@@ -1,12 +1,27 @@
-// src/components/SignUp.js
-import React from 'react';
-import { Form, Input, Button } from 'antd';
+import React, { useState } from 'react';
+import { Form, Input, Button, message } from 'antd';
 import { LockOutlined, UserOutlined, MailOutlined } from '@ant-design/icons';
 
 const SignUp = () => {
+  // Use useState to hold form data
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirm: '',
+  });
+
   const onFinish = (values) => {
     console.log('Received values from form: ', values);
-    // Here, you would handle the form submission (e.g., sending data to backend)
+
+    // Store form data in the state
+    setFormData(values);
+
+    // Show success message
+    message.success('Sign up successful! Your data is saved temporarily.');
+
+    // Optionally, reset the form after submission
+    // form.resetFields();
   };
 
   return (
@@ -24,7 +39,12 @@ const SignUp = () => {
           label="Username"
           rules={[{ required: true, message: 'Please input your username!' }]}
         >
-          <Input prefix={<UserOutlined />} placeholder="Username" />
+          <Input
+            prefix={<UserOutlined />}
+            placeholder="Username"
+            value={formData.username} // bind to formData
+            onChange={(e) => setFormData({ ...formData, username: e.target.value })} // update state
+          />
         </Form.Item>
 
         {/* Email Field */}
@@ -36,7 +56,12 @@ const SignUp = () => {
             { type: 'email', message: 'Please enter a valid email!' }
           ]}
         >
-          <Input prefix={<MailOutlined />} placeholder="Email" />
+          <Input
+            prefix={<MailOutlined />}
+            placeholder="Email"
+            value={formData.email} // bind to formData
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })} // update state
+          />
         </Form.Item>
 
         {/* Password Field */}
@@ -46,7 +71,12 @@ const SignUp = () => {
           rules={[{ required: true, message: 'Please input your password!' }]}
           hasFeedback
         >
-          <Input.Password prefix={<LockOutlined />} placeholder="Password" />
+          <Input.Password
+            prefix={<LockOutlined />}
+            placeholder="Password"
+            value={formData.password} // bind to formData
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })} // update state
+          />
         </Form.Item>
 
         {/* Confirm Password Field */}
@@ -67,7 +97,12 @@ const SignUp = () => {
             }),
           ]}
         >
-          <Input.Password prefix={<LockOutlined />} placeholder="Confirm Password" />
+          <Input.Password
+            prefix={<LockOutlined />}
+            placeholder="Confirm Password"
+            value={formData.confirm} // bind to formData
+            onChange={(e) => setFormData({ ...formData, confirm: e.target.value })} // update state
+          />
         </Form.Item>
 
         {/* Submit Button */}

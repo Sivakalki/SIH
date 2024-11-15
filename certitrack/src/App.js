@@ -1,18 +1,20 @@
-import './App.css';
-import 'antd/dist/reset.css';
-import SignUp from './components/SignUp';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
-function App() {
+import HomePage from './components/HomePage';
+import SignUp from './components/SignUp';
+import Login from './components/Login';
+
+const App = () => {
   return (
-    <div>
-      CertiTrack Application
-      <div className="buttons flex flex-col">
-        <button>Signup</button>
-        <button>Log in</button>
-        <SignUp/>
-      </div>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;
