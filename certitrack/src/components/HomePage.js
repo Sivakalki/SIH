@@ -1,11 +1,13 @@
 import React from 'react';
 import { Layout, Menu, Button } from 'antd';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { UserOutlined } from '@ant-design/icons';
 
 const { Header, Content, Footer } = Layout;
 
 const HomePage = () => {
+  const navigate = useNavigate();
+
   return (
     <Layout>
       <Header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -28,8 +30,11 @@ const HomePage = () => {
       </Header>
 
       <Content style={{ padding: '50px', textAlign: 'center' }}>
-        <h1>Welcome to My App</h1>
-        <p>This is the home page content.</p>
+        <h1>Fill the form for caste certificate application</h1>
+        <p>Please click the button below to start the application process.</p>
+        <Button type="primary" onClick={() => navigate('/application-form')}>
+          Fill Form
+        </Button>
       </Content>
 
       <Footer style={{ textAlign: 'center' }}>
