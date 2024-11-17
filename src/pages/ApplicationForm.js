@@ -60,8 +60,52 @@ export default function ApplicationForm() {
 
   const onFinish = async (values) => {
     setLoading(true);
+    console.log(values);
+
+    // Prepare the data for the backend
+    const formData = new FormData();
+
+    formData.append("firstname", values.firstName);
+    formData.append("lastname", values.lastName);
+    formData.append("email", values.email);
+    formData.append("phone", values.phoneNumber);
+    formData.append("aadharID", values.aadharId);
+    formData.append("caste", values.caste);
+    formData.append("addressDetails[village]", values.address);
+    formData.append("addressDetails[mandal]", values.mandal);
+    formData.append("addressDetails[pincode]", values.pincode);
+    formData.append("addressDetails[address]", values.address);
+    formData.append("addressDetails[state]", values.state);
+    formData.append("addressDetails[district]", values.district);
+    formData.append("addressDetails[city]", values.city);
+    formData.append("addressDetails[ward]", values.ward);
+
+    // Adding proof types
+    formData.append("addressProofType", values.proofOfResidence);
+    formData.append("dobProofType", values.proofOfDOB);
+    formData.append("casteProofType", values.proofOfCaste);
+
+    // Handle file uploads for each proof
+    if (values.electricityBillImage && values.electricityBillImage.length > 0) {
+      formData.append("addressProof", values.electricityBillImage[0].originFileObj);
+    }
+
+    if (values.motherCasteCertificateImage && values.motherCasteCertificateImage.length > 0) {
+      formData.append("casteProof", values.motherCasteCertificateImage[0].originFileObj);
+    }
+
+    if (values.sscCertificateImage && values.sscCertificateImage.length > 0) {
+      formData.append("dobProof", values.sscCertificateImage[0].originFileObj);
+    }
+
+    // Now, send the data to the backend
     try {
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/application/submitform`, values);
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/application`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       if (response.status === 200) {
         message.success('Application submitted successfully');
         form.resetFields();
@@ -72,6 +116,7 @@ export default function ApplicationForm() {
       setLoading(false);
     }
   };
+
 
   const normFile = (e) => {
     if (Array.isArray(e)) {
@@ -87,7 +132,7 @@ export default function ApplicationForm() {
         form={form}
         name="casteApplicationForm"
         onFinish={onFinish}
-        
+
         layout="vertical"
         requiredMark="optional"
       >
@@ -112,15 +157,15 @@ export default function ApplicationForm() {
             <Form.Item name="phoneNumber" label="Phone Number" rules={[{ required: true, message: 'Please input your phone number!' }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="applicationDate" label="Application Date" rules={[{ required: true, message: 'Please select the application date!' }]}>
+            {/* <Form.Item name="applicationDate" label="Application Date" rules={[{ required: true, message: 'Please select the application date!' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
             <Form.Item name="applicationArea" label="Application Area" rules={[{ required: true, message: 'Please input the application area!' }]}>
               <Input />
-            </Form.Item>
-            <Form.Item 
-              name="aadharId" 
-              label="Aadhar ID" 
+            </Form.Item> */}
+            <Form.Item
+              name="aadharId"
+              label="Aadhar ID"
               rules={[
                 { required: true, message: 'Please input your Aadhar ID!' },
                 { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
@@ -141,15 +186,15 @@ export default function ApplicationForm() {
             <Form.Item name="address" label="Address" rules={[{ required: true, message: 'Please input your address!' }]}>
               <Input.TextArea rows={4} />
             </Form.Item>
-            <Form.Item 
-              name="pincode" 
-              label="Pincode" 
+            <Form.Item
+              name="pincode"
+              label="Pincode"
               rules={[
                 { required: true, message: 'Please input your pincode!' },
                 { pattern: /^\d{6}$/, message: 'Pincode must be exactly 6 digits!' }
               ]}
             >
-              <Input 
+              <Input
                 onChange={(e) => {
                   const value = e.target.value;
                   if (value.length === 6) {
@@ -227,48 +272,48 @@ export default function ApplicationForm() {
             <Title level={4}>Proof of Residence</Title>
             <Form.Item name="proofOfResidence" label="Document Type" rules={[{ required: true, message: 'Please select the document type!' }]}>
               <Select onChange={(value) => setProofOfResidence(value)}>
-                <Option value="aadhar">Aadhar Card</Option>
-                <Option value="electricity">Electricity Bill</Option>
+                <Option value="aadhaar">Aadhar Card</Option>
+                <Option value="ELECTRICITY">Electricity Bill</Option>
                 <Option value="gas">Gas Bill</Option>
               </Select>
             </Form.Item>
             {proofOfResidence === 'aadhar' && (
-                      <>
-                        <Form.Item 
-                          name="aadharIdForResidence" 
-                          label="Aadhar ID" 
-                          rules={[
-                            { required: true, message: 'Please input your Aadhar ID!' },
-                            { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
-                          ]}
-                        >
-                          <Input />
-                        </Form.Item>
-                        <Form.Item
-                          name="aadharCardImage"
-                          label="Aadhar Card Image"
-                          valuePropName="fileList"
-                          getValueFromEvent={normFile}
-                          rules={[{ required: true, message: 'Please upload Aadhar Card image' }]}
-                        >
-                          <Upload 
-                            name="aadharCardImage" 
-                            listType="picture"
-                            maxCount={1}
-                            accept=".pdf,.jpg,.png"
-                            beforeUpload={(file) => {
-                              const isLt1M = file.size / 1024 / 1024 < 1;
-                              if (!isLt1M) {
-                                message.error('File must be smaller than 1MB!');
-                              }
-                              return false; // Prevent auto upload
-                            }}
-                          >
-                            <Button icon={<UploadOutlined />}>Click to upload</Button>
-                          </Upload>
-                        </Form.Item>
-                      </>
-                    )}
+              <>
+                <Form.Item
+                  name="aadharIdForResidence"
+                  label="Aadhar ID"
+                  rules={[
+                    { required: true, message: 'Please input your Aadhar ID!' },
+                    { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
+                  ]}
+                >
+                  <Input />
+                </Form.Item>
+                <Form.Item
+                  name="aadharCardImage"
+                  label="Aadhar Card Image"
+                  valuePropName="fileList"
+                  getValueFromEvent={normFile}
+                  rules={[{ required: true, message: 'Please upload Aadhar Card image' }]}
+                >
+                  <Upload
+                    name="aadharCardImage"
+                    listType="picture"
+                    maxCount={1}
+                    accept=".pdf,.jpg,.png"
+                    beforeUpload={(file) => {
+                      const isLt1M = file.size / 1024 / 1024 < 1;
+                      if (!isLt1M) {
+                        message.error('File must be smaller than 1MB!');
+                      }
+                      return false; // Prevent auto upload
+                    }}
+                  >
+                    <Button icon={<UploadOutlined />}>Click to upload</Button>
+                  </Upload>
+                </Form.Item>
+              </>
+            )}
             {proofOfResidence === 'electricity' && (
               <Form.Item
                 name="electricityBillImage"
@@ -277,8 +322,8 @@ export default function ApplicationForm() {
                 getValueFromEvent={normFile}
                 rules={[{ required: true, message: 'Please upload Electricity Bill image' }]}
               >
-                <Upload 
-                  name="electricityBillImage" 
+                <Upload
+                  name="electricityBillImage"
                   listType="picture"
                   accept=".pdf,.jpg,.png"
                   maxCount={1}
@@ -302,8 +347,8 @@ export default function ApplicationForm() {
                 getValueFromEvent={normFile}
                 rules={[{ required: true, message: 'Please upload Gas Bill image' }]}
               >
-                <Upload 
-                  name="gasBillImage" 
+                <Upload
+                  name="gasBillImage"
                   listType="picture"
                   accept=".pdf,.jpg,.png"
                   maxCount={1}
@@ -331,9 +376,9 @@ export default function ApplicationForm() {
             </Form.Item>
             {proofOfDOB === 'aadhar' && (
               <>
-                <Form.Item 
-                  name="aadharIdForDOB" 
-                  label="Aadhar ID" 
+                <Form.Item
+                  name="aadharIdForDOB"
+                  label="Aadhar ID"
                   rules={[
                     { required: true, message: 'Please input your Aadhar ID!' },
                     { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
@@ -348,8 +393,8 @@ export default function ApplicationForm() {
                   getValueFromEvent={normFile}
                   rules={[{ required: true, message: 'Please upload Aadhar Card image' }]}
                 >
-                  <Upload 
-                    name="aadharCardImageForDOB" 
+                  <Upload
+                    name="aadharCardImageForDOB"
                     listType="picture"
                     accept=".pdf,.jpg,.png"
                     maxCount={1}
@@ -378,8 +423,8 @@ export default function ApplicationForm() {
                   getValueFromEvent={normFile}
                   rules={[{ required: true, message: 'Please upload PAN Card image' }]}
                 >
-                  <Upload 
-                    name="panCardImage" 
+                  <Upload
+                    name="panCardImage"
                     listType="picture"
                     accept=".pdf,.jpg,.png"
                     maxCount={1}
@@ -404,12 +449,12 @@ export default function ApplicationForm() {
                 getValueFromEvent={normFile}
                 rules={[{ required: true, message: 'Please upload SSC Certificate image' }]}
               >
-                <Upload 
-                  name="sscCertificateImage" 
+                <Upload
+                  name="sscCertificateImage"
                   listType="picture"
                   accept=".pdf,.jpg,.png"
                   maxCount={1}
-            
+
                   beforeUpload={(file) => {
                     const isLt1M = file.size / 1024 / 1024 < 1;
                     if (!isLt1M) {
@@ -439,8 +484,8 @@ export default function ApplicationForm() {
                 getValueFromEvent={normFile}
                 rules={[{ required: true, message: "Please upload Father's Caste Certificate image" }]}
               >
-                <Upload 
-                  name="fatherCasteCertificateImage" 
+                <Upload
+                  name="fatherCasteCertificateImage"
                   listType="picture"
                   maxCount={1}
                   accept=".pdf,.jpg,.png"
@@ -464,8 +509,8 @@ export default function ApplicationForm() {
                 getValueFromEvent={normFile}
                 rules={[{ required: true, message: "Please upload Mother's Caste Certificate image" }]}
               >
-                <Upload 
-                  name="motherCasteCertificateImage" 
+                <Upload
+                  name="motherCasteCertificateImage"
                   listType="picture"
                   accept=".pdf,.jpg,.png"
                   maxCount={1}
@@ -485,9 +530,15 @@ export default function ApplicationForm() {
         </Row>
         <Divider />
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading} disabled={!form.isFieldsTouched(true) || !!form.getFieldsError().filter(({ errors }) => errors.length).length}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            disabled={loading || !form.isFieldsTouched()}
+          >
             Submit Application
           </Button>
+
         </Form.Item>
       </Form>
     </Card>
