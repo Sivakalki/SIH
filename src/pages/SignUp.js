@@ -1,7 +1,7 @@
 import { ExclamationCircleOutlined, LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, ConfigProvider, Form, Input, Select, Typography, message } from 'antd'
 import { useContext, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link,useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { UserContext } from '../components/userContext'
 
@@ -20,6 +20,7 @@ const mandalOptions = [
 export default function SignUp() {
   const [loading, setLoading] = useState(false)
   const {login} = useContext(UserContext);
+  const navigate = useNavigate()
 
   const onFinish = async (values) => {
     console.log(values)
@@ -33,6 +34,7 @@ export default function SignUp() {
         login(response.data.token)
         message.success('Sign up successful!')
         // You can add navigation logic here if needed
+        navigate('/')
       } else {
         throw new Error('Sign up failed')
       }
