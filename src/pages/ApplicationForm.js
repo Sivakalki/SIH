@@ -61,7 +61,7 @@ export default function ApplicationForm() {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const response = await axios.post(`${process.env.BACKENDURL}/application/submitform`, values);
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/application/submitform`, values);
       if (response.status === 200) {
         message.success('Application submitted successfully');
         form.resetFields();

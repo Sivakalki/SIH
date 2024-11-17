@@ -1,18 +1,34 @@
-import React , {useState} from 'react';
+import React , {useContext, useState} from 'react';
 import { Form, Input, Button, Checkbox , message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-
+import { UserContext } from '../components/userContext';
+import axios from 'axios';
+import { useNavigate} from 'react-router-dom';
 const Login = () => {
-
-  const [loginData, setLoginData] = useState({
-    username:'',
-    password:'',
-  });
-  const onFinish = (values) => {
+  const {login } = useContext(UserContext)
+  const navigate = useNavigate();
+  const onFinish = async (values) => {
     console.log('Received values from form: ', values);
     // Handle login logic (e.g., send data to the backend)
-    setLoginData(values);
-    message.success('Login successfull ! Your data is saved temporarily');
+    try{
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/users/login`,
+        values
+      )
+      console.log(res)
+      if(res.status===200){
+        const token = res.data.token
+        login(token)
+        message.success('Login successfull ! Your data is saved temporarily');
+        navigate('/')
+      }
+      else{
+        message.error(res.data.message)
+      }
+    }
+    catch(e){
+      message.error(e.response.data.message)
+    }
+    // setLoginData(values);
   };
 
   return (
@@ -24,15 +40,15 @@ const Login = () => {
         layout="vertical"
         autoComplete="off"
       >
-        {/* Username Field */}
+        {/* email Field */}
         <Form.Item
-          name="username"
-          label="Username"
-          rules={[{ required: true, message: 'Please input your username!' }]}
+          name="email"
+          label="Email"
+          rules={[{ required: true, message: 'Please input your email!' }]}
         >
           <Input
             prefix={<UserOutlined />}
-            placeholder="Username"
+            placeholder="email"
           />
         </Form.Item>
 
@@ -48,10 +64,10 @@ const Login = () => {
           />
         </Form.Item>
 
-        {/* Remember me Checkbox */}
+        {/* Remember me Checkbox
         <Form.Item name="remember" valuePropName="checked">
           <Checkbox>Remember me</Checkbox>
-        </Form.Item>
+        </Form.Item> */}
 
         {/* Submit Button */}
         <Form.Item>

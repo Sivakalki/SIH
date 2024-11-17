@@ -1,7 +1,9 @@
 import { ExclamationCircleOutlined, LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, ConfigProvider, Form, Input, Select, Typography, message } from 'antd'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import { Link } from 'react-router-dom'
+import axios from 'axios'
+import { UserContext } from '../components/userContext'
 
 const { Option } = Select
 const { Title, Text } = Typography
@@ -17,19 +19,18 @@ const mandalOptions = [
 
 export default function SignUp() {
   const [loading, setLoading] = useState(false)
+  const {login} = useContext(UserContext);
 
   const onFinish = async (values) => {
+    console.log(values)
     setLoading(true)
     try {
-      const response = await fetch('/users/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values),
-      })
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/users/signup`, 
+        values
+      )
 
-      if (response.ok) {
+      if (response.status===200) {
+        login(response.data.token)
         message.success('Sign up successful!')
         // You can add navigation logic here if needed
       } else {
@@ -100,7 +101,7 @@ export default function SignUp() {
               <Input.Password prefix={<LockOutlined className="text-gray-400" />} placeholder="Password" />
             </Form.Item>
             <Form.Item
-              name="confirmPassword"
+              name="confirm_password"
               label={<span className="flex items-center">Confirm Password </span>}
               dependencies={['password']}
               rules={[
