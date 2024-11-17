@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 import { Button, Avatar, Drawer } from 'antd'
 import { UserOutlined, LogoutOutlined, MenuOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
-import {  UserContext } from '../components/userContext';
+import { UserContext } from '../components/userContext';
+import axios from 'axios';
 // Create an authentication context
 
 const AuthProvider = ({ children }) => {
@@ -33,20 +34,36 @@ const AuthProvider = ({ children }) => {
   )
 }
 // Mock user data (replace with actual user data fetching logic)
-const mockUserData = {
-  name: 'John Doe',
-  email: 'john.doe@example.com',
-  role: 'User',
-}
+
+
 
 const HomePage = () => {
   const navigate = useNavigate()
-  const {token, login , logout } = useContext(UserContext)
+  const { token, login, logout } = useContext(UserContext)
   const [drawerVisible, setDrawerVisible] = useState(false)
+  const [userData, setUserData] = useState({ name: '', email: '', role: '' });
+  const fetchData = async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/users/user`, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // Include token in Authorization header
+        },
+      });
+      setUserData(res.data); // Set fetched user data
+    } catch (e) {
+       console.log("There is an error in getting profile details")
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchData();
+    }
+  }, [token]);
 
   const handleStartApplication = () => {
     if (token) {
-      navigate('/application-form') 
+      navigate('/application-form')
     } else {
       navigate('/login')
     }
@@ -103,7 +120,7 @@ const HomePage = () => {
               CertiTrack
             </h1>
             <p className="mt-4 text-xl text-gray-600">Streamline Your Certification Process</p>
-            <Button 
+            <Button
               type="primary"
               size="large"
               className="mt-8"
@@ -130,13 +147,13 @@ const HomePage = () => {
             <div className="flex items-center space-x-4">
               <Avatar size={64} icon={<UserOutlined />} />
               <div>
-                <h2 className="text-xl font-semibold">{mockUserData.name}</h2>
-                <p className="text-gray-500">{mockUserData.role}</p>
+                <h2 className="text-xl font-semibold">{userData.username}</h2>
+                <p className="text-gray-500">{userData.role}</p>
               </div>
             </div>
             <div>
               <p className="text-sm text-gray-500">Email</p>
-              <p>{mockUserData.email}</p>
+              <p>{userData.email}</p>
             </div>
             <Button block onClick={() => navigate('/profile')}>
               View Full Profile
