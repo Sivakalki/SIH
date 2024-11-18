@@ -6,6 +6,7 @@ import SignUp from './pages/SignUp';
 import Login from './pages/Login';
 import ApplicationForm from './pages/ApplicationForm';
 import Admin from './pages/dashboards/Admin';
+import Vro from './pages/dashboards/Vro';
 
 const App = () => {
   return (
@@ -16,6 +17,7 @@ const App = () => {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/application-form" element={<ApplicationForm/>} />
         <Route path="/admin" element={<Admin/>} />
+        <Route path="/vro" element={<Vro/>} />
       </Routes>
     </Router>
   );
