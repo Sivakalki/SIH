@@ -273,13 +273,13 @@ export default function ApplicationForm() {
             <Form.Item name="proofOfResidence" label="Document Type" rules={[{ required: true, message: 'Please select the document type!' }]}>
               <Select onChange={(value) => setProofOfResidence(value)}>
                 <Option value="aadhaar">Aadhar Card</Option>
-                <Option value="ELECTRICITY">Electricity Bill</Option>
+                <Option value="electricity">Electricity Bill</Option>
                 <Option value="gas">Gas Bill</Option>
               </Select>
             </Form.Item>
-            {proofOfResidence === 'aadhar' && (
+            {proofOfResidence === 'aadhaar' && (
               <>
-                <Form.Item
+                {/* <Form.Item
                   name="aadharIdForResidence"
                   label="Aadhar ID"
                   rules={[
@@ -288,7 +288,7 @@ export default function ApplicationForm() {
                   ]}
                 >
                   <Input />
-                </Form.Item>
+                </Form.Item> */}
                 <Form.Item
                   name="aadharCardImage"
                   label="Aadhar Card Image"

@@ -93,7 +93,7 @@ const HomePage = () => {
               </ul>
             </nav>
             <div className="flex space-x-2">
-              {token ? (
+              {userData.name ? (
                 <Button icon={<UserOutlined />} onClick={showDrawer} shape="circle" />
               ) : (
                 <>
