@@ -153,46 +153,83 @@ const Admin = () => {
             <Input placeholder="Enter email" />
           </Form.Item>
           <Form.Item
-              name="password"
-              label={<span className="flex items-center">Password </span>}
-              rules={[
-                { required: true, message: 'Please input your password!' },
-                { min: 8, message: 'Password must be at least 8 characters long' },
-                {
-                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/,
-                  message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
-                },
-              ]}
-            >
-              <Input.Password prefix={<LockOutlined className="text-gray-400" />} placeholder="Password" />
-            </Form.Item>
-            <Form.Item
-              name="confirm_password"
-              label={<span className="flex items-center">Confirm Password </span>}
-              dependencies={['password']}
-              rules={[
-                { required: true, message: 'Please confirm your password!' },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue('password') === value) {
-                      return Promise.resolve()
-                    }
-                    return Promise.reject(new Error('The two passwords do not match!'))
-                  },
-                }),
-              ]}
-            >
-              <Input.Password prefix={<LockOutlined className="text-gray-400" />} placeholder="Confirm Password" />
-            </Form.Item>
+            name="password"
+            label="Password"
+            rules={[
+              { required: true, message: "Password is required!" },
+              { min: 8, message: "Password must be at least 8 characters" },
+              {
+                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/,
+                message:
+                  "Password must include uppercase, lowercase, number, and special character.",
+              },
+            ]}
+          >
+            <Input.Password placeholder="Enter password" />
+          </Form.Item>
+          {/* Conditional Fields */}
+          {userType === "vro" && (
+            <>
+              <Form.Item
+                name="village"
+                label="Village or Ward"
+                rules={[{ required: true, message: "Village/Ward is required!" }]}
+              >
+                <Input placeholder="Enter village or ward" />
+              </Form.Item>
+              <Form.Item
+                name="Mandal"
+                label="Mandal"
+                rules={[{ required: true, message: "Mandal is required!" }]}
+              >
+                <Input placeholder="Enter mandal" />
+              </Form.Item>
+            </>
+          )}
+          {userType === "mro" && (
+            <>
+              <Form.Item
+                name="Mandal"
+                label="Mandal"
+                rules={[{ required: true, message: "Mandal is required!" }]}
+              >
+                <Input placeholder="Enter mandal" />
+              </Form.Item>
+              <Form.Item
+                name="district"
+                label="District"
+                rules={[{ required: true, message: "District is required!" }]}
+              >
+                <Input placeholder="Enter district" />
+              </Form.Item>
+            </>
+          )}
+          {userType === "district officer" && (
+            <>
+              <Form.Item
+                name="district"
+                label="District"
+                rules={[{ required: true, message: "District is required!" }]}
+              >
+                <Input placeholder="Enter district" />
+              </Form.Item>
+              <Form.Item
+                name="state"
+                label="State"
+                rules={[{ required: true, message: "State is required!" }]}
+              >
+                <Input placeholder="Enter state" />
+              </Form.Item>
+            </>
+          )}
           <Form.Item>
             <button
               className="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded w-full"
-              htmltype="submit"
+              htmlType="submit"
             >
               Create {userType.toUpperCase()}
             </button>
           </Form.Item>
-          
         </Form>
       </Modal>
     </div>

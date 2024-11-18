@@ -74,15 +74,41 @@ const HomePage = () => {
                 <Button icon={<UserOutlined />} onClick={showDrawer} shape="circle" />
               ) : (
                 <>
-                  <Button type="default" icon={<UserOutlined />}>
-                    <Link to="/admin">Admin</Link>
-                  </Button>
-                  <Button type="default" icon={<UserOutlined />}>
-                    <Link to="/login">Login</Link>
-                  </Button>
-                  <Button type="primary">
-                    <Link to="/signup">Sign Up</Link>
-                  </Button>
+                  <Link to="/admin">
+        <Button 
+          type="default" 
+          icon={<UserOutlined />} 
+          className="hover:text-blue-500 hover:shadow-md transition duration-300"
+        >
+          Admin
+        </Button>
+      </Link>
+      <Link to="/vro">
+        <Button 
+          type="default" 
+          icon={<UserOutlined />} 
+          className="hover:text-green-500 hover:shadow-md transition duration-300"
+        >
+          Vro
+        </Button>
+      </Link>
+      <Link to="/login">
+        <Button 
+          type="default" 
+          icon={<UserOutlined />} 
+          className="hover:text-red-500 hover:shadow-md transition duration-300"
+        >
+          Login
+        </Button>
+      </Link>
+      <Link to="/signup">
+        <Button 
+          type="primary" 
+          className="hover:bg-blue-700 hover:shadow-md transition duration-300"
+        >
+          Sign Up
+        </Button>
+      </Link>
                 </>
               )}
             </div>
