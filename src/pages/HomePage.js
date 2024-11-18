@@ -75,13 +75,13 @@ const HomePage = () => {
               ) : (
                 <>
                   <Link to="/admin">
-        <Button 
+        {/* <Button 
           type="default" 
           icon={<UserOutlined />} 
           className="hover:text-blue-500 hover:shadow-md transition duration-300"
         >
           Admin
-        </Button>
+        </Button> */}
       </Link>
       <Link to="/vro">
         <Button 

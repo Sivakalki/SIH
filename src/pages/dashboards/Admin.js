@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Table, Modal, Form, Input, Select, message, Card, Row, Col } from "antd";
 import { ExclamationCircleOutlined, UserOutlined, TeamOutlined, LockOutlined, SafetyOutlined } from "@ant-design/icons";
-
+import axios from "axios";
 const { Option } = Select;
 const { confirm } = Modal;
 
@@ -10,6 +10,7 @@ const Admin = () => {
   const [filter, setFilter] = useState("all");
   const [formVisible, setFormVisible] = useState(false);
   const [userType, setUserType] = useState("");
+  const [form] = Form.useForm()
 
   // Mock data for initial users
   const initialUsers = [
@@ -33,13 +34,76 @@ const Admin = () => {
     });
   };
 
-  const handleAddUser = (values) => {
-    const newUser = { id: Date.now(), ...values, type: userType };
-    setUsers((prev) => [...prev, newUser]);
-    message.success(`${userType.toUpperCase()} added successfully!`);
+  const handleCloseForm = ()=>{
+    form.resetFields()
+    setUserType("")
     setFormVisible(false);
-  };
+  }
+  const handleAddUser = async (values) => {
+    try {
+      // Prepare the request payload based on user type
+      let payload = {
+        username: values.name,
+        email: values.email,
+        password: values.password,
+        confirm_password: values.password, // Assuming password confirmation is the same as the password input
+        role: userType.toUpperCase(),
+      };
+  
+      if (userType === "vro") {
+        payload = {
+          ...payload,
+          village: values.village,
+          mandal: values.mandal,
+          district: values.district,
+          state: values.state,
+        };
+      } else if (userType === "mro") {
+        payload = {
+          ...payload,
+          mandal: values.mandal,
+          district: values.district,
+          state: values.state,
+        };
+      } else if (userType === "district officer") {
+        payload = {
+          ...payload,
+          district: values.district,
+          state: values.state,
+        };
+      }
+  
+      // Send signup request to the backend
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/users/signup`, payload);
+  
+      // Extract new user data from the response
+      const { data: newUser } = response;
+  
+      // Add the new user to the state
+      setUsers((prev) => [
+        ...prev,
+        {
+          id: newUser.id,
+          name: newUser.username,
+          email: newUser.email,
+          type: userType,
+        },
+      ]);
+  
+      // Show success message
+      message.success(`${userType.toUpperCase()} added successfully!`);
+      form.resetFields();
+      setUserType("");  // Reset userType
 
+      setFormVisible(false);
+    } catch (error) {
+      // Handle errors from the backend
+      message.error(
+        `Failed to add ${userType.toUpperCase()}: ${error.response?.data?.message || error.message}`
+      );
+    }
+  };
+  
   const deleteUser = (id) => {
     setUsers((prev) => prev.filter((user) => user.id !== id));
     message.success("User deleted successfully!");
@@ -131,7 +195,9 @@ const Admin = () => {
       <Modal
         title={`Create Account for ${userType.toUpperCase()}`}
         visible={formVisible}
-        onCancel={() => setFormVisible(false)}
+        onCancel={() => 
+          handleCloseForm()
+        }
         footer={null}
       >
         <Form layout="vertical" onFinish={handleAddUser}>
@@ -167,6 +233,23 @@ const Admin = () => {
           >
             <Input.Password placeholder="Enter password" />
           </Form.Item>
+          <Form.Item
+            name="confirm_password"
+            label="Confirm Password"
+            rules={[
+              { required: true, message: "Password is required!" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('password') === value) {
+                    return Promise.resolve()
+                  }
+                  return Promise.reject(new Error('The two passwords do not match!'))
+                },
+              }),
+            ]}
+          >
+            <Input.Password placeholder="Confirm password" />
+          </Form.Item>
           {/* Conditional Fields */}
           {userType === "vro" && (
             <>
@@ -178,18 +261,7 @@ const Admin = () => {
                 <Input placeholder="Enter village or ward" />
               </Form.Item>
               <Form.Item
-                name="Mandal"
-                label="Mandal"
-                rules={[{ required: true, message: "Mandal is required!" }]}
-              >
-                <Input placeholder="Enter mandal" />
-              </Form.Item>
-            </>
-          )}
-          {userType === "mro" && (
-            <>
-              <Form.Item
-                name="Mandal"
+                name="mandal"
                 label="Mandal"
                 rules={[{ required: true, message: "Mandal is required!" }]}
               >
@@ -201,6 +273,38 @@ const Admin = () => {
                 rules={[{ required: true, message: "District is required!" }]}
               >
                 <Input placeholder="Enter district" />
+              </Form.Item>
+              <Form.Item
+                name="state"
+                label="State"
+                rules={[{ required: true, message: "State is required!" }]}
+              >
+                <Input placeholder="Enter state" />
+              </Form.Item>
+            </>
+          )}
+          {userType === "mro" && (
+            <>
+              <Form.Item
+                name="mandal"
+                label="Mandal"
+                rules={[{ required: true, message: "Mandal is required!" }]}
+              >
+                <Input placeholder="Enter mandal" />
+              </Form.Item>
+              <Form.Item
+                name="district"
+                label="District"
+                rules={[{ required: true, message: "District is required!" }]}
+              >
+                <Input placeholder="Enter district" />
+              </Form.Item>
+              <Form.Item
+                name="state"
+                label="State"
+                rules={[{ required: true, message: "State is required!" }]}
+              >
+                <Input placeholder="Enter state" />
               </Form.Item>
             </>
           )}
