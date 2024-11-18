@@ -98,6 +98,9 @@ const HomePage = () => {
               ) : (
                 <>
                   <Button type="default" icon={<UserOutlined />}>
+                    <Link to="/admin">Admin</Link>
+                  </Button>
+                  <Button type="default" icon={<UserOutlined />}>
                     <Link to="/login">Login</Link>
                   </Button>
                   <Button type="primary">

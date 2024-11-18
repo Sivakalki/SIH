@@ -1,6 +1,6 @@
 import React , {useContext, useState} from 'react';
 import { Form, Input, Button, Checkbox , message } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
 import { UserContext } from '../components/userContext';
 import axios from 'axios';
 import { useNavigate} from 'react-router-dom';
@@ -44,10 +44,12 @@ const Login = () => {
         <Form.Item
           name="email"
           label="Email"
-          rules={[{ required: true, message: 'Please input your email!' }]}
+          rules={[{ required: true, message: 'Please input your email!' },
+            {type: 'email',message: 'Please enter a valid email!'}
+          ]}
         >
           <Input
-            prefix={<UserOutlined />}
+            prefix={<MailOutlined />}
             placeholder="email"
           />
         </Form.Item>
