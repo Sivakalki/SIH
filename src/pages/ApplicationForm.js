@@ -377,16 +377,6 @@ export default function ApplicationForm() {
             {proofOfDOB === 'aadhar' && (
               <>
                 <Form.Item
-                  name="aadharIdForDOB"
-                  label="Aadhar ID"
-                  rules={[
-                    { required: true, message: 'Please input your Aadhar ID!' },
-                    { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
-                  ]}
-                >
-                  <Input />
-                </Form.Item>
-                <Form.Item
                   name="aadharCardImageForDOB"
                   label="Aadhar Card Image"
                   valuePropName="fileList"
@@ -413,9 +403,7 @@ export default function ApplicationForm() {
             )}
             {proofOfDOB === 'pan' && (
               <>
-                <Form.Item name="panId" label="PAN ID" rules={[{ required: true, message: 'Please input your PAN ID!' }]}>
-                  <Input />
-                </Form.Item>
+                
                 <Form.Item
                   name="panCardImage"
                   label="PAN Card Image"
