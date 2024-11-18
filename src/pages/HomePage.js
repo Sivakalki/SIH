@@ -6,40 +6,10 @@ import { UserContext } from '../components/userContext';
 import axios from 'axios';
 // Create an authentication context
 
-const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(null)
-
-  useEffect(() => {
-    // Check for token in localStorage on initial load
-    const storedToken = localStorage.getItem('authToken')
-    if (storedToken) {
-      setToken(storedToken)
-    }
-  }, [])
-
-  const login = (newToken) => {
-    setToken(newToken)
-    localStorage.setItem('authToken', newToken)
-  }
-
-  const logout = () => {
-    setToken(null)
-    localStorage.removeItem('authToken')
-  }
-
-  return (
-    <UserContext.Provider value={{ token, login, logout }}>
-      {children}
-    </UserContext.Provider>
-  )
-}
-// Mock user data (replace with actual user data fetching logic)
-
-
 
 const HomePage = () => {
   const navigate = useNavigate()
-  const { token, login, logout } = useContext(UserContext)
+  const { token, logout } = useContext(UserContext)
   const [drawerVisible, setDrawerVisible] = useState(false)
   const [userData, setUserData] = useState({ name: '', email: '', role: '' });
   const fetchData = async () => {
@@ -54,6 +24,14 @@ const HomePage = () => {
        console.log("There is an error in getting profile details")
     }
   };
+
+  const clearuserdata=()=>{
+    setUserData({
+      name:'',
+      email:'',
+      role:''
+    })
+  }
 
   useEffect(() => {
     if (token) {
@@ -78,7 +56,6 @@ const HomePage = () => {
   }
 
   return (
-    <AuthProvider>
       <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(to bottom right, #E6F0FF, #EDE7F6)' }}>
         <header className="bg-white shadow-md">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -93,7 +70,7 @@ const HomePage = () => {
               </ul>
             </nav>
             <div className="flex space-x-2">
-              {userData.name ? (
+              {userData.username ? (
                 <Button icon={<UserOutlined />} onClick={showDrawer} shape="circle" />
               ) : (
                 <>
@@ -163,6 +140,7 @@ const HomePage = () => {
             </Button>
             <Button danger block onClick={() => {
               logout()
+              clearuserdata()
               closeDrawer()
             }}>
               <LogoutOutlined /> Logout
@@ -170,7 +148,6 @@ const HomePage = () => {
           </div>
         </Drawer>
       </div>
-    </AuthProvider>
   )
 }
 

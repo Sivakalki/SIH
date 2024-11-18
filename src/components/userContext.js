@@ -17,6 +17,7 @@ const UserProvider = ({ children }) => {
 
   // Logout and remove token from localStorage
   const logout = () => {
+    console.log("called logout function");
     setToken(null);
     localStorage.removeItem('token');
   };
