@@ -18,7 +18,7 @@ const Login = () => {
       if(res.status===200){
         const token = res.data.token
         login(token)
-        console.log(res.data.data.role," is the user data role ");
+        console.log("token is ",token)
         message.success('Login successfull ! Your data is saved temporarily');
         if(res.data.data.role === 'ADMIN'){
           navigate('/admin')
