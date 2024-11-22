@@ -8,7 +8,8 @@ import ApplicationForm from './pages/ApplicationForm';
 import Admin from './pages/dashboards/Admin';
 import Vro from './pages/dashboards/Vro';
 import Mro from './pages/dashboards/Mro';
-import Do from './pages/dashboards/Do'
+import Do from './pages/dashboards/Do';
+import Mvro from './pages/dashboards/mvro';
 
 const App = () => {
   return (
@@ -22,6 +23,8 @@ const App = () => {
         <Route path="/vro" element={<Vro/>} />
         <Route path="/mro" element={<Mro/>} />
         <Route path="/do" element={<Do/>} />
+        <Route path="/mvro" element={<Mvro/>} />
+        
       </Routes>
     </Router>
   );

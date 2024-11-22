@@ -94,6 +94,15 @@ const HomePage = () => {
                     Vro
                   </Button>
                 </Link>
+                <Link to="/mvro">
+                  <Button
+                    type="default"
+                    icon={<UserOutlined />}
+                    className="hover:text-green-500 hover:shadow-md transition duration-300"
+                  >
+                  mvro
+                  </Button> 
+                </Link>
                 <Link to="/mro">
                   <Button
                     type="default"
