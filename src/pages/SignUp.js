@@ -13,21 +13,22 @@ export default function SignUp() {
   const navigate = useNavigate()
 
   const onFinish = async (values) => {
-    console.log(values)
     setLoading(true)
     try {
       const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/users/signup`, 
         values
       )
-
       if (response.status===200) {
+        console.log(response.data)
         login(response.data.token)
         message.success('Sign up successful!')
         navigate('/')
       } else {
+        console.log(response.data.message)
         throw new Error('Sign up failed')
       }
     } catch (error) {
+      console.log(error)
       message.error('An error occurred during sign up')
     } finally {
       setLoading(false)
