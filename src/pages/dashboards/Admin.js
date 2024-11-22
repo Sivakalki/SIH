@@ -57,6 +57,7 @@ const Admin = () => {
           mandal: values.mandal,
           district: values.district,
           state: values.state,
+          pincode: values.pincode,
         };
       } else if (userType === "mro") {
         payload = {
@@ -259,6 +260,16 @@ const Admin = () => {
                 rules={[{ required: true, message: "Village/Ward is required!" }]}
               >
                 <Input placeholder="Enter village or ward" />
+              </Form.Item>
+              <Form.Item
+                name="pincode"
+                label="Pincode"
+                rules={[
+                  { required: true, message: 'Please input your pincode!' },
+                  { pattern: /^\d{6}$/, message: 'Pincode must be exactly 6 digits!' }
+                ]}
+              >
+                <Input placeholder="Enter Pincode" />
               </Form.Item>
               <Form.Item
                 name="mandal"

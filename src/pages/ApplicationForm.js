@@ -1,60 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Select, DatePicker, Button, message, Upload, Row, Col, Card, Typography, Divider, Spin } from 'antd';
-import { UploadOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Form, Input, Select, Button, message, Upload, Row, Col, Card, Typography, Divider, Spin } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
 const { Option } = Select;
-const { Title, Text } = Typography;
-
-// This would typically come from an API call to the backend
-const states = ['Andhra Pradesh', 'Telangana', 'Karnataka'];
+const { Title } = Typography;
 
 export default function ApplicationForm() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [fetchingPincode, setFetchingPincode] = useState(false);
+  const [addressData, setAddressData] = useState([]);
   const [proofOfResidence, setProofOfResidence] = useState('');
   const [proofOfDOB, setProofOfDOB] = useState('');
   const [proofOfCaste, setProofOfCaste] = useState('');
-  const [districts, setDistricts] = useState([]);
-  const [mandals, setMandals] = useState([]);
-  const [cities, setCities] = useState([]);
+  const [pincodes, setPincodes] = useState([]);
+  const [selectedPincode, setSelectedPincode] = useState(null);
 
-  const fetchLocationData = async (pincode) => {
-    if (pincode.length !== 6) return;
-
-    setFetchingPincode(true);
-    try {
-      const response = await axios.get(`https://api.postalpincode.in/pincode/${pincode}`);
-      const data = response.data[0];
-      if (data.Status === "Success" && data.PostOffice.length > 0) {
-        const postOffice = data.PostOffice[0];
-        form.setFieldsValue({
-          state: postOffice.State,
-          district: postOffice.District,
-          city: postOffice.Division,
-        });
-        // In a real application, you would fetch districts, cities, and mandals based on the state and district
-        setDistricts([postOffice.District]);
-        setCities([postOffice.Division]);
-        setMandals([postOffice.Block]);
-      } else {
-        message.error('No data found for the given pincode');
-        form.setFieldsValue({
-          state: undefined,
-          district: undefined,
-          city: undefined,
-          mandal: undefined,
-        });
-        setDistricts([]);
-        setCities([]);
-        setMandals([]);
+  useEffect(() => {
+    const fetchAddressData = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/getAllLocationDetails`);
+        setAddressData(response.data);
+        const uniquePincodes = [...new Set(response.data.map(item => item.pincode))];
+        setPincodes(uniquePincodes);
+      } catch (error) {
+        console.error('Error fetching address data:', error);
+        message.error('Failed to fetch address data');
       }
-    } catch (error) {
-      console.error('Error fetching location data:', error);
-      message.error('Failed to fetch location data');
-    } finally {
-      setFetchingPincode(false);
+    };
+
+    fetchAddressData();
+  }, []);
+
+  const handlePincodeChange = (value) => {
+    setSelectedPincode(value);
+    const selectedAddress = addressData.find(item => item.pincode === value);
+    if (selectedAddress) {
+      form.setFieldsValue({
+        state: selectedAddress.state,
+        district: selectedAddress.district,
+        mandal: selectedAddress.mandal,
+        village: selectedAddress.village,
+      });
     }
   };
 
@@ -71,7 +58,7 @@ export default function ApplicationForm() {
     formData.append("phone", values.phoneNumber);
     formData.append("aadharID", values.aadharId);
     formData.append("caste", values.caste);
-    formData.append("addressDetails[village]", values.address);
+    formData.append("addressDetails[village]", values.village);
     formData.append("addressDetails[mandal]", values.mandal);
     formData.append("addressDetails[pincode]", values.pincode);
     formData.append("addressDetails[address]", values.address);
@@ -117,7 +104,6 @@ export default function ApplicationForm() {
     }
   };
 
-
   const normFile = (e) => {
     if (Array.isArray(e)) {
       return e;
@@ -132,7 +118,6 @@ export default function ApplicationForm() {
         form={form}
         name="casteApplicationForm"
         onFinish={onFinish}
-
         layout="vertical"
         requiredMark="optional"
       >
@@ -157,12 +142,6 @@ export default function ApplicationForm() {
             <Form.Item name="phoneNumber" label="Phone Number" rules={[{ required: true, message: 'Please input your phone number!' }]}>
               <Input />
             </Form.Item>
-            {/* <Form.Item name="applicationDate" label="Application Date" rules={[{ required: true, message: 'Please select the application date!' }]}>
-              <DatePicker style={{ width: '100%' }} />
-            </Form.Item>
-            <Form.Item name="applicationArea" label="Application Area" rules={[{ required: true, message: 'Please input the application area!' }]}>
-              <Input />
-            </Form.Item> */}
             <Form.Item
               name="aadharId"
               label="Aadhar ID"
@@ -189,79 +168,53 @@ export default function ApplicationForm() {
             <Form.Item
               name="pincode"
               label="Pincode"
-              rules={[
-                { required: true, message: 'Please input your pincode!' },
-                { pattern: /^\d{6}$/, message: 'Pincode must be exactly 6 digits!' }
-              ]}
+              rules={[{ required: true, message: 'Please select your pincode!' }]}
             >
-              <Input
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value.length === 6) {
-                    fetchLocationData(value);
-                  }
-                }}
-                maxLength={6}
-                suffix={fetchingPincode ? <LoadingOutlined /> : null}
-              />
-            </Form.Item>
-            <Form.Item name="ward" label="Ward" rules={[{ required: true, message: 'Please input your ward!' }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item name="state" label="State" rules={[{ required: true, message: 'Please select your state!' }]}>
               <Select
                 showSearch
-                placeholder="Select state"
-                disabled={fetchingPincode}
+                placeholder="Select pincode"
+                onChange={handlePincodeChange}
                 filterOption={(input, option) =>
-                  option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                 }
               >
-                {states.map(state => (
+                {pincodes.map(pincode => (
+                  <Option key={pincode} value={pincode}>{pincode}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item name="state" label="State" rules={[{ required: true, message: 'Please select your state!' }]}>
+              <Select disabled={!selectedPincode}>
+                {[...new Set(addressData.map(item => item.state))].map(state => (
                   <Option key={state} value={state}>{state}</Option>
                 ))}
               </Select>
             </Form.Item>
             <Form.Item name="district" label="District" rules={[{ required: true, message: 'Please select your district!' }]}>
-              <Select
-                showSearch
-                placeholder="Select district"
-                disabled={fetchingPincode}
-                filterOption={(input, option) =>
-                  option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
-              >
-                {districts.map(district => (
-                  <Option key={district} value={district}>{district}</Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item name="city" label="City" rules={[{ required: true, message: 'Please select your city!' }]}>
-              <Select
-                showSearch
-                placeholder="Select city"
-                disabled={fetchingPincode}
-                filterOption={(input, option) =>
-                  option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
-              >
-                {cities.map(city => (
-                  <Option key={city} value={city}>{city}</Option>
-                ))}
+              <Select disabled={!selectedPincode}>
+                {addressData
+                  .filter(item => item.pincode === selectedPincode)
+                  .map(item => (
+                    <Option key={item.district} value={item.district}>{item.district}</Option>
+                  ))}
               </Select>
             </Form.Item>
             <Form.Item name="mandal" label="Mandal" rules={[{ required: true, message: 'Please select your mandal!' }]}>
-              <Select
-                showSearch
-                placeholder="Select mandal"
-                disabled={fetchingPincode}
-                filterOption={(input, option) =>
-                  option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
-              >
-                {mandals.map(mandal => (
-                  <Option key={mandal} value={mandal}>{mandal}</Option>
-                ))}
+              <Select disabled={!selectedPincode}>
+                {addressData
+                  .filter(item => item.pincode === selectedPincode)
+                  .map(item => (
+                    <Option key={item.mandal} value={item.mandal}>{item.mandal}</Option>
+                  ))}
+              </Select>
+            </Form.Item>
+            <Form.Item name="village" label="Village" rules={[{ required: true, message: 'Please select your village!' }]}>
+              <Select disabled={!selectedPincode}>
+                {addressData
+                  .filter(item => item.pincode === selectedPincode)
+                  .map(item => (
+                    <Option key={item.village} value={item.village}>{item.village}</Option>
+                  ))}
               </Select>
             </Form.Item>
           </Col>
@@ -377,16 +330,6 @@ export default function ApplicationForm() {
             {proofOfDOB === 'aadhar' && (
               <>
                 <Form.Item
-                  name="aadharIdForDOB"
-                  label="Aadhar ID"
-                  rules={[
-                    { required: true, message: 'Please input your Aadhar ID!' },
-                    { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
-                  ]}
-                >
-                  <Input />
-                </Form.Item>
-                <Form.Item
                   name="aadharCardImageForDOB"
                   label="Aadhar Card Image"
                   valuePropName="fileList"
@@ -413,9 +356,7 @@ export default function ApplicationForm() {
             )}
             {proofOfDOB === 'pan' && (
               <>
-                <Form.Item name="panId" label="PAN ID" rules={[{ required: true, message: 'Please input your PAN ID!' }]}>
-                  <Input />
-                </Form.Item>
+                
                 <Form.Item
                   name="panCardImage"
                   label="PAN Card Image"
@@ -538,7 +479,6 @@ export default function ApplicationForm() {
           >
             Submit Application
           </Button>
-
         </Form.Item>
       </Form>
     </Card>

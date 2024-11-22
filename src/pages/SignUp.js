@@ -1,21 +1,11 @@
-import { ExclamationCircleOutlined, LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons'
+import {  LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, ConfigProvider, Form, Input, Select, Typography, message } from 'antd'
 import { useContext, useState } from 'react'
 import { Link,useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { UserContext } from '../components/userContext'
 
-const { Option } = Select
 const { Title, Text } = Typography
-
-// Sample data for mandal dropdown
-const mandalOptions = [
-  'Adilabad', 'Bhadradri', 'Jagitial', 'Jangaon', 'Jayashankar', 'Jogulamba',
-  'Kamareddy', 'Karimnagar', 'Khammam', 'Kumuram Bheem', 'Mahabubabad', 'Mahabubnagar',
-  'Mancherial', 'Medak', 'Medchal–Malkajgiri', 'Mulugu', 'Nagarkurnool', 'Nalgonda',
-  'Narayanpet', 'Nirmal', 'Nizamabad', 'Peddapalli', 'Rajanna Sircilla', 'Rangareddy',
-  'Sangareddy', 'Siddipet', 'Suryapet', 'Vikarabad', 'Wanaparthy', 'Warangal', 'Yadadri'
-]
 
 export default function SignUp() {
   const [loading, setLoading] = useState(false)
@@ -33,7 +23,6 @@ export default function SignUp() {
       if (response.status===200) {
         login(response.data.token)
         message.success('Sign up successful!')
-        // You can add navigation logic here if needed
         navigate('/')
       } else {
         throw new Error('Sign up failed')
@@ -121,36 +110,15 @@ export default function SignUp() {
               <Input.Password prefix={<LockOutlined className="text-gray-400" />} placeholder="Confirm Password" />
             </Form.Item>
             <Form.Item
-              name="area"
-              label={<span className="flex items-center">Area </span>}
-              rules={[{ required: true, message: 'Please select your area!' }]}
+              name="phone"
+              label={<span className="flex items-center">Phone number </span>}
+              rules={[
+                { required: true, message: 'Please enter your phone number' },
+              ]}
             >
-              <Select placeholder="Select your area">
-                <Option value="urban">Urban</Option>
-                <Option value="suburban">Suburban</Option>
-                <Option value="rural">Rural</Option>
-              </Select>
+              <Input.TextArea prefix={<LockOutlined className="text-gray-400" />} placeholder="+91 242334322" />
             </Form.Item>
-            <Form.Item
-              name="mandal"
-              label={<span className="flex items-center">Mandal </span>}
-              rules={[{ required: true, message: 'Please select your mandal!' }]}
-            >
-              <Select
-                showSearch
-                placeholder="Search for your mandal"
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
-              >
-                {mandalOptions.map((mandal) => (
-                  <Option key={mandal} value={mandal} label={mandal}>
-                    {mandal}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
+            
             <Form.Item>
               <Button type="primary" htmlType="submit" className="w-full h-10 text-lg" loading={loading}>
                 Sign Up

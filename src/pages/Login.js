@@ -23,6 +23,9 @@ const Login = () => {
         if(res.data.data.role === 'ADMIN'){
           navigate('/admin')
         }
+        else if(res.data.data.role === 'VRO'){
+          navigate('/vro')
+        }
         else{
           navigate('/')
         }
@@ -32,7 +35,8 @@ const Login = () => {
       }
     }
     catch(e){
-      message.error(e.response.data.message)
+      console.log(e, " is the error  ")
+      message.error("There is an error")
     }
     // setLoginData(values);
   };
