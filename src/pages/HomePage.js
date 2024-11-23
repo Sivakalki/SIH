@@ -29,7 +29,6 @@ const HomePage = () => {
 
   useEffect(() => {
     if (token) {
-      console.log(token);
       fetchData();
     }
   }, [token]);

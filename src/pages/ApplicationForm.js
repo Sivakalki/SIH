@@ -1,31 +1,81 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Select, Button, message, Upload, Row, Col, Card, Typography, Divider, Spin } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { format } from 'date-fns';
 import axios from 'axios';
+import moment from 'moment';
+import {
+  Form,
+  Input,
+  Button,
+  Select,
+  DatePicker,
+  Radio,
+  Upload,
+  Card,
+  message,
+  ConfigProvider
+} from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import 'antd/dist/reset.css'; // Import Ant Design styles
 
 const { Option } = Select;
-const { Title } = Typography;
 
-export default function ApplicationForm() {
-  const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
+const MAX_FILE_SIZE = 1024 * 1024 * 5; // 5MB
+
+const schema = z.object({
+  full_name: z.string().min(1, "Full name is required"),
+  dob: z.date({ required_error: "Date of birth is required" }),
+  gender: z.enum(["MALE", "FEMALE", "OTHER"], { required_error: "Gender is required" }),
+  religion: z.string().min(1, "Religion is required"),
+  caste_id: z.number().int().positive("Caste is required"),
+  sub_caste: z.string().min(1, "Sub caste is required"),
+  parent_religion: z.string().min(1, "Parent religion is required"),
+  parent_guardian_id: z.number().int().positive("Parent/Guardian type is required"),
+  parent_guardian_name: z.string().min(1, "Parent/Guardian name is required"),
+  marital_status: z.enum(["SINGLE", "MARRIED", "DIVORCED", "WIDOWED"], { required_error: "Marital status is required" }),
+  aadhar_num: z.string().length(12, "Aadhar number must be 12 digits"),
+  phone_num: z.string().min(10, "Phone number must be at least 10 digits"),
+  email: z.string().email("Invalid email address"),
+  pincode: z.string().min(1, "Pincode is required"),
+  state: z.string().min(1, "State is required"),
+  district: z.string().min(1, "District is required"),
+  mandal: z.string().min(1, "Mandal is required"),
+  sachivalayam: z.string().min(1, "Sachivalayam is required"),
+  address: z.string().min(1, "Address is required"),
+  addressProofType: z.enum(["AADHAR", "ELECTRICITY_BILL", "GAS_BILL"], { required_error: "Address proof type is required" }),
+  addressProof: z.any().refine((file) => file && file[0]?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`).optional(),
+  dobProofType: z.enum(["AADHAR", "PAN", "SSC"], { required_error: "DOB proof type is required" }),
+  dobProof: z.any().refine((file) => file && file[0]?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`).optional(),
+  casteProofType: z.enum(["FATHER", "MOTHER"], { required_error: "Caste proof type is required" }),
+  casteProof: z.any().refine((file) => file && file[0]?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`).optional(),
+});
+
+function ApplicationForm() {
+  const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+    resolver: zodResolver(schema),
+  });
+
   const [addressData, setAddressData] = useState([]);
-  const [proofOfResidence, setProofOfResidence] = useState('');
-  const [proofOfDOB, setProofOfDOB] = useState('');
-  const [proofOfCaste, setProofOfCaste] = useState('');
   const [pincodes, setPincodes] = useState([]);
   const [selectedPincode, setSelectedPincode] = useState(null);
+  const [sachivalayamOptions, setSachivalayamOptions] = useState([])
 
   useEffect(() => {
     const fetchAddressData = async () => {
       try {
         const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/getAllLocationDetails`);
+        if (response.data == 400) {
+          message.error("There are no VRO present here")
+        }
+        console.log(response.data)
         setAddressData(response.data);
         const uniquePincodes = [...new Set(response.data.map(item => item.pincode))];
         setPincodes(uniquePincodes);
       } catch (error) {
         console.error('Error fetching address data:', error);
-        message.error('Failed to fetch address data');
+        message.error('Uable to fetch the data');
       }
     };
 
@@ -34,453 +84,405 @@ export default function ApplicationForm() {
 
   const handlePincodeChange = (value) => {
     setSelectedPincode(value);
-    const selectedAddress = addressData.find(item => item.pincode === value);
-    if (selectedAddress) {
-      form.setFieldsValue({
-        state: selectedAddress.state,
-        district: selectedAddress.district,
-        mandal: selectedAddress.mandal,
-        village: selectedAddress.village,
-      });
+    const selectedAddresses = addressData.filter(item => item.pincode === value);
+  
+    if (selectedAddresses.length > 0) {
+      const sachivalayams = selectedAddresses.map(item => item.sachivalayam);
+      setValue('sachivalayam', ''); // Reset the sachivalayam value
+      setValue('state', selectedAddresses[0].state); // Assuming all have the same state
+      setValue('district', selectedAddresses[0].district);
+      setValue('mandal', selectedAddresses[0].mandal);
+      setSachivalayamOptions(sachivalayams); // Populate the dropdown with sachivalayams
+    } else {
+      setSachivalayamOptions([]); // Clear dropdown if no sachivalayams are found
     }
   };
 
-  const onFinish = async (values) => {
-    setLoading(true);
-    console.log(values);
+  const [castes] = useState([
+    { caste_id: 1, name: 'OC' },
+    { caste_id: 2, name: 'OBC' },
+    { caste_id: 3, name: 'ST' },
+    { caste_id: 4, name: 'SC' },
+  ]);
 
-    // Prepare the data for the backend
+  const [religions] = useState([
+    { religion_id: 1, name: 'HINDU' },
+    { religion_id: 2, name: 'CHRISTIAN' },
+    { religion_id: 3, name: 'MUSLIM' },
+    { religion_id: 4, name: 'NOA' },
+  ]);
+
+  const [parentGuardianTypes] = useState([
+    { id: 1, type: 'FATHER' },
+    { id: 2, type: 'MOTHER' },
+    { id: 3, type: 'SIBILING' },
+  ]);
+
+  const addressProofType = watch('addressProofType');
+  const dobProofType = watch('dobProofType');
+  const casteProofType = watch('casteProofType');
+
+  const onSubmit = async (data) => {
     const formData = new FormData();
 
-    formData.append("firstname", values.firstName);
-    formData.append("lastname", values.lastName);
-    formData.append("email", values.email);
-    formData.append("phone", values.phoneNumber);
-    formData.append("aadharID", values.aadharId);
-    formData.append("caste", values.caste);
-    formData.append("addressDetails[village]", values.village);
-    formData.append("addressDetails[mandal]", values.mandal);
-    formData.append("addressDetails[pincode]", values.pincode);
-    formData.append("addressDetails[address]", values.address);
-    formData.append("addressDetails[state]", values.state);
-    formData.append("addressDetails[district]", values.district);
-    formData.append("addressDetails[city]", values.city);
-    formData.append("addressDetails[ward]", values.ward);
-
-    // Adding proof types
-    formData.append("addressProofType", values.proofOfResidence);
-    formData.append("dobProofType", values.proofOfDOB);
-    formData.append("casteProofType", values.proofOfCaste);
-
-    // Handle file uploads for each proof
-    if (values.electricityBillImage && values.electricityBillImage.length > 0) {
-      formData.append("addressProof", values.electricityBillImage[0].originFileObj);
-    }
-
-    if (values.motherCasteCertificateImage && values.motherCasteCertificateImage.length > 0) {
-      formData.append("casteProof", values.motherCasteCertificateImage[0].originFileObj);
-    }
-
-    if (values.sscCertificateImage && values.sscCertificateImage.length > 0) {
-      formData.append("dobProof", values.sscCertificateImage[0].originFileObj);
-    }
-
-    // Now, send the data to the backend
-    try {
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/application`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (response.status === 200) {
-        message.success('Application submitted successfully');
-        form.resetFields();
+    Object.entries(data).forEach(([key, value]) => {
+      if (value instanceof File) {
+        formData.append(key, value);
+      } else if (value instanceof Date) {
+        formData.append(key, value.toISOString());
+      } else if (Array.isArray(value) && value[0] instanceof File) {
+        formData.append(key, value[0]);
+      } else {
+        formData.append(key, String(value));
       }
-    } catch (error) {
-      message.error('Failed to submit application');
-    } finally {
-      setLoading(false);
-    }
-  };
+    });
 
-  const normFile = (e) => {
-    if (Array.isArray(e)) {
-      return e;
+    console.log(formData, " is the form data")
+    try {
+      const response = await axios.post('/api/application', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      console.log('Application submitted successfully:', response.data);
+      message.success('Application submitted successfully');
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      message.error('Error submitting application');
     }
-    return e && e.fileList;
   };
 
   return (
-    <Card style={{ width: '100%', maxWidth: 1200, margin: '0 auto', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
-      <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>Caste Application Form</Title>
-      <Form
-        form={form}
-        name="casteApplicationForm"
-        onFinish={onFinish}
-        layout="vertical"
-        requiredMark="optional"
-      >
-        <Row gutter={24}>
-          <Col span={24} md={12}>
-            <Title level={4}>Personal Information</Title>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item name="firstName" label="First Name" rules={[{ required: true, message: 'Please input your first name!' }]}>
-                  <Input />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="lastName" label="Last Name" rules={[{ required: true, message: 'Please input your last name!' }]}>
-                  <Input />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Please input a valid email!' }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item name="phoneNumber" label="Phone Number" rules={[{ required: true, message: 'Please input your phone number!' }]}>
-              <Input />
-            </Form.Item>
-            <Form.Item
-              name="aadharId"
-              label="Aadhar ID"
-              rules={[
-                { required: true, message: 'Please input your Aadhar ID!' },
-                { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
-              ]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item name="caste" label="Caste" rules={[{ required: true, message: 'Please select your caste!' }]}>
-              <Select>
-                {['General', 'OBC', 'SC', 'ST'].map(caste => (
-                  <Option key={caste} value={caste}>{caste}</Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-          <Col span={24} md={12}>
-            <Title level={4}>Address Information</Title>
-            <Form.Item name="address" label="Address" rules={[{ required: true, message: 'Please input your address!' }]}>
-              <Input.TextArea rows={4} />
-            </Form.Item>
-            <Form.Item
-              name="pincode"
-              label="Pincode"
-              rules={[{ required: true, message: 'Please select your pincode!' }]}
-            >
-              <Select
-                showSearch
-                placeholder="Select pincode"
-                onChange={handlePincodeChange}
-                filterOption={(input, option) =>
-                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
-              >
-                {pincodes.map(pincode => (
-                  <Option key={pincode} value={pincode}>{pincode}</Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item name="state" label="State" rules={[{ required: true, message: 'Please select your state!' }]}>
-              <Select disabled={!selectedPincode}>
-                {[...new Set(addressData.map(item => item.state))].map(state => (
-                  <Option key={state} value={state}>{state}</Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item name="district" label="District" rules={[{ required: true, message: 'Please select your district!' }]}>
-              <Select disabled={!selectedPincode}>
-                {addressData
-                  .filter(item => item.pincode === selectedPincode)
-                  .map(item => (
-                    <Option key={item.district} value={item.district}>{item.district}</Option>
-                  ))}
-              </Select>
-            </Form.Item>
-            <Form.Item name="mandal" label="Mandal" rules={[{ required: true, message: 'Please select your mandal!' }]}>
-              <Select disabled={!selectedPincode}>
-                {addressData
-                  .filter(item => item.pincode === selectedPincode)
-                  .map(item => (
-                    <Option key={item.mandal} value={item.mandal}>{item.mandal}</Option>
-                  ))}
-              </Select>
-            </Form.Item>
-            <Form.Item name="village" label="Village" rules={[{ required: true, message: 'Please select your village!' }]}>
-              <Select disabled={!selectedPincode}>
-                {addressData
-                  .filter(item => item.pincode === selectedPincode)
-                  .map(item => (
-                    <Option key={item.village} value={item.village}>{item.village}</Option>
-                  ))}
-              </Select>
-            </Form.Item>
-          </Col>
-        </Row>
-        <Divider />
-        <Row gutter={24}>
-          <Col span={24} md={8}>
-            <Title level={4}>Proof of Residence</Title>
-            <Form.Item name="proofOfResidence" label="Document Type" rules={[{ required: true, message: 'Please select the document type!' }]}>
-              <Select onChange={(value) => setProofOfResidence(value)}>
-                <Option value="aadhaar">Aadhar Card</Option>
-                <Option value="electricity">Electricity Bill</Option>
-                <Option value="gas">Gas Bill</Option>
-              </Select>
-            </Form.Item>
-            {proofOfResidence === 'aadhaar' && (
-              <>
-                {/* <Form.Item
-                  name="aadharIdForResidence"
-                  label="Aadhar ID"
-                  rules={[
-                    { required: true, message: 'Please input your Aadhar ID!' },
-                    { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
-                  ]}
-                >
-                  <Input />
-                </Form.Item> */}
-                <Form.Item
-                  name="aadharCardImage"
-                  label="Aadhar Card Image"
-                  valuePropName="fileList"
-                  getValueFromEvent={normFile}
-                  rules={[{ required: true, message: 'Please upload Aadhar Card image' }]}
-                >
-                  <Upload
-                    name="aadharCardImage"
-                    listType="picture"
-                    maxCount={1}
-                    accept=".pdf,.jpg,.png"
-                    beforeUpload={(file) => {
-                      const isLt1M = file.size / 1024 / 1024 < 1;
-                      if (!isLt1M) {
-                        message.error('File must be smaller than 1MB!');
-                      }
-                      return false; // Prevent auto upload
-                    }}
-                  >
-                    <Button icon={<UploadOutlined />}>Click to upload</Button>
-                  </Upload>
-                </Form.Item>
-              </>
-            )}
-            {proofOfResidence === 'electricity' && (
-              <Form.Item
-                name="electricityBillImage"
-                label="Electricity Bill Image"
-                valuePropName="fileList"
-                getValueFromEvent={normFile}
-                rules={[{ required: true, message: 'Please upload Electricity Bill image' }]}
-              >
-                <Upload
-                  name="electricityBillImage"
-                  listType="picture"
-                  accept=".pdf,.jpg,.png"
-                  maxCount={1}
-                  beforeUpload={(file) => {
-                    const isLt1M = file.size / 1024 / 1024 < 1;
-                    if (!isLt1M) {
-                      message.error('File must be smaller than 1MB!');
-                    }
-                    return false;
-                  }}
-                >
-                  <Button icon={<UploadOutlined />}>Click to upload</Button>
-                </Upload>
-              </Form.Item>
-            )}
-            {proofOfResidence === 'gas' && (
-              <Form.Item
-                name="gasBillImage"
-                label="Gas Bill Image"
-                valuePropName="fileList"
-                getValueFromEvent={normFile}
-                rules={[{ required: true, message: 'Please upload Gas Bill image' }]}
-              >
-                <Upload
-                  name="gasBillImage"
-                  listType="picture"
-                  accept=".pdf,.jpg,.png"
-                  maxCount={1}
-                  beforeUpload={(file) => {
-                    const isLt1M = file.size / 1024 / 1024 < 1;
-                    if (!isLt1M) {
-                      message.error('File must be smaller than 1MB!');
-                    }
-                    return false;
-                  }}
-                >
-                  <Button icon={<UploadOutlined />}>Click to upload</Button>
-                </Upload>
-              </Form.Item>
-            )}
-          </Col>
-          <Col span={24} md={8}>
-            <Title level={4}>Proof of Date of Birth</Title>
-            <Form.Item name="proofOfDOB" label="Document Type" rules={[{ required: true, message: 'Please select the document type!' }]}>
-              <Select onChange={(value) => setProofOfDOB(value)}>
-                <Option value="aadhar">Aadhar Card</Option>
-                <Option value="pan">PAN Card</Option>
-                <Option value="ssc">SSC Certificate</Option>
-              </Select>
-            </Form.Item>
-            {proofOfDOB === 'aadhar' && (
-              <>
-                <Form.Item
-                  name="aadharCardImageForDOB"
-                  label="Aadhar Card Image"
-                  valuePropName="fileList"
-                  getValueFromEvent={normFile}
-                  rules={[{ required: true, message: 'Please upload Aadhar Card image' }]}
-                >
-                  <Upload
-                    name="aadharCardImageForDOB"
-                    listType="picture"
-                    accept=".pdf,.jpg,.png"
-                    maxCount={1}
-                    beforeUpload={(file) => {
-                      const isLt1M = file.size / 1024 / 1024 < 1;
-                      if (!isLt1M) {
-                        message.error('File must be smaller than 1MB!');
-                      }
-                      return false;
-                    }}
-                  >
-                    <Button icon={<UploadOutlined />}>Click to upload</Button>
-                  </Upload>
-                </Form.Item>
-              </>
-            )}
-            {proofOfDOB === 'pan' && (
-              <>
-                
-                <Form.Item
-                  name="panCardImage"
-                  label="PAN Card Image"
-                  valuePropName="fileList"
-                  getValueFromEvent={normFile}
-                  rules={[{ required: true, message: 'Please upload PAN Card image' }]}
-                >
-                  <Upload
-                    name="panCardImage"
-                    listType="picture"
-                    accept=".pdf,.jpg,.png"
-                    maxCount={1}
-                    beforeUpload={(file) => {
-                      const isLt1M = file.size / 1024 / 1024 < 1;
-                      if (!isLt1M) {
-                        message.error('File must be smaller than 1MB!');
-                      }
-                      return false;
-                    }}
-                  >
-                    <Button icon={<UploadOutlined />}>Click to upload</Button>
-                  </Upload>
-                </Form.Item>
-              </>
-            )}
-            {proofOfDOB === 'ssc' && (
-              <Form.Item
-                name="sscCertificateImage"
-                label="SSC Certificate Image"
-                valuePropName="fileList"
-                getValueFromEvent={normFile}
-                rules={[{ required: true, message: 'Please upload SSC Certificate image' }]}
-              >
-                <Upload
-                  name="sscCertificateImage"
-                  listType="picture"
-                  accept=".pdf,.jpg,.png"
-                  maxCount={1}
+    <ConfigProvider>
+      <Card title="Application Form" style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+        <Form layout="vertical" onFinish={handleSubmit(onSubmit)}>
+          <Form.Item label="Full Name" validateStatus={errors.full_name ? 'error' : ''} help={errors.full_name?.message}>
+            <Controller
+              name="full_name"
+              control={control}
+              render={({ field }) => <Input {...field} />}
+            />
+          </Form.Item>
 
-                  beforeUpload={(file) => {
-                    const isLt1M = file.size / 1024 / 1024 < 1;
-                    if (!isLt1M) {
-                      message.error('File must be smaller than 1MB!');
-                    }
-                    return false;
-                  }}
-                >
-                  <Button icon={<UploadOutlined />}>Click to upload</Button>
-                </Upload>
-              </Form.Item>
-            )}
-          </Col>
-          <Col span={24} md={8}>
-            <Title level={4}>Proof of Caste</Title>
-            <Form.Item name="proofOfCaste" label="Document Type" rules={[{ required: true, message: 'Please select the document type!' }]}>
-              <Select onChange={(value) => setProofOfCaste(value)}>
-                <Option value="father">Father's Caste Certificate</Option>
-                <Option value="mother">Mother's Caste Certificate</Option>
-              </Select>
+          <Form.Item label="Date of Birth" validateStatus={errors.dob ? 'error' : ''} help={errors.dob?.message}>
+                <Controller
+                  name="dob"
+                  control={control}
+                  render={({ field }) => (
+                    <DatePicker
+                      {...field}
+                      format="YYYY-MM-DD"
+                      disabledDate={(current) => current && current > new Date()}
+                      onChange={(date) => field.onChange(date ? date.toDate() : null)} // Convert moment to Date
+                      value={field.value ? moment(field.value) : null} // Ensure value is a moment object
+                    />
+                  )}
+                />
             </Form.Item>
-            {proofOfCaste === 'father' && (
-              <Form.Item
-                name="fatherCasteCertificateImage"
-                label="Father's Caste Certificate Image"
-                valuePropName="fileList"
-                getValueFromEvent={normFile}
-                rules={[{ required: true, message: "Please upload Father's Caste Certificate image" }]}
-              >
-                <Upload
-                  name="fatherCasteCertificateImage"
-                  listType="picture"
-                  maxCount={1}
-                  accept=".pdf,.jpg,.png"
-                  beforeUpload={(file) => {
-                    const isLt1M = file.size / 1024 / 1024 < 1;
-                    if (!isLt1M) {
-                      message.error('File must be smaller than 1MB!');
-                    }
-                    return false;
+
+          <Form.Item label="Gender" validateStatus={errors.gender ? 'error' : ''} help={errors.gender?.message}>
+            <Controller
+              name="gender"
+              control={control}
+              render={({ field }) => (
+                <Radio.Group {...field}>
+                  <Radio value="MALE">Male</Radio>
+                  <Radio value="FEMALE">Female</Radio>
+                  <Radio value="OTHER">Other</Radio>
+                </Radio.Group>
+              )}
+            />
+          </Form.Item>
+
+          <Form.Item label="Religion" validateStatus={errors.religion ? 'error' : ''} help={errors.religion?.message}>
+            <Controller
+              name="religion"
+              control={control}
+              render={({ field }) =>
+                <Select {...field}>
+                  {religions.map((religion) => (
+                    <Option key={religion.religion_id} value={religion.name}>
+                      {religion.name}
+                    </Option>
+                  ))}
+                </Select>
+              }
+            />
+          </Form.Item>
+
+          <Form.Item label="Caste" validateStatus={errors.caste_id ? 'error' : ''} help={errors.caste_id?.message}>
+            <Controller
+              name="caste_id"
+              control={control}
+              render={({ field }) => (
+                <Select {...field}>
+                  {castes.map((caste) => (
+                    <Option key={caste.caste_id} value={caste.caste_id}>
+                      {caste.name}
+                    </Option>
+                  ))}
+                </Select>
+              )}
+            />
+          </Form.Item>
+
+          <Form.Item label="Sub Caste" validateStatus={errors.sub_caste ? 'error' : ''} help={errors.sub_caste?.message}>
+            <Controller
+              name="sub_caste"
+              control={control}
+              render={({ field }) => <Input {...field} />}
+            />
+          </Form.Item>
+
+          <Form.Item label="Parent Religion" validateStatus={errors.parent_religion ? 'error' : ''} help={errors.parent_religion?.message}>
+            <Controller
+              name="parent_religion"
+              control={control}
+              render={({ field }) => <Input {...field} />}
+            />
+          </Form.Item>
+
+          <Form.Item label="Parent/Guardian Type" validateStatus={errors.parent_guardian_id ? 'error' : ''} help={errors.parent_guardian_id?.message}>
+            <Controller
+              name="parent_guardian_id"
+              control={control}
+              render={({ field }) => (
+                <Select {...field}>
+                  {parentGuardianTypes.map((type) => (
+                    <Option key={type.id} value={type.type}>
+                      {type.type}
+                    </Option>
+                  ))}
+                </Select>
+              )}
+            />
+          </Form.Item>
+
+          <Form.Item label="Parent/Guardian Name" validateStatus={errors.parent_guardian_name ? 'error' : ''} help={errors.parent_guardian_name?.message}>
+            <Controller
+              name="parent_guardian_name"
+              control={control}
+              render={({ field }) => <Input {...field} />}
+            />
+          </Form.Item>
+
+          <Form.Item label="Marital Status" validateStatus={errors.marital_status ? 'error' : ''} help={errors.marital_status?.message}>
+            <Controller
+              name="marital_status"
+              control={control}
+              render={({ field }) => (
+                <Select {...field}>
+                  <Option value="SINGLE">Single</Option>
+                  <Option value="MARRIED">Married</Option>
+                  <Option value="DIVORCED">Divorced</Option>
+                  <Option value="WIDOWED">Widowed</Option>
+                </Select>
+              )}
+            />
+          </Form.Item>
+
+          <Form.Item label="Aadhar Number" validateStatus={errors.aadhar_num ? 'error' : ''} help={errors.aadhar_num?.message}>
+            <Controller
+              name="aadhar_num"
+              control={control}
+              render={({ field }) => <Input {...field} />}
+            />
+          </Form.Item>
+
+          <Form.Item label="Phone Number" validateStatus={errors.phone_num ? 'error' : ''} help={errors.phone_num?.message}>
+            <Controller
+              name="phone_num"
+              control={control}
+              render={({ field }) => <Input {...field} />}
+            />
+          </Form.Item>
+
+          <Form.Item label="Email" validateStatus={errors.email ? 'error' : ''} help={errors.email?.message}>
+            <Controller
+              name="email"
+              control={control}
+              render={({ field }) => <Input {...field} />}
+            />
+          </Form.Item>
+
+          <Form.Item label="Pincode" validateStatus={errors.pincode ? 'error' : ''} help={errors.pincode?.message}>
+            <Controller
+              name="pincode"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  onChange={(value) => {
+                    field.onChange(value);
+                    handlePincodeChange(value);
                   }}
                 >
-                  <Button icon={<UploadOutlined />}>Click to upload</Button>
-                </Upload>
-              </Form.Item>
-            )}
-            {proofOfCaste === 'mother' && (
-              <Form.Item
-                name="motherCasteCertificateImage"
-                label="Mother's Caste Certificate Image"
-                valuePropName="fileList"
-                getValueFromEvent={normFile}
-                rules={[{ required: true, message: "Please upload Mother's Caste Certificate image" }]}
-              >
+                  {pincodes.map((pincode) => (
+                    <Option key={pincode} value={pincode}>
+                      {pincode}
+                    </Option>
+                  ))}
+                </Select>
+              )}
+            />
+          </Form.Item>
+
+          <Form.Item label="State" validateStatus={errors.state ? 'error' : ''} help={errors.state?.message}>
+            <Controller
+              name="state"
+              control={control}
+              render={({ field }) => <Input {...field} readOnly />}
+            />
+          </Form.Item>
+
+          <Form.Item label="District" validateStatus={errors.district ? 'error' : ''} help={errors.district?.message}>
+            <Controller
+              name="district"
+              control={control}
+              render={({ field }) => <Input {...field} readOnly />}
+            />
+          </Form.Item>
+
+          <Form.Item label="Mandal" validateStatus={errors.mandal ? 'error' : ''} help={errors.mandal?.message}>
+            <Controller
+              name="mandal"
+              control={control}
+              render={({ field }) => <Input {...field} readOnly />}
+            />
+          </Form.Item>
+
+          <Form.Item label="Sachivalayam" validateStatus={errors.sachivalayam ? 'error' : ''} help={errors.sachivalayam?.message}>
+            <Controller
+              name="sachivalayam"
+              control={control}
+              render={({ field }) =>
+                <Select {...field}>
+                  {sachivalayamOptions.map((sachivalayam, index) => (
+                    <Option key={index} value={sachivalayam}>
+                      {sachivalayam}
+                    </Option>
+                  ))}
+                </Select>
+              }
+            />
+          </Form.Item>
+
+          <Form.Item label="Address" validateStatus={errors.address ? 'error' : ''} help={errors.address?.message}>
+            <Controller
+              name="address"
+              control={control}
+              render={({ field }) => <Input.TextArea {...field} />}
+            />
+          </Form.Item>
+
+          <Form.Item label="Address Proof Type" validateStatus={errors.addressProofType ? 'error' : ''} help={errors.addressProofType?.message}>
+            <Controller
+              name="addressProofType"
+              control={control}
+              render={({ field }) => (
+                <Select {...field}>
+                  <Option value="AADHAR">Aadhar Card</Option>
+                  <Option value="ELECTRICITY_BILL">Electricity Bill</Option>
+                  <Option value="GAS_BILL">Gas Bill</Option>
+                </Select>
+              )}
+            />
+          </Form.Item>
+
+          {addressProofType && (
+            <Form.Item label="Address Proof" validateStatus={errors.addressProof ? 'error' : ''} help={errors.addressProof?.message}>
+              <Controller
+                name="addressProof"
+                control={control}
+                render={({ field }) => (
+                  <Upload {...field} beforeUpload={() => false}>
+                    <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                  </Upload>
+                )}
+              />
+            </Form.Item>
+          )}
+
+          <Form.Item label="Date of Birth Proof Type" validateStatus={errors.dobProofType ? 'error' : ''} help={errors.dobProofType?.message}>
+            <Controller
+              name="dobProofType"
+              control={control}
+              render={({ field }) => (
+                <Select {...field}>
+                  <Option value="AADHAR">Aadhar Card</Option>
+                  <Option value="PAN">PAN Card</Option>
+                  <Option value="SSC">SSC Certificate</Option>
+                </Select>
+              )}
+            />
+          </Form.Item>
+
+          {dobProofType && (
+            <Form.Item label="Date of Birth Proof" validateStatus={errors.dobProof ? 'error' : ''} help={errors.dobProof?.message}>
+              <Controller
+                name="dobProof"
+                control={control}
+                render={({ field }) => (
+                  <Upload {...field} beforeUpload={() => false}>
+                    <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                  </Upload>
+                )}
+              />
+            </Form.Item>
+          )}
+
+          <Form.Item label="Caste Proof Type" validateStatus={errors.casteProofType ? 'error' : ''} help={errors.casteProofType?.message}>
+            <Controller
+              name="casteProofType"
+              control={control}
+              render={({ field }) => (
                 <Upload
-                  name="motherCasteCertificateImage"
-                  listType="picture"
-                  accept=".pdf,.jpg,.png"
-                  maxCount={1}
-                  beforeUpload={(file) => {
-                    const isLt1M = file.size / 1024 / 1024 < 1;
-                    if (!isLt1M) {
-                      message.error('File must be smaller than 1MB!');
-                    }
-                    return false;
-                  }}
-                >
-                  <Button icon={<UploadOutlined />}>Click to upload</Button>
-                </Upload>
-              </Form.Item>
-            )}
-          </Col>
-        </Row>
-        <Divider />
-        <Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={loading}
-            disabled={loading || !form.isFieldsTouched()}
-          >
-            Submit Application
-          </Button>
-        </Form.Item>
-      </Form>
-    </Card>
+                      {...field}
+                      beforeUpload={(file) => {
+                        const isLt1MB = file.size / 1024 / 1024 < 1; // Check if file size is less than 1MB
+                        if (!isLt1MB) {
+                          message.error('File must be smaller than 1MB!');
+                        }
+                        return isLt1MB || Upload.LIST_IGNORE; // Return false to prevent upload
+                      }}
+                    >
+                      <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                    </Upload>
+              )}
+            />
+          </Form.Item>
+
+          {casteProofType && (
+            <Form.Item label="Caste Proof" validateStatus={errors.casteProof ? 'error' : ''} help={errors.casteProof?.message}>
+              <Controller
+                  name="casteProof"
+                  control={control}
+                  render={({ field }) => (
+                    <Upload
+                      {...field}
+                      beforeUpload={(file) => {
+                        const isLt1MB = file.size / 1024 / 1024 < 1; // Check if file size is less than 1MB
+                        if (!isLt1MB) {
+                          message.error('File must be smaller than 1MB!');
+                        }
+                        return isLt1MB || Upload.LIST_IGNORE; // Return false to prevent upload
+                      }}
+                    >
+                      <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                    </Upload>
+                  )}
+                />
+            </Form.Item>
+          )}
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Submit Application
+            </Button>
+          </Form.Item>
+        </Form>
+      </Card>
+    </ConfigProvider>
   );
 }
+
+export default ApplicationForm;
+
