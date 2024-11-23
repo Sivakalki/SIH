@@ -8,18 +8,16 @@ import {
   UserOutlined,
   LogoutOutlined
 } from '@ant-design/icons';
-import { Line } from '@ant-design/plots';
 
 const { Option } = Select;
 const { Title, Text, Paragraph } = Typography;
 
-// Mock data
+// Example database
 const mockApplications = [
   {
     id: 'APP001',
     name: 'John Doe',
     status: 'pending',
-    village: 'Village 1',
     personalInfo: {
       fullName: 'John Doe',
       email: 'john.doe@example.com',
@@ -40,13 +38,12 @@ const mockApplications = [
       proofOfDateOfBirth: { type: 'Passport', url: 'https://example.com/passport.pdf' },
       proofOfCaste: { type: 'Caste Certificate', url: 'https://example.com/caste-certificate.pdf' }
     },
-    mroRemarks: 'All documents verified and found to be in order.'
+    mvroRemarks: 'All documents verified and found to be in order.'
   },
   {
     id: 'APP002',
     name: 'Jane Smith',
     status: 'approved',
-    village: 'Village 2',
     personalInfo: {
       fullName: 'Jane Smith',
       email: 'jane.smith@example.com',
@@ -67,13 +64,12 @@ const mockApplications = [
       proofOfDateOfBirth: { type: 'Passport', url: 'https://example.com/passport.pdf' },
       proofOfCaste: { type: 'OBC Certificate', url: 'https://example.com/obc-certificate.pdf' }
     },
-    mroRemarks: 'All documents verified and found to be in order.'
+    mvroRemarks: 'All documents verified and found to be in order.'
   },
   {
     id: 'APP003',
     name: 'Bob Johnson',
     status: 'rejected',
-    village: 'Village 3',
     personalInfo: {
       fullName: 'Bob Johnson',
       email: 'bob.johnson@example.com',
@@ -94,101 +90,71 @@ const mockApplications = [
       proofOfDateOfBirth: { type: 'Voter ID', url: 'https://example.com/voter-id.pdf' },
       proofOfCaste: { type: 'SC Certificate', url: 'https://example.com/sc-certificate.pdf' }
     },
-    mroRemarks: 'All documents verified and found to be in order.'
+    mvroRemarks: 'All documents verified and found to be in order.'
   }
 ];
 
-const villages = ['All', 'Village 1', 'Village 2', 'Village 3'];
+const mockRejectedApplications = [
+  {
+    id: 'APP004',
+    name: 'Alice Brown',
+    status: 'pending',
+    personalInfo: {
+      fullName: 'Alice Brown',
+      email: 'alice.brown@example.com',
+      phoneNumber: '+91 9876543213',
+      aadharId: '1234 5678 9015',
+      caste: 'General'
+    },
+    addressInfo: {
+      address: '321 Hill Road',
+      pincode: '500004',
+      ward: 'Ward 18',
+      state: 'Telangana',
+      district: 'Hyderabad',
+      mandal: 'Secunderabad'
+    },
+    documents: {
+      proofOfResidence: { type: 'Water Bill', url: 'https://example.com/water-bill.pdf' },
+      proofOfDateOfBirth: { type: 'PAN Card', url: 'https://example.com/pan-card.pdf' },
+      proofOfCaste: { type: 'Birth Certificate', url: 'https://example.com/birth-certificate.pdf' }
+    },
+    mvroRemarks: 'All documents verified and found to be in order.',
+    rejectedReason: 'Address proof needs clarification'
+  }
+];
 
-const statisticsData = {
-  'Village 1': [
-    { month: 'Jan', applications: 10 },
-    { month: 'Feb', applications: 15 },
-    { month: 'Mar', applications: 20 },
-    { month: 'Apr', applications: 18 },
-    { month: 'May', applications: 25 },
-    { month: 'Jun', applications: 30 },
-    { month: 'Jul', applications: 28 },
-    { month: 'Aug', applications: 35 },
-    { month: 'Sep', applications: 32 },
-    { month: 'Oct', applications: 40 },
-    { month: 'Nov', applications: 38 },
-    { month: 'Dec', applications: 45 }
-  ],
-  'Village 2': [
-    { month: 'Jan', applications: 8 },
-    { month: 'Feb', applications: 12 },
-    { month: 'Mar', applications: 18 },
-    { month: 'Apr', applications: 22 },
-    { month: 'May', applications: 20 },
-    { month: 'Jun', applications: 28 },
-    { month: 'Jul', applications: 25 },
-    { month: 'Aug', applications: 30 },
-    { month: 'Sep', applications: 28 },
-    { month: 'Oct', applications: 35 },
-    { month: 'Nov', applications: 32 },
-    { month: 'Dec', applications: 40 }
-  ],
-  'Village 3': [
-    { month: 'Jan', applications: 5 },
-    { month: 'Feb', applications: 10 },
-    { month: 'Mar', applications: 15 },
-    { month: 'Apr', applications: 12 },
-    { month: 'May', applications: 18 },
-    { month: 'Jun', applications: 22 },
-    { month: 'Jul', applications: 20 },
-    { month: 'Aug', applications: 25 },
-    { month: 'Sep', applications: 23 },
-    { month: 'Oct', applications: 28 },
-    { month: 'Nov', applications: 26 },
-    { month: 'Dec', applications: 30 }
-  ]
-};
-
+// Mock user data
 const userData = {
   name: 'John Smith',
-  role: 'Mandal Revenue Officer',
+  role: 'Mandal Village Revenue Officer',
   email: 'john.smith@gov.in',
   mandal: 'Secunderabad'
 };
 
-export default function MRODashboard() {
+export default function MVRODashboard() {
   const [applications, setApplications] = useState([]);
+  const [rejectedApps, setRejectedApps] = useState([]);
   const [filteredApplications, setFilteredApplications] = useState([]);
-  const [totalApplications, setTotalApplications] = useState([]);
   const [filterStatus, setFilterStatus] = useState('all');
-  const [selectedVillage, setSelectedVillage] = useState('All');
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [statisticsModalVisible, setStatisticsModalVisible] = useState(false);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     setApplications(mockApplications);
-    setTotalApplications(mockApplications);
-    filterApplications('all', 'All');
+    setRejectedApps(mockRejectedApplications);
+    setFilteredApplications(mockApplications);
   }, []);
 
-  const filterApplications = (status, village) => {
+  const filterApplications = (status) => {
     setFilterStatus(status);
-    setSelectedVillage(village);
-    let filtered = applications;
-    if (village !== 'All') {
-      filtered = filtered.filter(app => app.village === village);
-    }
-    if (status !== 'all') {
-      filtered = filtered.filter(app => app.status === status);
-    }
-    setFilteredApplications(filtered);
-
-    // Update total applications based on village selection
-    if (village === 'All') {
-      setTotalApplications(applications);
+    if (status === 'all') {
+      setFilteredApplications(applications);
     } else {
-      setTotalApplications(applications.filter(app => app.village === village));
+      setFilteredApplications(applications.filter(app => app.status === status));
     }
   };
 
@@ -197,50 +163,31 @@ export default function MRODashboard() {
     setModalVisible(true);
   };
 
-  const handleStatusChange = (id, newStatus) => {
+  const handleStatusChange = (id, newStatus, isRejectedApp = false) => {
     if (newStatus === 'rejected') {
       setRejectionModalVisible(true);
     } else {
-      updateApplicationStatus(id, newStatus);
+      updateApplicationStatus(id, newStatus, isRejectedApp);
     }
   };
 
-  const updateApplicationStatus = (id, newStatus) => {
-    const updatedApps = applications.map(app =>
-      app.id === id ? { ...app, status: newStatus, rejectedReason: rejectionReason } : app
-    );
-    setApplications(updatedApps);
-    
-    const updatedFilteredApps = filteredApplications.map(app =>
-      app.id === id ? { ...app, status: newStatus, rejectedReason: rejectionReason } : app
-    );
-    setFilteredApplications(updatedFilteredApps);
-
-    // Update total applications
-    setTotalApplications(updatedApps.filter(app => selectedVillage === 'All' || app.village === selectedVillage));
-
+  const updateApplicationStatus = (id, newStatus, isRejectedApp = false) => {
+    if (isRejectedApp) {
+      const updatedApps = rejectedApps.map(app =>
+        app.id === id ? { ...app, status: newStatus, rejectedReason: rejectionReason } : app
+      );
+      setRejectedApps(updatedApps);
+    } else {
+      const updatedApps = applications.map(app =>
+        app.id === id ? { ...app, status: newStatus, rejectedReason: rejectionReason } : app
+      );
+      setApplications(updatedApps);
+      filterApplications(filterStatus);
+    }
     setModalVisible(false);
     setRejectionModalVisible(false);
     setRejectionReason('');
     message.success(`Application ${newStatus}`);
-
-    const updatedVillage = selectedVillage === 'All' ? 'All' : updatedApps.find(app => app.id === id).village;
-    updateStatistics(updatedVillage, newStatus);
-  };
-
-  const updateStatistics = (village, newStatus) => {
-    const villagesToUpdate = village === 'All' ? villages.filter(v => v !== 'All') : [village];
-    
-    villagesToUpdate.forEach(v => {
-      const villageData = statisticsData[v];
-      if (villageData) {
-        const lastMonth = villageData[villageData.length - 1];
-        lastMonth.applications += 1;
-      }
-    });
-
-    setStatisticsModalVisible(prev => !prev);
-    setStatisticsModalVisible(prev => !prev);
   };
 
   const columns = [
@@ -283,7 +230,7 @@ export default function MRODashboard() {
     },
   ];
 
-  const StatisticCard = ({ title, count, status, backgroundColor, icon }) => (
+  const StatisticCard = ({ title, value, status, backgroundColor, icon }) => (
     <Card
       style={{
         cursor: 'pointer',
@@ -291,12 +238,12 @@ export default function MRODashboard() {
         borderRadius: '8px',
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}
-      onClick={() => filterApplications(status, selectedVillage)}
+      onClick={() => filterApplications(status)}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Statistic
           title={<span style={{ fontSize: '16px', color: 'rgba(0,0,0,0.85)' }}>{title}</span>}
-          value={count}
+          value={value}
           valueStyle={{ fontSize: '24px', color: 'rgba(0,0,0,0.85)' }}
         />
         {icon}
@@ -349,54 +296,13 @@ export default function MRODashboard() {
     </div>
   );
 
-  const renderStatisticsGraph = () => {
-    let data;
-    if (selectedVillage === 'All') {
-      data = Object.values(statisticsData).reduce((acc, villageData) => {
-        villageData.forEach((monthData, index) => {
-          if (!acc[index]) {
-            acc[index] = { month: monthData.month, applications: 0 };
-          }
-          acc[index].applications += monthData.applications;
-        });
-        return acc;
-      }, []);
-    } else {
-      data = statisticsData[selectedVillage] || [];
-    }
-
-    
-const config = {
-      data,
-      xField: 'month',
-      yField: 'applications',
-      xAxis: {
-        type: 'cat',
-      },
-      yAxis: {
-        label: {
-          formatter: (v) => `${v}`,
-        },
-      },
-      smooth: true,
-      animation: {
-        appear: {
-          animation: 'path-in',
-          duration: 5000,
-        },
-      },
-    };
-
-    return <Line {...config} />;
-  };
-
   return (
     <div style={{ padding: '24px', backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
-            <Title level={2} style={{ margin: 0 }}>MRO Dashboard</Title>
-            <Text>{userData.name} - MRO of {userData.mandal} Mandal</Text>
+            <Title level={2} style={{ margin: 0 }}>MVRO Dashboard</Title>
+            <Text>{userData.name} - MVRO of {userData.mandal} Mandal</Text>
           </div>
           <Button
             icon={<UserOutlined />}
@@ -411,7 +317,7 @@ const config = {
           <Col xs={24} sm={12} md={6}>
             <StatisticCard
               title="Total Applications"
-              count={totalApplications.length}
+              value={applications.length}
               status="all"
               backgroundColor="#F5F5F5"
               icon={<FileTextOutlined style={{ fontSize: '24px', opacity: 0.7 }} />}
@@ -420,7 +326,7 @@ const config = {
           <Col xs={24} sm={12} md={6}>
             <StatisticCard
               title="Approved"
-              count={filteredApplications.filter(app => app.status === 'approved').length}
+              value={applications.filter(app => app.status === 'approved').length}
               status="approved"
               backgroundColor="#E6FFE6"
               icon={<CheckCircleOutlined style={{ fontSize: '24px', color: '#52c41a' }} />}
@@ -429,7 +335,7 @@ const config = {
           <Col xs={24} sm={12} md={6}>
             <StatisticCard
               title="Pending"
-              count={filteredApplications.filter(app => app.status === 'pending').length}
+              value={applications.filter(app => app.status === 'pending').length}
               status="pending"
               backgroundColor="#FFF7E6"
               icon={<ClockCircleOutlined style={{ fontSize: '24px', color: '#faad14' }} />}
@@ -438,7 +344,7 @@ const config = {
           <Col xs={24} sm={12} md={6}>
             <StatisticCard
               title="Rejected"
-              count={filteredApplications.filter(app => app.status === 'rejected').length}
+              value={applications.filter(app => app.status === 'rejected').length}
               status="rejected"
               backgroundColor="#FFF1F0"
               icon={<CloseCircleOutlined style={{ fontSize: '24px', color: '#f5222d' }} />}
@@ -447,39 +353,19 @@ const config = {
         </Row>
 
         <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div>
-                <label htmlFor="village-filter" style={{ marginRight: '8px', fontWeight: 'bold' }}>Select Village:</label>
-                <Select
-                  id="village-filter"
-                  value={selectedVillage}
-                  style={{ width: 120 }}
-                  onChange={(value) => filterApplications(filterStatus, value)}
-                >
-                  {villages.map(village => (
-                    <Option key={village} value={village}>{village}</Option>
-                  ))}
-                </Select>
-              </div>
-              <Button onClick={() => setStatisticsModalVisible(true)}>
-                See Statistics
-              </Button>
-            </div>
-            <div>
-              <label htmlFor="status-filter" style={{ marginRight: '8px', fontWeight: 'bold' }}>Filter by Status:</label>
-              <Select
-                id="status-filter"
-                value={filterStatus}
-                style={{ width: 120 }}
-                onChange={(value) => filterApplications(value, selectedVillage)}
-              >
-                <Option value="all">All</Option>
-                <Option value="approved">Approved</Option>
-                <Option value="pending">Pending</Option>
-                <Option value="rejected">Rejected</Option>
-              </Select>
-            </div>
+          <div>
+            <label htmlFor="status-filter" style={{ marginRight: '8px', fontWeight: 'bold' }}>Filter by Status:</label>
+            <Select
+              id="status-filter"
+              value={filterStatus}
+              style={{ width: 120 }}
+              onChange={filterApplications}
+            >
+              <Option value="all">All</Option>
+              <Option value="approved">Approved</Option>
+              <Option value="pending">Pending</Option>
+              <Option value="rejected">Rejected</Option>
+            </Select>
           </div>
           <Table
             columns={columns}
@@ -491,6 +377,17 @@ const config = {
         </Space>
       </Card>
 
+      <Card style={{ marginTop: '24px' }}>
+        <Title level={3}>Rejected Applications from RI</Title>
+        <Table
+          columns={columns}
+          dataSource={rejectedApps}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: true }}
+        />
+      </Card>
+
       <Modal
         title="Application Details"
         visible={modalVisible}
@@ -499,14 +396,17 @@ const config = {
           <Button
             key="reject"
             danger
-            onClick={() => handleStatusChange(selectedApplication?.id, 'rejected')}
+            onClick={() => handleStatusChange(selectedApplication?.id, 'rejected', selectedApplication?.id.startsWith('APP004'))
+            }
           >
             Reject Application
           </Button>,
           <Button
             key="approve"
             type="primary"
-            onClick={() => handleStatusChange(selectedApplication?.id, 'approved')}
+            onClick={() =>
+              handleStatusChange(selectedApplication?.id, 'approved', selectedApplication?.id.startsWith('APP004'))
+            }
           >
             Approve Application
           </Button>,
@@ -522,9 +422,9 @@ const config = {
             {renderDocumentBlock(selectedApplication.documents)}
             <Divider />
             <div>
-              <Title level={4} style={{ marginBottom: '16px' }}>MRO Remarks</Title>
+              <Title level={4} style={{ marginBottom: '16px' }}>MVRO Remarks</Title>
               <Card>
-                <Paragraph>{selectedApplication.mroRemarks}</Paragraph>
+                <Paragraph>{selectedApplication.mvroRemarks}</Paragraph>
               </Card>
             </div>
             {selectedApplication.rejectedReason && (
@@ -546,7 +446,7 @@ const config = {
         title="Reject Application"
         visible={rejectionModalVisible}
         onCancel={() => setRejectionModalVisible(false)}
-        onOk={() => updateApplicationStatus(selectedApplication?.id, 'rejected')}
+        onOk={() => updateApplicationStatus(selectedApplication?.id, 'rejected', selectedApplication?.id.startsWith('APP004'))}
       >
         <div style={{ marginBottom: '16px' }}>
           <Text>Please provide a reason for rejecting this application:</Text>
@@ -606,29 +506,6 @@ const config = {
           </Space>
         </div>
       </Drawer>
-
-      <Modal
-        title="Village Statistics"
-        visible={statisticsModalVisible}
-        onCancel={() => setStatisticsModalVisible(false)}
-        footer={null}
-        width={800}
-      >
-        <div style={{ marginBottom: '16px' }}>
-          <label htmlFor="year-select" style={{ marginRight: '8px', fontWeight: 'bold' }}>Select Year:</label>
-          <Select
-            id="year-select"
-            value={selectedYear}
-            style={{ width: 120 }}
-            onChange={setSelectedYear}
-          >
-            {[2021, 2022, 2023, 2024].map(year => (
-              <Option key={year} value={year}>{year}</Option>
-            ))}
-          </Select>
-        </div>
-        {renderStatisticsGraph()}
-      </Modal>
     </div>
   );
 }
