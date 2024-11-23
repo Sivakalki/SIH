@@ -9,6 +9,9 @@ import {
   LogoutOutlined
 } from '@ant-design/icons';
 
+import { UserContext } from "../../components/userContext";
+import axios from 'axios';
+
 const { Option } = Select;
 const { Title, Text, Paragraph } = Typography;
 
@@ -132,6 +135,8 @@ const userData = {
   mandal: 'Secunderabad'
 };
 
+
+
 export default function MVRODashboard() {
   const [applications, setApplications] = useState([]);
   const [rejectedApps, setRejectedApps] = useState([]);
@@ -143,6 +148,31 @@ export default function MVRODashboard() {
   const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
 
+
+  // const [userType, setUserType] = useState("");
+  // const [userData, setUserData] = useState(null);
+  // const { token, logout } = useContext(UserContext);
+  // const fetchData = async () => {
+  //   try {
+  //     const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/users/user`, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`, // Include token in Authorization header
+  //       },
+  //     });
+  //     setUserData(res.data.user);
+  //     setRole(res.data.role);
+  //     console.log(res, " is the response data")
+  //   } catch (e) {
+  //     console.error('There is an error in getting profile details', e);
+  //     setUserData(null); // Reset userData if the request fails
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   if (token) {
+  //     fetchData();
+  //   }
+  // }, [token]);
   useEffect(() => {
     setApplications(mockApplications);
     setRejectedApps(mockRejectedApplications);
@@ -312,7 +342,7 @@ export default function MVRODashboard() {
             Profile
           </Button>
         </div>
-       
+
         <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
           <Col xs={24} sm={12} md={6}>
             <StatisticCard
