@@ -10,7 +10,9 @@ import Vro from './pages/dashboards/Vro';
 import Mro from './pages/dashboards/Mro';
 import Do from './pages/dashboards/Do';
 import Mvro from './pages/dashboards/mvro';
-
+import VRODashboard2 from './pages/users/svro/Dashboard';
+import CompletedApplications from './pages/users/svro/Completed';
+import Applications from './pages/users/svro/Applications';
 const App = () => {
   return (
     <Router>
@@ -23,8 +25,10 @@ const App = () => {
         <Route path="/vro" element={<Vro/>} />
         <Route path="/mro" element={<Mro/>} />
         <Route path="/do" element={<Do/>} />
+        <Route path="/svro2" element={<VRODashboard2/>} />
+        <Route path="/svro2/Completed/" element={<CompletedApplications/>} />
+        <Route path="/svro2/applications/" element={<Applications/>} />
         <Route path="/mvro" element={<Mvro/>} />
-        
       </Routes>
     </Router>
   );

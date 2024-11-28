@@ -23,8 +23,8 @@ const Login = () => {
         if(res.data.role === 'ADMIN'){
           navigate('/admin')
         }
-        else if(res.data.data.role === 'VRO'){
-          navigate('/vro')
+        else if(res.data.role === 'SVRO'){
+          navigate('/svro2')
         }
         else{
           navigate('/')

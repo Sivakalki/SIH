@@ -49,6 +49,20 @@ const HomePage = () => {
     setDrawerVisible(false);
   };
 
+  useEffect(()=>{
+    verifyUser();
+  })
+  const verifyUser =()=>{
+    if(token){
+      if(role != "APPLICANT"){
+        return(
+          <div className='flex justify-center items-center text-red-500'>
+            This is applicants page, not for higher authorities
+          </div>
+        )
+      }
+    }
+  }
   return (
     <div
       className="min-h-screen flex flex-col"
