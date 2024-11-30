@@ -13,6 +13,7 @@ import Mvro from './pages/dashboards/mvro';
 import VRODashboard2 from './pages/users/svro/Dashboard';
 import CompletedApplications from './pages/users/svro/Completed';
 import Applications from './pages/users/svro/Applications';
+import ApplicationForm2 from './pages/ApplicationForm2';
 const App = () => {
   return (
     <Router>
