@@ -26,6 +26,9 @@ const Login = () => {
         else if(res.data.role === 'SVRO'){
           navigate('/svro2')
         }
+        else if(res.data.role === 'MVRO'){
+          navigate('/mvro')
+        }
         else{
           navigate('/')
         }

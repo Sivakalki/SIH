@@ -6,7 +6,7 @@ import { UserContext } from '../../../components/userContext';
 import { useNavigate } from 'react-router-dom';
 const { Title } = Typography;
 
-export default function CompletedApplications() {
+export default function CompletedApplicationsMVRO() {
     const [applications, setApplications] = useState([]);
     const [selectedApplication, setSelectedApplication] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -75,7 +75,7 @@ export default function CompletedApplications() {
 
     const handleViewApplication = async (id) => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${id}`, {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${id}` ,{
                 headers: {
                     Authorization: `Bearer ${token}`, // Include token in Authorization header
                 },

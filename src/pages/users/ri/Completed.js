@@ -75,11 +75,7 @@ export default function CompletedApplications() {
 
     const handleViewApplication = async (id) => {
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`, // Include token in Authorization header
-                },
-            });
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${id}`);
             setSelectedApplication(response.data.data);
             setModalVisible(true);
             console.log(response.data.data)
@@ -107,22 +103,12 @@ export default function CompletedApplications() {
 
     const submitRemarks = async (values) => {
         try {
-            console.log(values);
-            await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/mvro/create_report/${selectedApplication.application_id}`,
-                { description: values.remarks }, 
-                 // This is the request body
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            await axios.post(`/api/applications/${selectedApplication.application_id}/remarks`, values);
             message.success('Remarks submitted successfully');
+            closeRemarksDrawer();
             setModalVisible(false);
             fetchApplications(); // Refresh the applications list
         } catch (error) {
-            console.error('Error submitting remarks:', error);
             message.error('Failed to submit remarks');
         }
     };

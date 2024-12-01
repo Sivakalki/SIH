@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Select, Button, Space, Typography, message, Card, Form, Input, Drawer, Avatar, Modal, Badge, Spin, Descriptions, Tag } from 'antd';
+import { Input, Table, Select, Button, Space, Typography, message, Card, Drawer, Avatar, Modal, Badge, Spin, Descriptions, Tag } from 'antd';
 import { EyeOutlined, UserOutlined, LogoutOutlined, FileTextOutlined, BellOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Line } from '@ant-design/plots';
 import { Link } from 'react-router-dom';
@@ -34,7 +34,7 @@ const mockNotifications = [
 ];
 
 
-export default function Applications() {
+export default function MVROMyReports() {
     const [applications, setApplications] = useState([]);
     const [selectedApplication, setSelectedApplication] = useState(null);
     const [profileDrawerVisible, setProfileDrawerVisible] = useState(false);
@@ -48,13 +48,13 @@ export default function Applications() {
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [userLoading, setUserLoading] = useState(true);
-    const [activeNavItem, setActiveNavItem] = useState('applications');
-    const [report, SetReport] = useState([]);
+    const [activeNavItem, setActiveNavItem] = useState('myReports');
     const [role, setRole] = useState("");
     const navigate = useNavigate()
     const [filterStatus, setFilterStatus] = useState('All');
     const [loadingApplicationId, setLoadingApplicationId] = useState(null);
-    const [resentApplicationDrawerVisible, setResentApplicationDrawerVisible] = useState(false);
+    const [isEditingDescription, setIsEditingDescription] = useState(false); // Manage edit state
+    const [editedDescription, setEditedDescription] = useState(''); // Manage edited description value
     useEffect(() => {
         if (!token) {
             setErrorMessage("You are not logged in. Please log in to access this page.");
@@ -66,8 +66,8 @@ export default function Applications() {
     }, [token]);
 
     useEffect(() => {
-        if (userData && role && role !== "SVRO") {
-            setErrorMessage("Access denied. Only SVROs are allowed to view this page.");
+        if (userData && role && role !== "MVRO") {
+            setErrorMessage("Access denied. Only MVROs are allowed to view this page.");
             setUserLoading(false);
         }
     }, [role]);
@@ -75,7 +75,7 @@ export default function Applications() {
     const fetchApplications = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/pending_applications`, {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/mvro/get_reports`, {
                 headers: {
                     Authorization: `Bearer ${token}`, // Include token in Authorization header
                 },
@@ -128,18 +128,36 @@ export default function Applications() {
 
     const columns = [
         {
+            title: 'Report ID',
+            dataIndex: 'report_id',
+            key: 'report_id',
+        },
+        {
             title: 'Application ID',
             dataIndex: 'application_id',
             key: 'id',
         },
         {
-            title: 'Name',
-            dataIndex: 'full_name',
+            title: 'Applicant Name',
+            dataIndex: 'applicant_name',
             key: 'name',
         },
         {
+            title: 'Any Rejections',
+            dataIndex: 'rejections',
+            key: 'name',
+            render: (rejections) => (
+                <span style={{
+                    color: rejections ? '#f5222d' : '#8c8c8c', // Red for rejections, dark gray for "No Rejections"
+                    fontStyle: rejections ? 'normal' : 'italic',
+                }}>
+                    {rejections || 'No Rejections'}
+                </span>
+            ),
+        },
+        {
             title: 'Status',
-            dataIndex: 'role_type',
+            dataIndex: 'status',
             key: 'role_type',
             render: (status) => (
                 <span style={{
@@ -157,25 +175,25 @@ export default function Applications() {
             render: (_, record) => (
                 <Button
                     icon={<EyeOutlined />}
-                    onClick={() => handleViewApplication(record.application_id)}
+                    onClick={() => handleCompleteReport(record.report_id)}
                     loading={loadingApplicationId === record.application_id}
                 >
-                    View Full Application
+                    View Complete Report
                 </Button>
             ),
         },
     ];
 
-    const handleViewApplication = async (id) => {
+    const handleCompleteReport = async (id) => {
         setLoadingApplicationId(id);
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${id}`, {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/mvro/get_report/${id}`, {
                 headers: {
-                    Authorization: `Bearer ${token}`
-                }
+                    Authorization: `Bearer ${token}`, // Include token in Authorization header
+                },
             });
             setSelectedApplication(response.data.data);
-            SetReport(response.data.report)
+            console.log(response.data.data, " is the selected application")
             setModalVisible(true);
         } catch (error) {
             message.error('Failed to load application details');
@@ -188,13 +206,7 @@ export default function Applications() {
         setDrawerVisible(true);
     };
 
-    const closeDrawer = () => {
-        setDrawerVisible(false);
-    };
 
-    const openRemarksForm = () => {
-        setRemarksDrawerVisible(true);
-    };
 
     const openProfileDrawer = () => {
         setProfileDrawerVisible(true);
@@ -222,7 +234,7 @@ export default function Applications() {
 
     const unreadNotificationsCount = notifications.filter(n => !n.read).length;
     const handleNavigate = (path) => {
-        const basePath = "/svro2"; // Define your base path
+        const basePath = "/mvro"; // Define your base path
         if (path === 'dashboard') {
             console.log("ented here")
             navigate(`${basePath}`)
@@ -231,47 +243,31 @@ export default function Applications() {
             navigate(`${basePath}/${path}`);
         }
     }
-    const submitRemarks = async (values) => {
+
+    const submitDescriptionEdit = async (id) => {
         try {
-            console.log(values);
-            await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/mvro/create_report/${selectedApplication.application_id}`,
-                { description: values.remarks },
-                // This is the request body
+            const response = await axios.put(`${process.env.REACT_APP_BACKEND_URL}/mvro/edit_report/${id}`,
+                {
+                    description: editedDescription, // Pass the data to update in the body
+                },
                 {
                     headers: {
-                        Authorization: `Bearer ${token}`,
+                        Authorization: `Bearer ${token}`, // Include token in Authorization header
                     },
                 }
             );
-            message.success('Remarks submitted successfully');
-            setModalVisible(false);
-            fetchApplications(); // Refresh the applications list
+            setSelectedApplication((prev) => ({
+                ...prev,
+                description: response.data.description,
+            }));
+            setIsEditingDescription(false);
+            message.success(response.data.message)
+            // Refresh the data or update local state
         } catch (error) {
-            console.error('Error submitting remarks:', error);
-            message.error('Failed to submit remarks');
+            console.log(error)
+            message.error("Failed to submit report");
         }
     };
-
-    const submitResentApplication = async (values) => {
-        try {
-            await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/svro/resent_application/${selectedApplication.application_id}`,
-                { description: values.description },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            message.success('Resent application submitted successfully');
-            setResentApplicationDrawerVisible(false);
-            fetchApplications(); // Refresh the applications list
-        } catch (error) {
-            message.error('Failed to submit resent application');
-        }
-    };
-
     return (
         <div className="vro-dashboard bg-background min-h-screen">
             <nav className="bg-primary text-white p-4 flex items-center justify-between">
@@ -333,145 +329,115 @@ export default function Applications() {
                 visible={modalVisible}
                 onCancel={() => setModalVisible(false)}
                 footer={[
-                    report === null ? (
-                        <Button key="remarks" type="primary" onClick={openRemarksForm}>
-                            Add Remarks
-                        </Button>
-                    ) : (
-                        <Button key="submitted" type="default" disabled>
-                            Report Already Submitted
-                        </Button>
-                    ),
-                    <Button key="resent" type="default" onClick={() => setResentApplicationDrawerVisible(true)}>
-                        Resent Application
+                    <Button key="back" onClick={() => setModalVisible(false)}>
+                        Back
                     </Button>,
                 ]}
                 width={800}
             >
                 {selectedApplication && (
-                    <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                        <Card title="Applicant Information" style={{ marginBottom: '16px' }}>
-                            <Descriptions column={2}>
-                                <Descriptions.Item label="Applied By">
-                                    {selectedApplication.applied_by.name}
+                    <div style={{ maxHeight: '60vh', overflowY: 'auto', padding: '16px' }}>
+                        {/* Report Description Section */}
+                        <Card title="Report Details" style={{ marginBottom: '16px' }}>
+                            <Descriptions column={1}>
+                                <Descriptions.Item label="Description">
+                                    {isEditingDescription ? (
+                                        <Input.TextArea
+                                            value={editedDescription}
+                                            onChange={(e) => setEditedDescription(e.target.value)}
+                                            rows={4}
+                                        />
+                                    ) : (
+                                        selectedApplication.description
+                                    )}
                                 </Descriptions.Item>
-                                <Descriptions.Item label="Application ID">{selectedApplication.application_id}</Descriptions.Item>
-                                <Descriptions.Item label="Status">{selectedApplication.status}</Descriptions.Item>
-                                <Descriptions.Item label="Current Stage">{selectedApplication.current_stage.role_type}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
-
-                        <Card title="Personal Details" style={{ marginBottom: '16px' }}>
-                            <Descriptions column={2}>
-                                <Descriptions.Item label="Full Name">{selectedApplication.full_name}</Descriptions.Item>
-                                <Descriptions.Item label="Date of Birth">{new Date(selectedApplication.dob).toLocaleDateString()}</Descriptions.Item>
-                                <Descriptions.Item label="Gender">{selectedApplication.gender}</Descriptions.Item>
-                                <Descriptions.Item label="Religion">{selectedApplication.religion}</Descriptions.Item>
-                                <Descriptions.Item label="Caste">{selectedApplication.caste.caste_type}</Descriptions.Item>
-                                <Descriptions.Item label="Sub Caste">{selectedApplication.sub_caste}</Descriptions.Item>
-                                <Descriptions.Item label="Parent/Guardian">{selectedApplication.parent_guardian_type.type}: {selectedApplication.parent_guardian_name}</Descriptions.Item>
-                                <Descriptions.Item label="Marital Status">{selectedApplication.marital_status}</Descriptions.Item>
-                                <Descriptions.Item label="Aadhar Number">{selectedApplication.aadhar_num}</Descriptions.Item>
-                                <Descriptions.Item label="Phone Number">{selectedApplication.phone_num}</Descriptions.Item>
-                                <Descriptions.Item label="Email">{selectedApplication.email}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
-
-                        <Card title="Address Details" style={{ marginBottom: '16px' }}>
-                            <Descriptions column={2}>
-                                <Descriptions.Item label="Address">{selectedApplication.address.address}</Descriptions.Item>
-                                <Descriptions.Item label="Pincode">{selectedApplication.address.pincode}</Descriptions.Item>
-                                <Descriptions.Item label="State">{selectedApplication.address.state}</Descriptions.Item>
-                                <Descriptions.Item label="District">{selectedApplication.address.district}</Descriptions.Item>
-                                <Descriptions.Item label="Mandal">{selectedApplication.address.mandal}</Descriptions.Item>
-                                <Descriptions.Item label="Sachivalayam">{selectedApplication.address.sachivalayam}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
-
-                        <Card title="Proof Types" style={{ marginBottom: '16px' }}>
-                            <Descriptions column={2}>
-                                <Descriptions.Item label="Address Proof">
-                                    {selectedApplication.addressProof ? <FileTextOutlined /> : 'Not Provided'}
+                                <Descriptions.Item label="Application ID">
+                                    {selectedApplication.application_id}
                                 </Descriptions.Item>
-                                <Descriptions.Item label="Caste Proof">
-                                    {selectedApplication.casteProof ? <FileTextOutlined /> : 'Not Provided'}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Date of Birth Proof">
-                                    {selectedApplication.dobProof ? <FileTextOutlined /> : 'Not Provided'}
+                                <Descriptions.Item label="Applicant Name">
+                                    {selectedApplication.application.full_name}
                                 </Descriptions.Item>
                             </Descriptions>
+                            {!isEditingDescription ? (
+                                <Button
+                                    type="primary"
+                                    style={{ marginTop: '16px' }}
+                                    onClick={() => {
+                                        setIsEditingDescription(true);
+                                        setEditedDescription(selectedApplication.description);
+                                    }}
+                                >
+                                    Edit Description
+                                </Button>
+                            ) : (
+                                <div style={{ marginTop: '16px' }}>
+                                    <Button
+                                        type="primary"
+                                        onClick={() => {
+                                            submitDescriptionEdit(selectedApplication.report_id);
+                                            setIsEditingDescription(false);
+                                        }}
+                                    >
+                                        Submit
+                                    </Button>
+                                    <Button
+                                        style={{ marginLeft: '8px' }}
+                                        onClick={() => setIsEditingDescription(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            )}
                         </Card>
 
-                        <Card title="Roles Allotted">
-                            <Descriptions column={2}>
-                                <Descriptions.Item label="MVRO">User ID: {selectedApplication.mvro_user.user_id}</Descriptions.Item>
-                                <Descriptions.Item label="SVRO">User ID: {selectedApplication.svro_user.user_id}</Descriptions.Item>
-                                <Descriptions.Item label="RI">User ID: {selectedApplication.ri_user.user_id}</Descriptions.Item>
-                                <Descriptions.Item label="MRO">User ID: {selectedApplication.mro_user.user_id}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
+                        {/* Application Details Section */}
+                        <div>
+                            <Title level={4} style={{ marginTop: '16px' }}>
+                                Application Details
+                            </Title>
+                            <Card title="Applicant Information" style={{ marginBottom: '16px' }}>
+                                <Descriptions column={2}>
+                                    <Descriptions.Item label="Full Name">
+                                        {selectedApplication.application.full_name}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Date of Birth">
+                                        {new Date(selectedApplication.application.dob).toLocaleDateString()}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Gender">
+                                        {selectedApplication.application.gender}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Religion">
+                                        {selectedApplication.application.religion}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Sub Caste">
+                                        {selectedApplication.application.sub_caste}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Marital Status">
+                                        {selectedApplication.application.marital_status}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Aadhar Number">
+                                        {selectedApplication.application.aadhar_num}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Phone Number">
+                                        {selectedApplication.application.phone_num}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Email">
+                                        {selectedApplication.application.email}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Parent/Guardian Name">
+                                        {selectedApplication.application.parent_guardian_name}
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Application Status">
+                                        {selectedApplication.application.status}
+                                    </Descriptions.Item>
+                                </Descriptions>
+                            </Card>
+                        </div>
                     </div>
                 )}
             </Modal>
-            <Drawer
-                title="Add Remarks"
-                placement="right"
-                onClose={() => setRemarksDrawerVisible(false)}
-                open={remarksDrawerVisible}
-                width={400}
-            >
-                <Form
-                    layout="vertical"
-                    onFinish={submitRemarks}
-                    initialValues={{
-                        remarks: "",
-                    }}
-                >
-                    <Form.Item
-                        label="Remarks"
-                        name="remarks"
-                        rules={[
-                            { required: true, message: "Please enter your remarks!" },
-                            { max: 500, message: "Remarks cannot exceed 500 characters." },
-                        ]}
-                    >
-                        <Input.TextArea rows={4} placeholder="Enter your remarks" />
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" block>
-                            Submit
-                        </Button>
-                    </Form.Item>
-                </Form>
-            </Drawer>
-            <Drawer
-                title="Resent Application"
-                placement="right"
-                onClose={() => setResentApplicationDrawerVisible(false)}
-                open={resentApplicationDrawerVisible}
-                width={400}
-            >
-                <Form
-                    layout="vertical"
-                    onFinish={submitResentApplication}
-                    initialValues={{
-                        description: "",
-                    }}
-                >
-                    <Form.Item
-                        label="Description"
-                        name="description"
-                        rules={[{ required: true, message: "Please enter your description!" }]}
-                    >
-                        <Input.TextArea rows={4} placeholder="Enter your description for the resent application" />
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" block>
-                            Submit
-                        </Button>
-                    </Form.Item>
-                </Form>
-            </Drawer>
+
+
             <Drawer
                 title="User Profile"
                 placement="right"

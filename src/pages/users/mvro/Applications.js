@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Select, Button, Space, Typography, message, Card, Form, Input, Drawer, Avatar, Modal, Badge, Spin, Descriptions, Tag } from 'antd';
+import { Table, Select, Button, Space, Typography, message, Card, Drawer, Avatar, Modal, Badge, Spin, Descriptions,Form, Input, Tag } from 'antd';
 import { EyeOutlined, UserOutlined, LogoutOutlined, FileTextOutlined, BellOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Line } from '@ant-design/plots';
 import { Link } from 'react-router-dom';
@@ -34,7 +34,7 @@ const mockNotifications = [
 ];
 
 
-export default function Applications() {
+export default function ApplicationsMvro() {
     const [applications, setApplications] = useState([]);
     const [selectedApplication, setSelectedApplication] = useState(null);
     const [profileDrawerVisible, setProfileDrawerVisible] = useState(false);
@@ -54,7 +54,6 @@ export default function Applications() {
     const navigate = useNavigate()
     const [filterStatus, setFilterStatus] = useState('All');
     const [loadingApplicationId, setLoadingApplicationId] = useState(null);
-    const [resentApplicationDrawerVisible, setResentApplicationDrawerVisible] = useState(false);
     useEffect(() => {
         if (!token) {
             setErrorMessage("You are not logged in. Please log in to access this page.");
@@ -66,8 +65,8 @@ export default function Applications() {
     }, [token]);
 
     useEffect(() => {
-        if (userData && role && role !== "SVRO") {
-            setErrorMessage("Access denied. Only SVROs are allowed to view this page.");
+        if (userData && role && role !== "MVRO") {
+            setErrorMessage("Access denied. Only MVROs are allowed to view this page.");
             setUserLoading(false);
         }
     }, [role]);
@@ -75,7 +74,7 @@ export default function Applications() {
     const fetchApplications = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/pending_applications`, {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/mvro/pending_applications`, {
                 headers: {
                     Authorization: `Bearer ${token}`, // Include token in Authorization header
                 },
@@ -139,8 +138,8 @@ export default function Applications() {
         },
         {
             title: 'Status',
-            dataIndex: 'role_type',
-            key: 'role_type',
+            dataIndex: 'current_stage',
+            key: 'current_stage',
             render: (status) => (
                 <span style={{
                     color: status === 'pending' ? '#faad14' : status === 'completed' ? '#52c41a' : '#f5222d',
@@ -220,24 +219,13 @@ export default function Applications() {
         filterStatus === 'All' || app.role_type === filterStatus
     );
 
-    const unreadNotificationsCount = notifications.filter(n => !n.read).length;
-    const handleNavigate = (path) => {
-        const basePath = "/svro2"; // Define your base path
-        if (path === 'dashboard') {
-            console.log("ented here")
-            navigate(`${basePath}`)
-        } else {
-            console.log("NEthered herre")
-            navigate(`${basePath}/${path}`);
-        }
-    }
     const submitRemarks = async (values) => {
         try {
             console.log(values);
             await axios.post(
                 `${process.env.REACT_APP_BACKEND_URL}/mvro/create_report/${selectedApplication.application_id}`,
-                { description: values.remarks },
-                // This is the request body
+                { description: values.remarks }, 
+                 // This is the request body
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -252,26 +240,20 @@ export default function Applications() {
             message.error('Failed to submit remarks');
         }
     };
+    
 
-    const submitResentApplication = async (values) => {
-        try {
-            await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/svro/resent_application/${selectedApplication.application_id}`,
-                { description: values.description },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            message.success('Resent application submitted successfully');
-            setResentApplicationDrawerVisible(false);
-            fetchApplications(); // Refresh the applications list
-        } catch (error) {
-            message.error('Failed to submit resent application');
+
+    const unreadNotificationsCount = notifications.filter(n => !n.read).length;
+    const handleNavigate = (path) => {
+        const basePath = "/mvro"; // Define your base path
+        if (path === 'dashboard') {
+            console.log("ented here")
+            navigate(`${basePath}`)
+        } else {
+            console.log("NEthered herre")
+            navigate(`${basePath}/${path}`);
         }
-    };
-
+    }
     return (
         <div className="vro-dashboard bg-background min-h-screen">
             <nav className="bg-primary text-white p-4 flex items-center justify-between">
@@ -333,19 +315,39 @@ export default function Applications() {
                 visible={modalVisible}
                 onCancel={() => setModalVisible(false)}
                 footer={[
-                    report === null ? (
-                        <Button key="remarks" type="primary" onClick={openRemarksForm}>
-                            Add Remarks
-                        </Button>
+                    selectedApplication && selectedApplication.current_stage ? (
+                        selectedApplication.current_stage.role_type === "MVRO" ? (
+                            report === null ? (
+                                <Button key="remarks" type="primary" onClick={openRemarksForm}>
+                                    Add Remarks
+                                </Button>
+                            ) : (
+                                <Button key="submitted" type="default" disabled>
+                                    Report Already Submitted
+                                </Button>
+                            )
+                        ) : selectedApplication.current_stage.role_type === "SVRO" ? (
+                            report === null ? (
+                                <Button key="remarks" type="primary" onClick={openRemarksForm} disabled>
+                                    SVRO Remarks are not Submitted
+                                </Button>
+                            ) : (
+                                <Button key="svroSubmitted" type="default" disabled>
+                                    Remarks Already Submitted
+                                </Button>
+                            )
+                        ) : (
+                            <Button key="default" type="default" disabled>
+                                You are not eligible
+                            </Button>
+                        )
                     ) : (
-                        <Button key="submitted" type="default" disabled>
-                            Report Already Submitted
+                        <Button key="loading" type="default" disabled>
+                            Loading...
                         </Button>
                     ),
-                    <Button key="resent" type="default" onClick={() => setResentApplicationDrawerVisible(true)}>
-                        Resent Application
-                    </Button>,
                 ]}
+
                 width={800}
             >
                 {selectedApplication && (
@@ -436,34 +438,6 @@ export default function Applications() {
                         ]}
                     >
                         <Input.TextArea rows={4} placeholder="Enter your remarks" />
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" block>
-                            Submit
-                        </Button>
-                    </Form.Item>
-                </Form>
-            </Drawer>
-            <Drawer
-                title="Resent Application"
-                placement="right"
-                onClose={() => setResentApplicationDrawerVisible(false)}
-                open={resentApplicationDrawerVisible}
-                width={400}
-            >
-                <Form
-                    layout="vertical"
-                    onFinish={submitResentApplication}
-                    initialValues={{
-                        description: "",
-                    }}
-                >
-                    <Form.Item
-                        label="Description"
-                        name="description"
-                        rules={[{ required: true, message: "Please enter your description!" }]}
-                    >
-                        <Input.TextArea rows={4} placeholder="Enter your description for the resent application" />
                     </Form.Item>
                     <Form.Item>
                         <Button type="primary" htmlType="submit" block>

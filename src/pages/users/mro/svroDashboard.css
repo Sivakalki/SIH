@@ -1,0 +1,51 @@
+.vro-dashboard {
+    background-color: #f0f2f5;
+    min-height: 100vh;
+  }
+  
+  .main-card {
+    margin: 0 auto;
+  }
+  
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  
+  .dashboard-title {
+    margin: 0;
+    color: #1890ff;
+  }
+  
+  .dashboard-content {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  
+  .chart-card {
+    height: 100%;
+  }
+  
+  .statistic-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .statistic-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .logo{
+    border-radius: 50%;
+  }
+  
+  @media (max-width: 991px) {
+    .chart-card {
+      margin-top: 16px;
+    }
+  }
+  
+  

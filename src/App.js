@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-
 import HomePage from './pages/HomePage';
 import SignUp from './pages/SignUp';
 import Login from './pages/Login';
@@ -13,6 +12,11 @@ import Mvro from './pages/dashboards/mvro';
 import VRODashboard2 from './pages/users/svro/Dashboard';
 import CompletedApplications from './pages/users/svro/Completed';
 import Applications from './pages/users/svro/Applications';
+import MyReports from './pages/users/svro/MyReports';
+import MVRODashboard from './pages/users/mvro/Dashboard';
+// import  from './pages/users/mvro/Applications';
+import ApplicationsMvro from './pages/users/mvro/Applications';
+import MVROMyReports from './pages/users/mvro/MyReports';
 const App = () => {
   return (
     <Router>
@@ -26,9 +30,12 @@ const App = () => {
         <Route path="/mro" element={<Mro/>} />
         <Route path="/do" element={<Do/>} />
         <Route path="/svro2" element={<VRODashboard2/>} />
-        <Route path="/svro2/Completed/" element={<CompletedApplications/>} />
-        <Route path="/svro2/applications/" element={<Applications/>} />
-        <Route path="/mvro" element={<Mvro/>} />
+        <Route path="/svro2/Completed" element={<CompletedApplications/>} />
+        <Route path="/svro2/applications" element={<Applications/>} />
+        <Route path="/svro2/myReports" element={<MyReports/>} />
+        <Route path="/mvro/Applications" element={<ApplicationsMvro/>} />
+        <Route path="/mvro/myReports" element={<MVROMyReports/>} />
+        <Route path="/mvro" element={<MVRODashboard/>} />
       </Routes>
     </Router>
   );

@@ -63,7 +63,7 @@ const monthRanges = {
   'Aug-Dec': ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
 };
 
-export default function VRODashboard() {
+export default function MVRODashboard() {
   const [profileDrawerVisible, setProfileDrawerVisible] = useState(false);
   const [notificationDrawerVisible, setNotificationDrawerVisible] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -96,8 +96,8 @@ export default function VRODashboard() {
   }, [token]);
 
   useEffect(() => {
-    if (userData && role && role !== "SVRO") {
-      setErrorMessage("Access denied. Only SVROs are allowed to view this page.");
+    if (userData && role && role !== "MVRO") {
+      setErrorMessage("Access denied. Only MVROs are allowed to view this page.");
       setUserLoading(false);
     }
   }, [role]);
@@ -105,7 +105,7 @@ export default function VRODashboard() {
   const fetchDashboardData = async () => {
     if (token) {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/load_dashboard`, {
+        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/mvro/load_dashboard`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -237,7 +237,7 @@ export default function VRODashboard() {
       <Card className="main-card">
         <div className="dashboard-header">
           <div>
-            <Title level={2} className="dashboard-title">VRO Dashboard</Title>
+            <Title level={2} className="dashboard-title">MVRO Dashboard</Title>
             <p>Welcome, {userData.name}</p>
           </div>
         </div>
