@@ -171,21 +171,47 @@ function ApplicationForm() {
       message.error('Please verify your Aadhar number before submitting');
       return;
     }
-
+  
     const formData = new FormData();
-
-    Object.entries(data).forEach(([key, value]) => {
-      if (value instanceof File) {
-        formData.append(key, value);
-      } else if (value instanceof Date) {
-        formData.append(key, value.toISOString());
-      } else if (Array.isArray(value) && value[0] instanceof File) {
-        formData.append(key, value[0]);
-      } else {
-        formData.append(key, String(value));
+  
+    // Prepare the JSON data
+    const jsonData = {
+      full_name: data.full_name,
+      dob: moment(data.dob).format('YYYY-MM-DD'),
+      gender: data.gender,
+      religion: data.religion,
+      caste: castes.find(c => c.caste_id === data.caste_id)?.name || '',
+      sub_caste: data.sub_caste,
+      parent_religion: data.parent_religion,
+      parent_guardian_type: data.parent_guardian_id,
+      parent_guardian_name: data.parent_guardian_name,
+      marital_status: data.marital_status,
+      aadhar_num: data.aadhar_num.replace(/\s/g, ''),
+      phone_num: data.phone_num,
+      email: data.email,
+      addressDetails: {
+        pincode: data.pincode,
+        state: data.state,
+        district: data.district,
+        mandal: data.mandal,
+        address: data.address,
+        sachivalayam: data.sachivalayam
       }
-    });
-
+    };
+  
+    // Append the JSON data
+    formData.append('jsonData', JSON.stringify(jsonData));
+  
+    // Append file uploads
+    if (data.addressProof && data.addressProof[0]) {
+      formData.append('addressProof', data.addressProof[0]);
+    }
+    if (data.dobProof && data.dobProof[0]) {
+      formData.append('dobProof', data.dobProof[0]);
+    }
+    if (data.casteProof && data.casteProof[0]) {
+      formData.append('casteProof', data.casteProof[0]);
+    }
     try {
       const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/application`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -197,6 +223,7 @@ function ApplicationForm() {
       message.error('Error submitting application');
     }
   };
+  
 
   return (
     <ConfigProvider>

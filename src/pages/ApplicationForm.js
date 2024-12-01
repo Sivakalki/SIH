@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext} from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -22,6 +22,7 @@ import {
 } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import 'antd/dist/reset.css';
+import { UserContext } from '../components/userContext';
 
 const { Option } = Select;
 const { Title } = Typography;
@@ -81,6 +82,9 @@ function ApplicationForm() {
   const [proofOfResidence, setProofOfResidence] = useState('');
   const [proofOfDOB, setProofOfDOB] = useState('');
   const [proofOfCaste, setProofOfCaste] = useState('');
+  const { token, logout } = useContext(UserContext);
+
+  
 
   useEffect(() => {
     const fetchAddressData = async () => {
@@ -103,7 +107,7 @@ function ApplicationForm() {
 
   const handlePincodeChange = (value) => {
     const selectedAddresses = addressData.filter(item => item.pincode === value);
-  
+
     if (selectedAddresses.length > 0) {
       const sachivalayams = selectedAddresses.map(item => item.sachivalayam);
       setValue('sachivalayam', '');
@@ -149,10 +153,10 @@ function ApplicationForm() {
         `${process.env.REACT_APP_BACKEND_URL}/api/check_aadhaar/${aadharNum.replace(/\s/g, "")}`
       );
       console.log("Aadhar verification response:", response.data);
-    
+
       if (response.data && typeof response.data === "object") {
         const numOfApplications = response.data.numOfApplications;
-    
+
         if (numOfApplications === 0) {
           setIsAadharVerified(true);
           setIsAadharExisting(false);
@@ -176,55 +180,220 @@ function ApplicationForm() {
   };
 
   const onSubmit = async (data) => {
-    const jsonPayload = {};
-    const filesPayload = new FormData();
-  
-    // Convert data to JSON object
-    Object.entries(data).forEach(([key, value]) => {
-      if (value && value.fileList) {
-        // For Ant Design's Upload component, add the files to FormData
-        filesPayload.append(key, value.fileList[0].originFileObj);
-      } else if (typeof value === 'object' && !(value instanceof File)) {
-        // Handle nested objects like address details
-        jsonPayload[key] = value;
-      } else if (value instanceof File) {
-        // Add individual files to FormData
-        filesPayload.append(key, value);
-      } else {
-        jsonPayload[key] = value;
+    if (!isAadharVerified) {
+      message.error('Please verify your Aadhar number before submitting');
+      return;
+    }
+
+    const formData = new FormData();
+
+    // Prepare the JSON data
+    const jsonData = {
+      full_name: data.full_name,
+      dob: moment(data.dob).format('YYYY-MM-DD'),
+      gender: data.gender,
+      religion: data.religion,
+      caste: castes.find(c => c.caste_id === data.caste_id)?.name || '',
+      sub_caste: data.sub_caste,
+      parent_religion: data.parent_religion,
+      parent_guardian_type: data.parent_guardian_id,
+      parent_guardian_name: data.parent_guardian_name,
+      marital_status: data.marital_status,
+      aadhar_num: data.aadhar_num.replace(/\s/g, ''),
+      phone_num: data.phone_num,
+      email: data.email,
+      addressDetails: {
+        pincode: data.pincode,
+        state: data.state,
+        district: data.district,
+        mandal: data.mandal,
+        address: data.address,
+        sachivalayam: data.sachivalayam
       }
+    };
+
+    // Append the JSON data
+    formData.append('data', JSON.stringify(jsonData));
+
+
+    // Append file uploads
+    // Append the JSON data
+    Object.keys(jsonData).forEach(key => {
+      formData.append(key, typeof jsonData[key] === 'object'
+        ? JSON.stringify(jsonData[key])
+        : jsonData[key]);
     });
-  
-    console.log('JSON Payload:', JSON.stringify(jsonPayload)); // Debugging
-    console.log('FormData Files:', Array.from(filesPayload.entries())); // Debugging
-  
+
+    // Map the file fields to the expected multer fields
+    if (data.proofOfResidence === 'aadhaar' && data.aadharCardImage?.[0]) {
+      formData.append('addressProof', data.aadharCardImage[0].originFileObj);
+      formData.append("addressProofType", "AADHAR");
+    } else if (data.proofOfResidence === 'electricity' && data.electricityBillImage?.[0]) {
+      formData.append('addressProof', data.electricityBillImage[0].originFileObj);
+      formData.append("addressProofType", "ELECTRICITY");
+    } else if (data.proofOfResidence === 'gas' && data.gasBillImage?.[0]) {
+      formData.append('addressProof', data.gasBillImage[0].originFileObj);
+      formData.append("addressProofType", "GAS");
+    }
+
+    // Add DOB proof
+    if (data.proofOfDOB === 'aadhar' && data.aadharCardImageForDOB?.[0]) {
+      formData.append('dobProof', data.aadharCardImageForDOB[0].originFileObj);
+      formData.append("dobProofType", "AADHAR");
+    } else if (data.proofOfDOB === 'pan' && data.panCardImage?.[0]) {
+      formData.append('dobProof', data.panCardImage[0].originFileObj);
+      formData.append("dobProofType", "PAN");
+    } else if (data.proofOfDOB === 'ssc' && data.sscCertificateImage?.[0]) {
+      formData.append('dobProof', data.sscCertificateImage[0].originFileObj);
+      formData.append("dobProofType", "SSC");
+    }
+
+    // Add caste proof
+    if (data.fatherCasteCertificateImage?.[0]) {
+      formData.append('casteProof', data.fatherCasteCertificateImage[0].originFileObj);
+      formData.append("casteProofType", "FATHER");
+    } else if (data.motherCasteCertificateImage?.[0]) {
+      formData.append('casteProof', data.motherCasteCertificateImage[0].originFileObj);
+      formData.append("casteProofType", "MOTHER");
+    }
+
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
     try {
-      // Combine JSON data and files into one request
-      const combinedPayload = new FormData();
-      combinedPayload.append('data', new Blob([JSON.stringify(jsonPayload)], { type: 'application/json' }));
-      Array.from(filesPayload.entries()).forEach(([key, file]) => {
-        combinedPayload.append(key, file);
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/application`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+         },
       });
-  
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/application`, combinedPayload, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-  
       console.log('Application submitted successfully:', response.data);
       message.success('Application submitted successfully');
-  
-      // Send confirmation email
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/send-confirmation-email`, {
-        email: data.email,
-        name: data.full_name,
-      });
     } catch (error) {
       console.error('Error submitting application:', error);
-      message.error('Error submitting application');
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        message.error(`Error submitting application: ${error.response.data.message || 'Please try again.'}`);
+      } else if (error.request) {
+        // The request was made but no response was received
+        message.error('Error submitting application: No response from server. Please try again.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        message.error('Error submitting application: Please check your form and try again.');
+      }
     }
   };
-  
-  
+
+
+  // const onSubmit = async (data) => {
+  //   if (!isAadharVerified) {
+  //     message.error('Please verify your Aadhar number before submitting');
+  //     return;
+  //   }
+
+  //   const formData = new FormData();
+
+  //   // Prepare the JSON data
+  //   const jsonData = {
+  //     full_name: data.full_name,
+  //     dob: moment(data.dob).format('YYYY-MM-DD'),
+  //     gender: data.gender,
+  //     religion: data.religion,
+  //     caste: castes.find(c => c.caste_id === data.caste_id)?.name || '',
+  //     sub_caste: data.sub_caste,
+  //     parent_religion: data.parent_religion,
+  //     parent_guardian_type: data.parent_guardian_id,
+  //     parent_guardian_name: data.parent_guardian_name,
+  //     marital_status: data.marital_status,
+  //     aadhar_num: data.aadhar_num.replace(/\s/g, ''),
+  //     phone_num: data.phone_num,
+  //     email: data.email,
+  //     addressDetails: {
+  //       pincode: data.pincode,
+  //       state: data.state,
+  //       district: data.district,
+  //       mandal: data.mandal,
+  //       address: data.address,
+  //       sachivalayam: data.sachivalayam
+  //     }
+  //   };
+
+  //   // Append the JSON data
+  //   formData.append('jsonData', JSON.stringify(jsonData));
+
+  //   // Append file uploads
+  //   if (data.addressProof && data.addressProof[0]) {
+  //     formData.append('addressProof', data.addressProof[0]);
+  //   }
+  //   if (data.dobProof && data.dobProof[0]) {
+  //     formData.append('dobProof', data.dobProof[0]);
+  //   }
+  //   if (data.casteProof && data.casteProof[0]) {
+  //     formData.append('casteProof', data.casteProof[0]);
+  //   }
+  //   console.log(formData, " is the form data")
+  //   try {
+  //     const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/application`, formData, {
+  //       headers: { 'Content-Type': 'multipart/form-data' },
+  //     });
+  //     console.log('Application submitted successfully:', response.data);
+  //     message.success('Application submitted successfully');
+  //   } catch (error) {
+  //     console.error('Error submitting application:', error);
+  //     message.error('Error submitting application');
+  //   }
+  // };
+
+  // const onSubmit = async (data) => {
+  //   const jsonPayload = {};
+  //   const filesPayload = new FormData();
+
+  //   // Convert data to JSON object
+  //   Object.entries(data).forEach(([key, value]) => {
+  //     if (value && value.fileList) {
+  //       // For Ant Design's Upload component, add the files to FormData
+  //       filesPayload.append(key, value.fileList[0].originFileObj);
+  //     } else if (typeof value === 'object' && !(value instanceof File)) {
+  //       // Handle nested objects like address details
+  //       jsonPayload[key] = value;
+  //     } else if (value instanceof File) {
+  //       // Add individual files to FormData
+  //       filesPayload.append(key, value);
+  //     } else {
+  //       jsonPayload[key] = value;
+  //     }
+  //   });
+
+  //   console.log('JSON Payload:', JSON.stringify(jsonPayload)); // Debugging
+  //   console.log('FormData Files:', Array.from(filesPayload.entries())); // Debugging
+
+  //   try {
+  //     // Combine JSON data and files into one request
+  //     const combinedPayload = new FormData();
+  //     combinedPayload.append('data', new Blob([JSON.stringify(jsonPayload)], { type: 'application/json' }));
+  //     Array.from(filesPayload.entries()).forEach(([key, file]) => {
+  //       combinedPayload.append(key, file);
+  //     });
+
+  //     const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/application`, combinedPayload, {
+  //       headers: { 'Content-Type': 'multipart/form-data' },
+  //     });
+
+  //     console.log('Application submitted successfully:', response.data);
+  //     message.success('Application submitted successfully');
+
+  //     // Send confirmation email
+  //     await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/send-confirmation-email`, {
+  //       email: data.email,
+  //       name: data.full_name,
+  //     });
+  //   } catch (error) {
+  //     console.error('Error submitting application:', error);
+  //     message.error('Error submitting application');
+  //   }
+  // };
+
+
 
   const beforeUpload = (file) => {
     const isLt1M = file.size / 1024 / 1024 < 1;
@@ -545,8 +714,8 @@ function ApplicationForm() {
                       name="proofOfResidence"
                       control={control}
                       render={({ field }) => (
-                        <Select 
-                          {...field} 
+                        <Select
+                          {...field}
                           onChange={(value) => {
                             field.onChange(value);
                             setProofOfResidence(value);
@@ -657,8 +826,8 @@ function ApplicationForm() {
                       name="proofOfDOB"
                       control={control}
                       render={({ field }) => (
-                        <Select 
-                          {...field} 
+                        <Select
+                          {...field}
                           onChange={(value) => {
                             field.onChange(value);
                             setProofOfDOB(value);
@@ -769,8 +938,8 @@ function ApplicationForm() {
                       name="proofOfCaste"
                       control={control}
                       render={({ field }) => (
-                        <Select 
-                          {...field} 
+                        <Select
+                          {...field}
                           onChange={(value) => {
                             field.onChange(value);
                             setProofOfCaste(value);
