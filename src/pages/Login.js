@@ -29,8 +29,14 @@ const Login = () => {
         else if(res.data.role === 'MVRO'){
           navigate('/mvro')
         }
+        else if(res.data.role === 'RI'){
+          navigate('/ri')
+        }
+        else if(res.data.role === 'MRO'){
+          navigate('/mro')
+        }
         else{
-          navigate('/')
+          navigate('/applicant')
         }
       }
       else{

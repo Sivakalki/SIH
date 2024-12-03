@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap');
+
+.custom-menu .ant-menu-item-selected {
+  background-color: #4169E1 !important;
+  color: white !important;
+}
+
+.custom-menu .ant-menu-item:hover {
+  color: #4169E1 !important;
+}
+
+.custom-menu .ant-menu-item-selected:hover {
+  color: white !important;
+}
+
+.custom-menu .ant-menu-item-selected .anticon {
+  color: white !important;
+}
+
+.custom-menu .ant-menu-item .anticon {
+  color: #4169E1;
+}
+
+.custom-menu .ant-menu-item:hover .anticon {
+  color: #4169E1;
+}
+
+.custom-menu .ant-menu-item-selected:hover .anticon {
+  color: white !important;
+}
+
+.certitrack-title {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: linear-gradient(45deg, #4169E1, #1E90FF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}

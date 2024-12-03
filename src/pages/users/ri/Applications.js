@@ -65,8 +65,8 @@ export default function Applications() {
     }, [token]);
 
     useEffect(() => {
-        if (userData && role && role !== "SVRO") {
-            setErrorMessage("Access denied. Only SVROs are allowed to view this page.");
+        if (userData && role && role !== "RI") {
+            setErrorMessage("Access denied. Only RIs are allowed to view this page.");
             setUserLoading(false);
         }
     }, [role]);
@@ -257,7 +257,7 @@ export default function Applications() {
             </nav>
             <Card>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <Title level={2} style={{ margin: 0, color: '#1890ff' }}>VRO Dashboard</Title>
+                    <Title level={2} style={{ margin: 0, color: '#1890ff' }}>RI Dashboard</Title>
                     <Space>
                         <Select
                             defaultValue="All"
@@ -400,8 +400,8 @@ export default function Applications() {
             <NotificationDrawer
                 visible={notificationDrawerVisible}
                 onClose={closeNotificationDrawer}
-                notifications={notifications}
-                setNotifications={setNotifications}
+                notifications={[]}
+                setNotifications={() => {}}
             />
         </div>
     );
