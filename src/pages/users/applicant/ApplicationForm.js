@@ -97,6 +97,7 @@ function ApplicationForm() {
   const [collapsed, setCollapsed] = useState(false);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [verifyingAadhar, setVerifyingAadhar] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -126,10 +127,10 @@ function ApplicationForm() {
       onClick: () => navigate('/applicant/status')
     },
     {
-      key: 'history',
+      key: 'reports',
       icon: <BarsOutlined />,
-      label: 'History',
-      onClick: () => navigate('/applicant/history')
+      label: 'Reports',
+      onClick: () => navigate('/applicant/reports')
     }
   ];
 
@@ -171,40 +172,43 @@ function ApplicationForm() {
     fetchUserData();
   }, [token]);
 
-  const handleAadharVerify = async (aadharNum) => {
-    console.log("Verifying Aadhaar:", aadharNum);
-    if (!aadharNum || aadharNum.length !== 12) {
-      message.error('Please enter a valid 12-digit Aadhar number');
+  const verifyAadhar = async (aadharNumber) => {
+    console.log(aadharNumber);
+    if (!aadharNumber) {
+      message.error('Please enter Aadhar number first');
       return;
     }
 
     try {
+      setVerifyingAadhar(true);
       const response = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/check_aadhaar/${aadharNum}`
-      );
-
-      if (response.data && typeof response.data === "object") {
-        const numOfApplications = response.data.numOfApplications;
-
-        if (numOfApplications === 0) {
-          setIsAadharVerified(true);
-          setIsAadharExisting(false);
-          message.success("Aadhar verified successfully. You can proceed with the application.");
-        } else if (numOfApplications > 0) {
-          setIsAadharVerified(false);
-          setIsAadharExisting(true);
-          message.error("This Aadhar ID already exists. Please enter a new one.");
-        } else {
-          throw new Error("Unexpected numOfApplications value");
+        `${process.env.REACT_APP_BACKEND_URL}/api/check_aadhaar/${aadharNumber}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
         }
-      } else {
-        throw new Error("Invalid response format");
+      );
+      console.log(response.data.numOfApplications)
+      if (response.data.numOfApplications == 0) {
+        setIsAadharVerified(true);
+        message.success('Aadhar verified successfully!');
+      } 
+      else if(response.data.numOfApplications >= 1){
+        setIsAadharExisting(true);
+        message.error('Aadhar number already exists');  
+      }
+      else {
+        message.error('Invalid Aadhar number. Please check and try again.');
       }
     } catch (error) {
-      console.error("Error verifying Aadhar:", error);
-      message.error(`Error verifying Aadhar: ${error.message}`);
-      setIsAadharVerified(false);
-      setIsAadharExisting(false);
+      console.error('Error verifying Aadhar:', error);
+      if (error.response?.status === 401) {
+        message.error('Session expired. Please login again.');
+        logout();
+      } else {
+        message.error('Failed to verify Aadhar. Please try again.');
+      }
+    } finally {
+      setVerifyingAadhar(false);
     }
   };
 
@@ -328,7 +332,8 @@ function ApplicationForm() {
           control={control}
           errors={errors}
           isAadharVerified={isAadharVerified}
-          onAadharVerify={handleAadharVerify}
+          onAadharVerify={verifyAadhar}
+          verifyingAadhar={verifyingAadhar}
         />
       )
     },
@@ -402,9 +407,10 @@ function ApplicationForm() {
         <Menu
           className="custom-menu"
           mode="inline"
-          selectedKeys={[location.pathname === '/application-form' ? 'new-application' : 'home']}
+          selectedKeys={['new-application']}
           items={menuItems}
           style={{ borderRight: 0 }}
+          
         />
       </Sider>
       <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s' }}>
@@ -433,11 +439,11 @@ function ApplicationForm() {
               {userData?.name || 'User'}
             </span>
           </div>
-          <Button
+          {/* <Button
             type="text"
             icon={<LogoutOutlined style={{ color: '#4169E1' }} />}
             onClick={logout}
-          />
+          /> */}
         </Header>
         <Content style={{ 
           margin: '24px', 

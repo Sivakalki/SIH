@@ -1,11 +1,14 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext,useEffect } from 'react';
 import {
   Layout,
   Menu,
   Avatar,
   Typography,
   Spin,
-  Button
+  Dropdown,
+  Space,
+  Divider,
+  Badge
 } from 'antd';
 import {
   UserOutlined,
@@ -15,6 +18,9 @@ import {
   FileSearchOutlined,
   LogoutOutlined,
   BellOutlined,
+  SettingOutlined,
+  CaretDownOutlined,
+  EditOutlined,
   BarsOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -23,13 +29,13 @@ import axios from 'axios';
 import '../../styles/Dashboard.css';
 
 const { Header, Content, Sider } = Layout;
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const DashboardLayout = ({ children, loading = false }) => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { token, logout } = useContext(UserContext);
+  const { token, user, logout } = useContext(UserContext);
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
@@ -75,30 +81,70 @@ const DashboardLayout = ({ children, loading = false }) => {
       onClick: () => navigate('/applicant/status')
     },
     {
-      key: 'history',
+      key: 'reports',
       icon: <BarsOutlined />,
-      label: 'History',
-      onClick: () => navigate('/applicant/history')
+      label: 'Reports',
+      onClick: () => navigate('/applicant/reports')
     }
   ];
 
-  const getCurrentMenuKey = () => {
+  const getSelectedKey = () => {
     const path = location.pathname;
     if (path === '/applicant') return 'home';
     if (path === '/applicant/new-application') return 'new-application';
     if (path === '/applicant/applications') return 'my-applications';
     if (path === '/applicant/status') return 'application-status';
-    if (path === '/applicant/history') return 'history';
+    if (path === '/applicant/reports') return 'reports';
     return '';
   };
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const userMenuItems = [
+    {
+      key: 'profile',
+      label: (
+        <div style={{ padding: '8px 0' }}>
+          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+            <Avatar size={64} icon={<UserOutlined />} />
+          </div>
+          <Text strong style={{ display: 'block', textAlign: 'center' }}>
+            {userData?.name || 'User Name'}
+          </Text>
+          <Text type="secondary" style={{ display: 'block', textAlign: 'center' }}>
+            {userData?.email || 'user@example.com'}
+          </Text>
+        </div>
+      ),
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'edit-profile',
+      icon: <EditOutlined />,
+      label: 'Edit Profile',
+      onClick: () => navigate('/applicant/profile'),
+    },
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: 'Settings',
+      onClick: () => navigate('/applicant/settings'),
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Logout',
+      onClick: handleLogout,
+    },
+  ];
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -136,52 +182,49 @@ const DashboardLayout = ({ children, loading = false }) => {
         <Menu
           className="custom-menu"
           mode="inline"
-          selectedKeys={[getCurrentMenuKey()]}
+          selectedKeys={[getSelectedKey()]}
           items={menuItems}
           style={{ borderRight: 0 }}
         />
       </Sider>
       <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s' }}>
         <Header style={{ 
-          padding: '0 24px', 
+          padding: '0 16px', 
           background: '#fff', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'flex-end',
-          gap: '16px',
-          boxShadow: '0 2px 8px 0 rgba(29,35,41,.05)',
-          position: 'fixed',
-          right: 0,
-          top: 0,
-          left: collapsed ? 80 : 200,
-          zIndex: 9,
-          transition: 'all 0.2s'
+          position: 'sticky', 
+          top: 0, 
+          zIndex: 1, 
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          height: '64px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
         }}>
-          <Button
-            type="text"
-            icon={<BellOutlined style={{ fontSize: '20px', color: '#4169E1' }} />}
-          />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#4169E1' }} />
-            <span style={{ color: '#4169E1', fontWeight: 500 }}>
-              {userData?.name || 'User'}
-            </span>
-          </div>
-          <Button
-            type="text"
-            icon={<LogoutOutlined style={{ color: '#4169E1' }} />}
-            onClick={logout}
-          />
+          <Title level={4} style={{ margin: 0 }}>CertiTrack</Title>
+          <Space size="large">
+            <Badge count={5}>
+              <BellOutlined style={{ fontSize: '20px', cursor: 'pointer' }} />
+            </Badge>
+            <Dropdown menu={{ items: userMenuItems }} trigger={['click']} placement="bottomRight" arrow>
+              <Space style={{ cursor: 'pointer' }}>
+                <Avatar icon={<UserOutlined />} />
+                <CaretDownOutlined />
+              </Space>
+            </Dropdown>
+          </Space>
         </Header>
         <Content style={{ 
-          margin: '24px', 
-          marginTop: '88px', 
-          minHeight: 280,
-          overflow: 'auto',
-          height: 'calc(100vh - 88px)',
-          padding: '0 24px 24px'
+          padding: '16px',
+          background: '#fff',
+          minHeight: 'calc(100vh - 64px)'
         }}>
-          {children}
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+              <Spin size="large" />
+            </div>
+          ) : (
+            children
+          )}
         </Content>
       </Layout>
     </Layout>

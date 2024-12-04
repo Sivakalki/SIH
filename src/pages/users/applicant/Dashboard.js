@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Button, Card, Row, Col, Typography, Spin, Avatar, Drawer, Layout, Menu, Timeline } from 'antd';
+import { Button, Card, Row, Col, Typography, Spin, Avatar, Drawer, Layout, Menu, Timeline, message } from 'antd';
 import { 
   UserOutlined, 
   LogoutOutlined, 
@@ -116,7 +116,7 @@ const ApplicantDashboard = () => {
       key: 'new-application',
       icon: <PlusCircleOutlined />,
       label: 'Create New Application',
-      onClick: () => navigate('/application-form')
+      onClick: () => navigate('/applicant/new-application')
     },
     {
       key: 'my-applications',
@@ -131,10 +131,10 @@ const ApplicantDashboard = () => {
       onClick: () => navigate('/applicant/status')
     },
     {
-      key: 'history',
+      key: 'reports',
       icon: <BarsOutlined />,
-      label: 'History',
-      onClick: () => navigate('/applicant/history')
+      label: 'Reports',
+      onClick: () => navigate('/applicant/reports')
     }
   ];
 
@@ -160,18 +160,31 @@ const ApplicantDashboard = () => {
     }
   };
 
-  const fetchDashboardData = async () => {
-    try {
-      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/applicant/dashboard`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setDashboardData(response.data);
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-    }
-  };
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/applicant/dashboard`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setDashboardData(response.data);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+        if (error.response?.status === 401) {
+          message.error('Session expired. Please login again.');
+          logout();
+        } else {
+          message.error('Failed to fetch dashboard data. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [token, logout]);
 
   useEffect(() => {
     if (!token) {
@@ -184,7 +197,6 @@ const ApplicantDashboard = () => {
 
   useEffect(() => {
     if (token && userData && role === "APPLICANT") {
-      fetchDashboardData();
     }
   }, [token, userData, role]);
 
@@ -195,7 +207,7 @@ const ApplicantDashboard = () => {
     else if (path === '/application-form') setSelectedKey('new-application');
     else if (path === '/applicant/applications') setSelectedKey('my-applications');
     else if (path === '/applicant/status') setSelectedKey('application-status');
-    else if (path === '/applicant/history') setSelectedKey('history');
+    else if (path === '/applicant/reports') setSelectedKey('reports');
   }, [location]);
 
   if (loading) {

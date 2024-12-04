@@ -1,5 +1,3 @@
-// Move the content from src/pages/MyApplications.js to here
-// Update imports to use relative paths
 import React, { useState, useEffect, useContext } from 'react';
 import {
   Table,
@@ -7,138 +5,176 @@ import {
   Button,
   Space,
   message,
-  Layout,
-  Menu,
-  Avatar,
-  Typography
+  Typography,
+  Modal,
+  Descriptions,
+  Spin
 } from 'antd';
 import {
   EyeOutlined,
-  DeleteOutlined,
-  UserOutlined,
-  HomeOutlined,
-  PlusCircleOutlined,
-  FileTextOutlined,
-  FileSearchOutlined,
-  BarsOutlined,
-  LogoutOutlined,
-  BellOutlined
 } from '@ant-design/icons';
-import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { UserContext } from '../../../components/userContext';
-import '../../../styles/Dashboard.css';
+import DashboardLayout from '../../../components/layout/DashboardLayout';
 
-const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
 
 const MyApplications = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingApplicationId, setLoadingApplicationId] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState(null);
   const { token, logout } = useContext(UserContext);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
 
-  const menuItems = [
-    {
-      key: 'home',
-      icon: <HomeOutlined />,
-      label: 'Home',
-      onClick: () => navigate('/applicant')
-    },
-    {
-      key: 'new-application',
-      icon: <PlusCircleOutlined />,
-      label: 'Create New Application',
-      onClick: () => navigate('/applicant/new-application')
-    },
-    {
-      key: 'my-applications',
-      icon: <FileTextOutlined />,
-      label: 'My Applications',
-      onClick: () => navigate('/applicant/applications')
-    },
-    {
-      key: 'application-status',
-      icon: <FileSearchOutlined />,
-      label: 'Application Status',
-      onClick: () => navigate('/applicant/status')
-    },
-    {
-      key: 'reports',
-      icon: <BarsOutlined />,
-      label: 'Reports',
-      onClick: () => navigate('/applicant/reports')
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/myapplications`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setApplications(response.data.applications || []);
+      } catch (error) {
+        console.error('Error fetching applications:', error);
+        if (error.response?.status === 401) {
+          message.error('Session expired. Please login again.');
+          logout();
+        } else {
+          message.error('Failed to fetch applications. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchApplications();
+  }, [token, logout]);
+
+  const handleViewApplication = async (applicationId) => {
+    try {
+      setLoadingApplicationId(applicationId);
+      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${applicationId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSelectedApplication(response.data.data);
+      setModalVisible(true);
+    } catch (error) {
+      message.error('Failed to fetch application details');
+      console.error('Error fetching application details:', error);
+    } finally {
+      setLoadingApplicationId(null);
     }
-  ];
-
-  // Your existing fetch applications logic here
+  };
 
   const columns = [
-    // Your existing columns definition
+    {
+      title: 'Application ID',
+      dataIndex: 'application_id',
+      key: 'application_id',
+    },
+    {
+      title: 'Full Name',
+      dataIndex: 'full_name',
+      key: 'full_name',
+    },
+    {
+      title: 'Aadhar Number',
+      dataIndex: 'aadhar_num',
+      key: 'aadhar_num',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => (
+        <Tag color={
+          status === 'PENDING' ? 'gold' :
+          status === 'APPROVED' ? 'green' :
+          status === 'REJECTED' ? 'red' : 'default'
+        }>
+          {status}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space size="middle">
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewApplication(record.application_id)}
+            loading={loadingApplicationId === record.application_id}
+          >
+            View
+          </Button>
+        </Space>
+      ),
+    },
   ];
 
-  return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={(value) => setCollapsed(value)}
-        style={{
-          overflow: 'auto',
-          height: '100vh',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-        }}
+  const content = (
+    <>
+      <Title level={2}>My Applications</Title>
+      <Table
+        columns={columns}
+        dataSource={applications}
+        loading={loading}
+        rowKey="application_id"
+      />
+
+      <Modal
+        title="Application Details"
+        visible={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setModalVisible(false)}>
+            Close
+          </Button>
+        ]}
+        width={800}
       >
-        <div className="logo">
-          <Avatar size={48} icon={<UserOutlined />} />
-        </div>
-        <Menu
-          theme="dark"
-          selectedKeys={['my-applications']}
-          mode="inline"
-          items={menuItems}
-        />
-        <Menu
-          theme="dark"
-          selectable={false}
-          mode="inline"
-          items={[
-            {
-              key: 'logout',
-              icon: <LogoutOutlined />,
-              label: 'Logout',
-              onClick: logout,
-            },
-          ]}
-          style={{ position: 'absolute', bottom: 0, width: '100%' }}
-        />
-      </Sider>
-      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s' }}>
-        <Header style={{ padding: 15, background: '#fff' }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 24px' }}>
-            <Title level={4} style={{ margin: 0, flex: 1 }}>
-              My Applications
-            </Title>
-            <BellOutlined style={{ fontSize: '20px', marginRight: '24px' }} />
-            <Avatar icon={<UserOutlined />} />
-          </div>
-        </Header>
-        <Content style={{ margin: '24px 16px', padding: 24, background: '#fff' }}>
-          <Table
-            columns={columns}
-            dataSource={applications}
-            rowKey="application_id"
-            loading={loading}
-            pagination={{ pageSize: 10 }}
-          />
-        </Content>
-      </Layout>
-    </Layout>
+        {selectedApplication ? (
+          <Descriptions bordered column={1}>
+            <Descriptions.Item label="Application ID">{selectedApplication.application_id}</Descriptions.Item>
+            <Descriptions.Item label="Full Name">{selectedApplication.full_name}</Descriptions.Item>
+            <Descriptions.Item label="Aadhar Number">{selectedApplication.aadhar_num}</Descriptions.Item>
+            <Descriptions.Item label="Status">
+              <Tag color={
+                selectedApplication.status === 'PENDING' ? 'gold' :
+                selectedApplication.status === 'APPROVED' ? 'green' :
+                selectedApplication.status === 'REJECTED' ? 'red' : 'default'
+              }>
+                {selectedApplication.status}
+              </Tag>
+            </Descriptions.Item>
+            {selectedApplication.caste && (
+              <Descriptions.Item label="Caste">{selectedApplication.caste.caste_type}</Descriptions.Item>
+            )}
+            {selectedApplication.current_stage && (
+              <Descriptions.Item label="Current Stage">{selectedApplication.current_stage.role_type}</Descriptions.Item>
+            )}
+            {selectedApplication.address && (
+              <>
+                <Descriptions.Item label="Address">
+                  {`${selectedApplication.address.address}, ${selectedApplication.address.sachivalayam}, ${selectedApplication.address.mandal}, ${selectedApplication.address.district}, ${selectedApplication.address.state} - ${selectedApplication.address.pincode}`}
+                </Descriptions.Item>
+              </>
+            )}
+          </Descriptions>
+        ) : (
+          <Spin />
+        )}
+      </Modal>
+    </>
+  );
+
+  return (
+    <DashboardLayout loading={loading}>
+      {content}
+    </DashboardLayout>
   );
 };
 

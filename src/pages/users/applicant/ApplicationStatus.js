@@ -1,160 +1,167 @@
-// Move the content from src/pages/ApplicationStatus.js to here
-// Update imports to use relative paths
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import {
   Card,
   Steps,
-  Timeline,
   Button,
   Input,
   message,
-  Descriptions,
-  Layout,
-  Menu,
-  Avatar,
-  Typography
+  Typography,
+  Spin,
+  Tag,
+  Space
 } from 'antd';
-import {
-  SearchOutlined,
-  UserOutlined,
-  HomeOutlined,
-  PlusCircleOutlined,
-  FileTextOutlined,
-  FileSearchOutlined,
-  BarsOutlined,
-  LogoutOutlined,
-  BellOutlined
-} from '@ant-design/icons';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { SearchOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { UserContext } from '../../../components/userContext';
-import '../../../styles/Dashboard.css';
+import DashboardLayout from '../../../components/layout/DashboardLayout';
 
-const { Step } = Steps;
-const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
 
 const ApplicationStatus = () => {
   const [applicationId, setApplicationId] = useState('');
-  const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [applicationData, setApplicationData] = useState(null);
   const { token, logout } = useContext(UserContext);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
 
-  const menuItems = [
-    {
-      key: 'home',
-      icon: <HomeOutlined />,
-      label: 'Home',
-      onClick: () => navigate('/applicant')
-    },
-    {
-      key: 'new-application',
-      icon: <PlusCircleOutlined />,
-      label: 'Create New Application',
-      onClick: () => navigate('/applicant/new-application')
-    },
-    {
-      key: 'my-applications',
-      icon: <FileTextOutlined />,
-      label: 'My Applications',
-      onClick: () => navigate('/applicant/applications')
-    },
-    {
-      key: 'application-status',
-      icon: <FileSearchOutlined />,
-      label: 'Application Status',
-      onClick: () => navigate('/applicant/status')
-    },
-    {
-      key: 'reports',
-      icon: <BarsOutlined />,
-      label: 'Reports',
-      onClick: () => navigate('/applicant/reports')
+  const handleTrack = async () => {
+    if (!applicationId) {
+      message.error('Please enter an application ID');
+      return;
     }
-  ];
 
-  // Your existing application status logic here
+    try {
+      setTrackingLoading(true);
+      const response = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/application_status/${applicationId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      setApplicationData(response.data.application);
+      message.success('Application status retrieved successfully');
+    } catch (error) {
+      console.error('Error fetching application status:', error);
+      message.error('Failed to fetch application status');
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchApplicationStatus = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `${process.env.REACT_APP_BACKEND_URL}/api/application-status/${applicationId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        setApplicationData(response.data);
+      } catch (error) {
+        console.error('Error fetching application status:', error);
+        if (error.response?.status === 401) {
+          message.error('Session expired. Please login again.');
+          logout();
+        } else {
+          message.error('Failed to fetch application status. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (applicationId) {
+      fetchApplicationStatus();
+    }
+  }, [applicationId, token, logout]);
+
+  const getStepStatus = (roleType) => {
+    if (!applicationData) return 'wait';
+    
+    const stages = ['SVRO', 'MVRO', 'RI', 'MRO'];
+    const currentIndex = stages.indexOf(applicationData.current_stage.role_type);
+    const roleIndex = stages.indexOf(roleType);
+
+    if (currentIndex === -1) return 'wait';
+    if (roleIndex < currentIndex) return 'finish';
+    if (roleIndex === currentIndex) return 'process';
+    return 'wait';
+  };
+
+  const content = (
+    <>
+      <Title level={2}>Track Application</Title>
+      <Card style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+          <Input
+            placeholder="Enter Application ID"
+            value={applicationId}
+            onChange={e => setApplicationId(e.target.value)}
+            style={{ maxWidth: '300px' }}
+          />
+          <Button 
+            type="primary" 
+            icon={<SearchOutlined />} 
+            onClick={handleTrack}
+            loading={trackingLoading}
+          >
+            Track
+          </Button>
+        </div>
+
+        {applicationData && (
+          <div>
+            <Card title="Application Details" style={{ marginBottom: 24 }}>
+              <div style={{ marginBottom: 24 }}>
+                <p><strong>Application ID:</strong> {applicationData.application_id}</p>
+                <p><strong>Full Name:</strong> {applicationData.full_name}</p>
+                <p>
+                  <strong>Status:</strong>{' '}
+                  <Tag color={
+                    applicationData.status === 'PENDING' ? 'gold' :
+                    applicationData.status === 'APPROVED' ? 'green' :
+                    applicationData.status === 'REJECTED' ? 'red' : 'default'
+                  }>
+                    {applicationData.status}
+                  </Tag>
+                </p>
+                <p><strong>Current Stage:</strong> {applicationData.current_stage.role_type}</p>
+              </div>
+
+              <Steps
+                current={['SVRO', 'MVRO', 'RI', 'MRO'].indexOf(applicationData.current_stage.role_type)}
+                items={[
+                  {
+                    title: 'SVRO',
+                    status: getStepStatus('SVRO'),
+                  },
+                  {
+                    title: 'MVRO',
+                    status: getStepStatus('MVRO'),
+                  },
+                  {
+                    title: 'RI',
+                    status: getStepStatus('RI'),
+                  },
+                  {
+                    title: 'MRO',
+                    status: getStepStatus('MRO'),
+                  },
+                ]}
+              />
+            </Card>
+          </div>
+        )}
+      </Card>
+    </>
+  );
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={(value) => setCollapsed(value)}
-        style={{
-          overflow: 'auto',
-          height: '100vh',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-        }}
-      >
-        <div className="logo">
-          <Avatar size={48} icon={<UserOutlined />} />
-        </div>
-        <Menu
-          theme="dark"
-          selectedKeys={['application-status']}
-          mode="inline"
-          items={menuItems}
-        />
-        <Menu
-          theme="dark"
-          selectable={false}
-          mode="inline"
-          items={[
-            {
-              key: 'logout',
-              icon: <LogoutOutlined />,
-              label: 'Logout',
-              onClick: logout,
-            },
-          ]}
-          style={{ position: 'absolute', bottom: 0, width: '100%' }}
-        />
-      </Sider>
-      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s' }}>
-        <Header style={{ paddingTop: 15, background: '#fff' }}>
-          <div style={{ display: 'flex', alignItems: 'center', padding: '0 24px' }}>
-            <Title level={4} style={{ margin: 0, flex: 1 }}>
-              Application Status
-            </Title>
-            <BellOutlined style={{ fontSize: '20px', marginRight: '24px' }} />
-            <Avatar icon={<UserOutlined />} />
-          </div>
-        </Header>
-        <Content style={{ margin: '24px 16px', padding: 24, background: '#fff' }}>
-          <Card>
-            <div style={{ display: 'flex', marginBottom: '24px' }}>
-              <Input
-                placeholder="Enter Application ID"
-                value={applicationId}
-                onChange={(e) => setApplicationId(e.target.value)}
-                style={{ marginRight: '16px' }}
-              />
-              <Button
-                type="primary"
-                icon={<SearchOutlined />}
-                onClick={() => {/* Your search logic */}}
-                loading={loading}
-              >
-                Track
-              </Button>
-            </div>
-
-            {application && (
-              <>
-                {/* Your application status display content */}
-              </>
-            )}
-          </Card>
-        </Content>
-      </Layout>
-    </Layout>
+    <DashboardLayout loading={loading}>
+      {content}
+    </DashboardLayout>
   );
 };
 
