@@ -24,7 +24,7 @@ const Login = () => {
           navigate('/admin')
         }
         else if(res.data.role === 'SVRO'){
-          navigate('/svro2')
+          navigate('/svro')
         }
         else if(res.data.role === 'MVRO'){
           navigate('/mvro')

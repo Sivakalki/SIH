@@ -112,7 +112,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
           </Form.Item>
 
           <Form.Item
-            name="religion"
+            name="religion_id"
             label="Religion"
             rules={[
               { required: true, message: 'Please select your religion' }
@@ -120,7 +120,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
           >
             <Select placeholder="Select your religion">
               {religions.map(religion => (
-                <Option key={religion.religion_id} value={religion.name}>
+                <Option key={religion.religion_id} value={religion.religion_id}>
                   {religion.name}
                 </Option>
               ))}
@@ -128,7 +128,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
           </Form.Item>
 
           <Form.Item
-            name="caste"
+            name="caste_id"
             label="Caste"
             rules={[
               { required: true, message: 'Please select your caste' }
@@ -136,7 +136,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
           >
             <Select placeholder="Select your caste">
               {castes.map(caste => (
-                <Option key={caste.caste_id} value={caste.name}>
+                <Option key={caste.caste_id} value={caste.caste_id}>
                   {caste.name}
                 </Option>
               ))}
@@ -154,7 +154,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
           </Form.Item>
 
           <Form.Item
-            name="parentReligion"
+            name="parentReligion_id"
             label="Parent Religion"
             rules={[
               { required: true, message: 'Please select parent religion' }
@@ -162,7 +162,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
           >
             <Select placeholder="Select parent religion">
               {religions.map(religion => (
-                <Option key={religion.religion_id} value={religion.name}>
+                <Option key={religion.religion_id} value={religion.religion_id}>
                   {religion.name}
                 </Option>
               ))}

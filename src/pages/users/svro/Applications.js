@@ -1,517 +1,542 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Select, Button, Space, Typography, message, Card, Form, Input, Drawer, Avatar, Modal, Badge, Spin, Descriptions, Tag } from 'antd';
-import { EyeOutlined, UserOutlined, LogoutOutlined, FileTextOutlined, BellOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { Line } from '@ant-design/plots';
-import { Link } from 'react-router-dom';
-import StatisticCard from './utils/statistic-card';
-import NotificationDrawer from './utils/notification-drawer';
-import { UserContext } from '../../../components/userContext';
-import { useNavigate } from 'react-router-dom';
+import { Layout, Menu, Table, Button, Typography, message, Card, Avatar, Badge, Modal, Descriptions, Spin, Select, Form, Input, Drawer } from 'antd';
+import { 
+  HomeOutlined, 
+  FileTextOutlined, 
+  BarsOutlined,
+  BellOutlined,
+  UserOutlined,
+  LogoutOutlined,
+  EyeOutlined 
+} from '@ant-design/icons';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { motion } from 'framer-motion';
+import { UserContext } from '../../../components/userContext';
+import SvroLayout from '../../../components/layout/SvroLayout';
 
-
+const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
-const { Option } = Select;
 
-const NavItem = ({ to, children, isActive, onClick }) => (
-    <motion.div
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className={`px-4 py-2 rounded-md cursor-pointer ${isActive ? 'bg-secondary text-white' : 'text-white hover:bg-secondary/10'
-            }`}
-        onClick={onClick} // Attach onClick for navigation
-    >
-        <Link to={to}>{children}</Link>
-    </motion.div>
-);
-
-// Mock notifications data
-const mockNotifications = [
-    { id: 1, message: 'New application submitted', read: false },
-    { id: 2, message: 'Application #1234 approved', read: true },
-    { id: 3, message: 'Reminder: Review pending applications', read: false },
-];
-
+const handleApiError = (error) => {
+    if (error.response) {
+        if (error.response.status === 401) {
+            message.error('Session expired. Please login again.');
+            return true;
+        }
+        message.error(error.response.data.message || 'An error occurred');
+    } else if (error.request) {
+        message.error('Network error. Please check your connection.');
+    } else {
+        message.error('An error occurred');
+    }
+    return false;
+};
 
 export default function Applications() {
-    const [applications, setApplications] = useState([]);
-    const [selectedApplication, setSelectedApplication] = useState(null);
-    const [profileDrawerVisible, setProfileDrawerVisible] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [notificationDrawerVisible, setNotificationDrawerVisible] = useState(false);
-    const [drawerVisible, setDrawerVisible] = useState(false);
-    const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
-    const [userData, setUserData] = useState(null);
-    const [notifications, setNotifications] = useState(mockNotifications);
-    const { token, logout } = useContext(UserContext);
-    const [loading, setLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState("");
-    const [userLoading, setUserLoading] = useState(true);
-    const [activeNavItem, setActiveNavItem] = useState('applications');
-    const [report, SetReport] = useState([]);
-    const [role, setRole] = useState("");
-    const navigate = useNavigate()
-    const [filterStatus, setFilterStatus] = useState('All');
-    const [loadingApplicationId, setLoadingApplicationId] = useState(null);
-    const [resentApplicationDrawerVisible, setResentApplicationDrawerVisible] = useState(false);
-    useEffect(() => {
-        if (!token) {
-            setErrorMessage("You are not logged in. Please log in to access this page.");
-            setUserLoading(false);
-            return;
-        }
-        fetchData();
-        fetchApplications();
-    }, [token]);
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingButtons, setLoadingButtons] = useState({});
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [applicationDetails, setApplicationDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [currentStageFilter, setCurrentStageFilter] = useState(null);
+  const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
+  const [resendDrawerVisible, setResendDrawerVisible] = useState(false);
+  const [resendDescription, setResendDescription] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const { token, logout } = useContext(UserContext);
+  const [userData, setUserData] = useState(null);
+  const [role, setRole] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [userLoading, setUserLoading] = useState(true);
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        if (userData && role && role !== "SVRO") {
-            setErrorMessage("Access denied. Only SVROs are allowed to view this page.");
-            setUserLoading(false);
-        }
-    }, [role]);
-
-    const fetchApplications = async () => {
-        setLoading(true);
-        try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/pending_applications`, {
-                headers: {
-                    Authorization: `Bearer ${token}`, // Include token in Authorization header
-                },
-            });
-            console.log(response.data, " are the applications")
-            setApplications(response.data.data);
-        } catch (error) {
-            message.error('Failed to fetch applications');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchData = async () => {
-        try {
-            const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/users/user`, {
-                headers: {
-                    Authorization: `Bearer ${token}`, // Include token in Authorization header
-                },
-            });
-            setUserData(res.data.user);
-            setRole(res.data.role);
-            console.log(res, " is the response data")
-        } catch (e) {
-            setErrorMessage("Token expired. Login again")
-            console.error('There is an error in getting profile details', e);
-            setUserData(null); // Reset userData if the request fails
-        } finally {
-            setUserLoading(false); // Stop loading after data is fetched
-        }
-    };
-    if (userLoading) {
-        // Display a loading spinner while user data is being fetched
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
-                <Spin size="large" />
-                <Title level={3} style={{ marginTop: '20px' }}>Loading...</Title>
-            </div>
-        );
+  useEffect(() => {
+    if (!token) {
+      setErrorMessage("You are not logged in. Please log in to access this page.");
+      setUserLoading(false);
+      return;
     }
+    fetchData();
+    fetchApplications();
+  }, [token]);
 
-    if (errorMessage) {
-        return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
-                <Title level={3} style={{ color: '#f5222d' }}>{errorMessage}</Title>
-                {<Button type="primary" onClick={() => navigate('/login')}>Go to Login</Button>}
-            </div>
-        );
+  useEffect(() => {
+    if (userData && role && role !== "SVRO") {
+      setErrorMessage("Access denied. Only SVROs are allowed to view this page.");
+      setUserLoading(false);
     }
+  }, [role]);
 
-    const columns = [
-        {
-            title: 'Application ID',
-            dataIndex: 'application_id',
-            key: 'id',
+  const fetchApplications = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/all_applications`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        {
-            title: 'Name',
-            dataIndex: 'full_name',
-            key: 'name',
-        },
-        {
-            title: 'Status',
-            dataIndex: 'role_type',
-            key: 'role_type',
-            render: (status) => (
-                <span style={{
-                    color: status === 'pending' ? '#faad14' : status === 'completed' ? '#52c41a' : '#f5222d',
-                    textTransform: 'capitalize',
-                    fontWeight: 'bold',
-                }}>
-                    {status}
-                </span>
-            ),
-        },
-        {
-            title: 'Action',
-            key: 'action',
-            render: (_, record) => (
-                <Button
-                    icon={<EyeOutlined />}
-                    onClick={() => handleViewApplication(record.application_id)}
-                    loading={loadingApplicationId === record.application_id}
-                >
-                    View Full Application
-                </Button>
-            ),
-        },
-    ];
-
-    const handleViewApplication = async (id) => {
-        setLoadingApplicationId(id);
-        try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-            setSelectedApplication(response.data.data);
-            SetReport(response.data.report)
-            setModalVisible(true);
-        } catch (error) {
-            message.error('Failed to load application details');
-        } finally {
-            setLoadingApplicationId(null);
-        }
-    };
-
-    const openDrawer = () => {
-        setDrawerVisible(true);
-    };
-
-    const closeDrawer = () => {
-        setDrawerVisible(false);
-    };
-
-    const openRemarksForm = () => {
-        setRemarksDrawerVisible(true);
-    };
-
-    const openProfileDrawer = () => {
-        setProfileDrawerVisible(true);
-    };
-
-    const closeProfileDrawer = () => {
-        setProfileDrawerVisible(false);
-    };
-
-    const openNotificationDrawer = () => {
-        setNotificationDrawerVisible(true);
-    };
-
-    const closeNotificationDrawer = () => {
-        setNotificationDrawerVisible(false);
-    };
-
-    const handleFilterChange = (value) => {
-        setFilterStatus(value);
-    };
-
-    const filteredApplications = applications.filter(app =>
-        filterStatus === 'All' || app.role_type === filterStatus
-    );
-
-    const unreadNotificationsCount = notifications.filter(n => !n.read).length;
-    const handleNavigate = (path) => {
-        const basePath = "/svro2"; // Define your base path
-        if (path === 'dashboard') {
-            console.log("ented here")
-            navigate(`${basePath}`)
-        } else {
-            console.log("NEthered herre")
-            navigate(`${basePath}/${path}`);
-        }
+      });
+      setApplications(response.data.data);
+    } catch (error) {
+      if (handleApiError(error)) return;
+      message.error('Failed to fetch applications');
+    } finally {
+      setLoading(false);
     }
-    const submitRemarks = async (values) => {
-        try {
-            console.log(values);
-            await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/mvro/create_report/${selectedApplication.application_id}`,
-                { description: values.remarks },
-                // This is the request body
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            message.success('Remarks submitted successfully');
-            setModalVisible(false);
-            fetchApplications(); // Refresh the applications list
-        } catch (error) {
-            console.error('Error submitting remarks:', error);
-            message.error('Failed to submit remarks');
+  };
+
+  const fetchData = async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/users/user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setUserData(res.data.user);
+      setRole(res.data.role);
+    } catch (e) {
+      if (handleApiError(e)) return;
+      setErrorMessage("Token expired. Login again");
+      console.error('Error getting profile details:', e);
+      setUserData(null);
+    } finally {
+      setUserLoading(false);
+    }
+  };
+
+  const handleViewApplication = async (application) => {
+    setLoadingButtons(prev => ({ ...prev, [application.app_id]: true }));
+    setModalVisible(true);
+    setSelectedApplication(application);
+    setLoadingDetails(true);
+    
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/application/${application.app_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-    };
+      );
+      setApplicationDetails(response.data.data);
+    } catch (error) {
+      if (handleApiError(error)) return;
+      message.error('Failed to fetch application details');
+    } finally {
+      setLoadingDetails(false);
+      setLoadingButtons(prev => ({ ...prev, [application.app_id]: false }));
+    }
+  };
 
-    const submitResentApplication = async (values) => {
-        try {
-            await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/svro/resent_application/${selectedApplication.application_id}`,
-                { description: values.description },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            message.success('Resent application submitted successfully');
-            setResentApplicationDrawerVisible(false);
-            fetchApplications(); // Refresh the applications list
-        } catch (error) {
-            message.error('Failed to submit resent application');
+  const handleStageFilterChange = (value) => {
+    setCurrentStageFilter(value);
+  };
+
+  const filteredApplications = applications.filter(app => {
+    if (!currentStageFilter || currentStageFilter === 'ALL') return true;
+    return app.current_stage?.role_type === currentStageFilter;
+  });
+
+  const columns = [
+    {
+      title: 'Application ID',
+      dataIndex: 'app_id',
+      key: 'app_id',
+    },
+    {
+      title: 'Full Name',
+      dataIndex: 'full_name',
+      key: 'full_name',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => (
+        <Badge 
+          status={status === 'PENDING' ? 'processing' : 'success'} 
+          text={status}
+        />
+      ),
+    },
+    {
+      title: 'Current Stage',
+      dataIndex: 'current_stage',
+      key: 'current_stage',
+      render: (stage) => stage || 'Not Started',
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      render: (_, record) => (
+        <Button 
+          type="primary" 
+          icon={<EyeOutlined />}
+          loading={loadingButtons[record.app_id]}
+          onClick={() => handleViewApplication(record)}
+        >
+          View
+        </Button>
+      ),
+    },
+  ];
+
+  const openRemarksForm = () => {
+    setRemarksDrawerVisible(true);
+  };
+
+  const closeRemarksDrawer = () => {
+    setRemarksDrawerVisible(false);
+  };
+
+  const submitRemarks = async (values) => {
+    try {
+      await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/svro/create_report/${applicationDetails.application_id}`,
+        { description: values.remarks },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-    };
+      );
+      message.success('Remarks submitted successfully');
+      setRemarksDrawerVisible(false);
+      fetchApplications();
+    } catch (error) {
+      if (handleApiError(error)) return;
+      console.error('Error submitting remarks:', error);
+      message.error('Failed to submit remarks');
+    }
+  };
 
-    return (
-        <div className="vro-dashboard bg-background min-h-screen">
-            <nav className="bg-primary text-white p-4 flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                    <img src="/certitrack.jpg" alt="CertiTrack Logo" className="h-8 w-8 logo" />
-                    <Title level={3} className="text-white m-0">CertiTrack</Title>
-                </div>
-                <div className="flex items-center space-x-4">
-                    <NavItem to="/dashboard" isActive={activeNavItem === 'dashboard'} onClick={() => handleNavigate('dashboard')}>Dashboard</NavItem>
-                    <NavItem to="/applications" isActive={activeNavItem === 'applications'} onClick={() => handleNavigate('applications')}>Applications</NavItem>
-                    <NavItem to="/field-verification" isActive={activeNavItem === 'field-verification'} onClick={() => handleNavigate('field-verification')}>Field Verification</NavItem>
-                    <NavItem to="/myReports" isActive={activeNavItem === 'myReports'} onClick={() => handleNavigate('myReports')}>MyReports</NavItem>
-                </div>
-                <div className="flex items-center space-x-4">
-                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                        <Button type="text" icon={<QuestionCircleOutlined />} className="text-white" />
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                        <Badge count={unreadNotificationsCount} overflowCount={99}>
-                            <Button type="text" icon={<BellOutlined />} onClick={openNotificationDrawer} className="text-white" aria-label="Notifications" />
-                        </Badge>
-                    </motion.div>
-                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                        <Button type="text" icon={<UserOutlined />} onClick={openProfileDrawer} className="text-white">
-                            {userData?.name}
-                        </Button>
-                    </motion.div>
-                </div>
-            </nav>
-            <Card>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <Title level={2} style={{ margin: 0, color: '#1890ff' }}>VRO Dashboard</Title>
-                    <Space>
-                        <Select
-                            defaultValue="All"
-                            style={{ width: 120 }}
-                            onChange={handleFilterChange}
-                        >
-                            <Option value="All">All</Option>
-                            <Option value="SVRO">SVRO</Option>
-                            <Option value="MVRO">MVRO</Option>
-                            <Option value="MRO">MRO</Option>
-                            <Option value="RI">RI</Option>
-                        </Select>
-                        <Button icon={<UserOutlined />} onClick={openDrawer}>Profile</Button>
-                    </Space>
-                </div>
-                <Table
-                    columns={columns}
-                    dataSource={filteredApplications}
-                    rowKey="id"
-                    pagination={{ pageSize: 10 }}
-                    style={{ overflowX: 'auto' }}
-                    loading={loading}
-                />
-            </Card>
-            <Modal
-                title={<Title level={3}>Full Application Details</Title>}
-                visible={modalVisible}
-                onCancel={() => setModalVisible(false)}
-                footer={[
-                    report === null ? (
-                        <Button key="remarks" type="primary" onClick={openRemarksForm}>
-                            Add Remarks
-                        </Button>
-                    ) : (
-                        <Button key="submitted" type="default" disabled>
-                            Report Already Submitted
-                        </Button>
-                    ),
-                    <Button key="resent" type="default" onClick={() => setResentApplicationDrawerVisible(true)}>
-                        Resent Application
-                    </Button>,
-                ]}
-                width={800}
-            >
-                {selectedApplication && (
-                    <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                        <Card title="Applicant Information" style={{ marginBottom: '16px' }}>
-                            <Descriptions column={2}>
-                                <Descriptions.Item label="Applied By">
-                                    {selectedApplication.applied_by.name}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Application ID">{selectedApplication.application_id}</Descriptions.Item>
-                                <Descriptions.Item label="Status">{selectedApplication.status}</Descriptions.Item>
-                                <Descriptions.Item label="Current Stage">{selectedApplication.current_stage.role_type}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
-
-                        <Card title="Personal Details" style={{ marginBottom: '16px' }}>
-                            <Descriptions column={2}>
-                                <Descriptions.Item label="Full Name">{selectedApplication.full_name}</Descriptions.Item>
-                                <Descriptions.Item label="Date of Birth">{new Date(selectedApplication.dob).toLocaleDateString()}</Descriptions.Item>
-                                <Descriptions.Item label="Gender">{selectedApplication.gender}</Descriptions.Item>
-                                <Descriptions.Item label="Religion">{selectedApplication.religion}</Descriptions.Item>
-                                <Descriptions.Item label="Caste">{selectedApplication.caste.caste_type}</Descriptions.Item>
-                                <Descriptions.Item label="Sub Caste">{selectedApplication.sub_caste}</Descriptions.Item>
-                                <Descriptions.Item label="Parent/Guardian">{selectedApplication.parent_guardian_type.type}: {selectedApplication.parent_guardian_name}</Descriptions.Item>
-                                <Descriptions.Item label="Marital Status">{selectedApplication.marital_status}</Descriptions.Item>
-                                <Descriptions.Item label="Aadhar Number">{selectedApplication.aadhar_num}</Descriptions.Item>
-                                <Descriptions.Item label="Phone Number">{selectedApplication.phone_num}</Descriptions.Item>
-                                <Descriptions.Item label="Email">{selectedApplication.email}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
-
-                        <Card title="Address Details" style={{ marginBottom: '16px' }}>
-                            <Descriptions column={2}>
-                                <Descriptions.Item label="Address">{selectedApplication.address.address}</Descriptions.Item>
-                                <Descriptions.Item label="Pincode">{selectedApplication.address.pincode}</Descriptions.Item>
-                                <Descriptions.Item label="State">{selectedApplication.address.state}</Descriptions.Item>
-                                <Descriptions.Item label="District">{selectedApplication.address.district}</Descriptions.Item>
-                                <Descriptions.Item label="Mandal">{selectedApplication.address.mandal}</Descriptions.Item>
-                                <Descriptions.Item label="Sachivalayam">{selectedApplication.address.sachivalayam}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
-
-                        <Card title="Proof Types" style={{ marginBottom: '16px' }}>
-                            <Descriptions column={2}>
-                                <Descriptions.Item label="Address Proof">
-                                    {selectedApplication.addressProof ? <FileTextOutlined /> : 'Not Provided'}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Caste Proof">
-                                    {selectedApplication.casteProof ? <FileTextOutlined /> : 'Not Provided'}
-                                </Descriptions.Item>
-                                <Descriptions.Item label="Date of Birth Proof">
-                                    {selectedApplication.dobProof ? <FileTextOutlined /> : 'Not Provided'}
-                                </Descriptions.Item>
-                            </Descriptions>
-                        </Card>
-
-                        <Card title="Roles Allotted">
-                            <Descriptions column={2}>
-                                <Descriptions.Item label="MVRO">User ID: {selectedApplication.mvro_user.user_id}</Descriptions.Item>
-                                <Descriptions.Item label="SVRO">User ID: {selectedApplication.svro_user.user_id}</Descriptions.Item>
-                                <Descriptions.Item label="RI">User ID: {selectedApplication.ri_user.user_id}</Descriptions.Item>
-                                <Descriptions.Item label="MRO">User ID: {selectedApplication.mro_user.user_id}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
-                    </div>
-                )}
-            </Modal>
-            <Drawer
-                title="Add Remarks"
-                placement="right"
-                onClose={() => setRemarksDrawerVisible(false)}
-                open={remarksDrawerVisible}
-                width={400}
-            >
-                <Form
-                    layout="vertical"
-                    onFinish={submitRemarks}
-                    initialValues={{
-                        remarks: "",
-                    }}
-                >
-                    <Form.Item
-                        label="Remarks"
-                        name="remarks"
-                        rules={[
-                            { required: true, message: "Please enter your remarks!" },
-                            { max: 500, message: "Remarks cannot exceed 500 characters." },
-                        ]}
-                    >
-                        <Input.TextArea rows={4} placeholder="Enter your remarks" />
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" block>
-                            Submit
-                        </Button>
-                    </Form.Item>
-                </Form>
-            </Drawer>
-            <Drawer
-                title="Resent Application"
-                placement="right"
-                onClose={() => setResentApplicationDrawerVisible(false)}
-                open={resentApplicationDrawerVisible}
-                width={400}
-            >
-                <Form
-                    layout="vertical"
-                    onFinish={submitResentApplication}
-                    initialValues={{
-                        description: "",
-                    }}
-                >
-                    <Form.Item
-                        label="Description"
-                        name="description"
-                        rules={[{ required: true, message: "Please enter your description!" }]}
-                    >
-                        <Input.TextArea rows={4} placeholder="Enter your description for the resent application" />
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" block>
-                            Submit
-                        </Button>
-                    </Form.Item>
-                </Form>
-            </Drawer>
-            <Drawer
-                title="User Profile"
-                placement="right"
-                onClose={closeProfileDrawer}
-                open={profileDrawerVisible}
-            >
-                <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                        <Avatar size={64} icon={<UserOutlined />} />
-                        <div>
-                            <h2 className="text-xl font-semibold">{userData.name}</h2>
-                            <p className="text-gray-500">{userData.role}</p>
-                        </div>
-                    </div>
-                    <div>
-                        <p className="text-sm text-gray-500">Email</p>
-                        <p>{userData.email}</p>
-                    </div>
-                    <Button block onClick={() => {
-                        message.info('Navigating to full profile page');
-                        closeProfileDrawer();
-                    }}>
-                        View Full Profile
-                    </Button>
-                    <Button danger block onClick={() => {
-                        logout();
-                        closeProfileDrawer();
-                    }}>
-                        <LogoutOutlined /> Logout
-                    </Button>
-                </div>
-            </Drawer>
-
-            <NotificationDrawer
-                visible={notificationDrawerVisible}
-                onClose={closeNotificationDrawer}
-                notifications={notifications}
-                setNotifications={setNotifications}
-            />
+  const handleTokenExpiration = () => {
+    logout();
+    Modal.error({
+      title: 'Session Expired',
+      content: (
+        <div>
+          <p>Your session has expired. Please login again to continue.</p>
+          <Button 
+            type="primary" 
+            onClick={() => navigate('/login')}
+            style={{ marginTop: '16px' }}
+          >
+            Login Again
+          </Button>
         </div>
-    );
-}
+      ),
+      okButtonProps: { style: { display: 'none' } }
+    });
+  };
 
+  const handleResendApplication = async () => {
+    if (!resendDescription.trim()) {
+      message.error('Please provide a description');
+      return;
+    }
+
+    setResendLoading(true);
+    try {
+      await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/svro/recheck/${selectedApplication.application_id}`,
+        {
+          description: resendDescription
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      message.success('Application resent successfully');
+      setResendDrawerVisible(false);
+      setResendDescription('');
+      fetchApplications(); // Refresh the applications list
+    } catch (error) {
+      if (handleApiError(error)) return;
+      message.error('Failed to resend application');
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  if (userLoading) {
+    return (
+      <SvroLayout logout={logout}>
+        <div className="flex justify-center items-center min-h-screen">
+          <Spin size="large" />
+        </div>
+      </SvroLayout>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <SvroLayout logout={logout}>
+        <div className="flex justify-center items-center min-h-screen">
+          <Title level={3} className="text-red-500">{errorMessage}</Title>
+        </div>
+      </SvroLayout>
+    );
+  }
+
+  return (
+    <SvroLayout logout={logout}>
+      <div className="mb-6">
+        <Title level={2}>Applications</Title>
+      </div>
+
+      <Card className="shadow-md">
+        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
+          <Select
+            style={{ width: 200 }}
+            placeholder="Filter by Current Stage"
+            allowClear
+            onChange={handleStageFilterChange}
+            value={currentStageFilter}
+            defaultValue="ALL"
+          >
+            <Select.Option value="ALL">All Applications</Select.Option>
+            <Select.Option value="SVRO">SVRO</Select.Option>
+            <Select.Option value="MVRO">MVRO</Select.Option>
+            <Select.Option value="RI">RI</Select.Option>
+            <Select.Option value="MRO">MRO</Select.Option>
+          </Select>
+        </div>
+        <Table 
+          columns={columns} 
+          dataSource={filteredApplications}
+          loading={loading}
+          rowKey="app_id"
+        />
+      </Card>
+
+      <Modal
+        title={<Title level={3}>Application Details</Title>}
+        visible={modalVisible}
+        onCancel={() => {
+          setModalVisible(false);
+          setApplicationDetails(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => setModalVisible(false)}>
+            Close
+          </Button>,
+          selectedApplication && selectedApplication.current_stage === "SVRO" && (
+            <Button
+              key="resend"
+              type="primary"
+              onClick={() => setResendDrawerVisible(true)}
+              style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
+            >
+              Resend Application
+            </Button>
+          ),
+          selectedApplication && selectedApplication.current_stage === "SVRO" && (
+            <Button 
+              key="remarks" 
+              type="primary" 
+              onClick={openRemarksForm}
+              style={{ marginLeft: 8 }}
+            >
+              Add Remarks
+            </Button>
+          )
+        ].filter(Boolean)}
+        width={800}
+      >
+        {loadingDetails ? (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <Spin size="large" />
+          </div>
+        ) : applicationDetails && (
+          <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+            <Card title="Personal Information" style={{ marginBottom: '16px' }}>
+              <Descriptions column={2}>
+                <Descriptions.Item label="Full Name">{applicationDetails.full_name}</Descriptions.Item>
+                <Descriptions.Item label="Application ID">{applicationDetails.application_id}</Descriptions.Item>
+                <Descriptions.Item label="Date of Birth">{new Date(applicationDetails.dob).toLocaleDateString()}</Descriptions.Item>
+                <Descriptions.Item label="Gender">{applicationDetails.gender}</Descriptions.Item>
+                <Descriptions.Item label="Religion">{applicationDetails.religion}</Descriptions.Item>
+                <Descriptions.Item label="Caste">{applicationDetails.caste?.caste_type}</Descriptions.Item>
+                <Descriptions.Item label="Sub Caste">{applicationDetails.sub_caste}</Descriptions.Item>
+                <Descriptions.Item label="Parent Religion">{applicationDetails.parent_religion}</Descriptions.Item>
+                <Descriptions.Item label="Marital Status">{applicationDetails.marital_status}</Descriptions.Item>
+                <Descriptions.Item label="Aadhar Number">{applicationDetails.aadhar_num}</Descriptions.Item>
+                <Descriptions.Item label="Phone Number">{applicationDetails.phone_num}</Descriptions.Item>
+                <Descriptions.Item label="Email">{applicationDetails.email}</Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            <Card title="Parent/Guardian Information" style={{ marginBottom: '16px' }}>
+              <Descriptions column={2}>
+                <Descriptions.Item label="Guardian Type">{applicationDetails.parent_guardian_type?.type}</Descriptions.Item>
+                <Descriptions.Item label="Guardian Name">{applicationDetails.parent_guardian_name}</Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            <Card title="Address Information" style={{ marginBottom: '16px' }}>
+              <Descriptions column={2}>
+                <Descriptions.Item label="Address">{applicationDetails.address?.address}</Descriptions.Item>
+                <Descriptions.Item label="Pincode">{applicationDetails.address?.pincode}</Descriptions.Item>
+                <Descriptions.Item label="State">{applicationDetails.address?.state}</Descriptions.Item>
+                <Descriptions.Item label="District">{applicationDetails.address?.district}</Descriptions.Item>
+                <Descriptions.Item label="Mandal">{applicationDetails.address?.mandal}</Descriptions.Item>
+                <Descriptions.Item label="Sachivalayam">{applicationDetails.address?.sachivalayam}</Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            <Card title="Documents" style={{ marginBottom: '16px' }}>
+              <Descriptions column={2}>
+                <Descriptions.Item label="Address Proof">
+                  {applicationDetails.addressProof ? (
+                    <Button type="link" onClick={() => window.open(applicationDetails.addressProof, '_blank')}>
+                      View Document
+                    </Button>
+                  ) : 'Not Uploaded'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Caste Proof">
+                  {applicationDetails.casteProof ? (
+                    <Button type="link" onClick={() => window.open(applicationDetails.casteProof, '_blank')}>
+                      View Document
+                    </Button>
+                  ) : 'Not Uploaded'}
+                </Descriptions.Item>
+                <Descriptions.Item label="DOB Proof">
+                  {applicationDetails.dobProof ? (
+                    <Button type="link" onClick={() => window.open(applicationDetails.dobProof, '_blank')}>
+                      View Document
+                    </Button>
+                  ) : 'Not Uploaded'}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            <Card title="Application Status" style={{ marginBottom: '16px' }}>
+              <Descriptions column={2}>
+                <Descriptions.Item label="Status">
+                  <Badge 
+                    status={applicationDetails.status === 'PENDING' ? 'processing' : 'success'} 
+                    text={applicationDetails.status}
+                  />
+                </Descriptions.Item>
+                <Descriptions.Item 
+                  label={
+                    <span style={{ 
+                      backgroundColor: '#1890ff',
+                      color: 'white',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      fontWeight: 'bold'
+                    }}>
+                      Current Stage
+                    </span>
+                  }
+                >
+                  <div style={{
+                    backgroundColor: '#e6f7ff',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid #91d5ff',
+                    color: '#1890ff',
+                    fontWeight: 'bold'
+                  }}>
+                    {applicationDetails.current_stage?.role_type || 'Not Started'}
+                  </div>
+                </Descriptions.Item>
+                <Descriptions.Item label="Created At">{new Date(applicationDetails.created_at).toLocaleString()}</Descriptions.Item>
+                <Descriptions.Item label="Updated At">{new Date(applicationDetails.updated_at).toLocaleString()}</Descriptions.Item>
+                {applicationDetails.rejection_reason && (
+                  <Descriptions.Item label="Rejection Reason">{applicationDetails.rejection_reason}</Descriptions.Item>
+                )}
+              </Descriptions>
+            </Card>
+
+            <Card title="Officials Information" style={{ marginBottom: '16px' }}>
+              <Descriptions column={2}>
+                <Descriptions.Item label="MVRO Details">
+                  {`${applicationDetails.mvro_user?.mandal || 'N/A'} - ${applicationDetails.mvro_user?.district || 'N/A'}`}
+                </Descriptions.Item>
+                <Descriptions.Item label="SVRO Details">
+                  {`${applicationDetails.svro_user?.mandal || 'N/A'} - ${applicationDetails.svro_user?.sachivalayam || 'N/A'}`}
+                </Descriptions.Item>
+                <Descriptions.Item label="RI Details">
+                  {`${applicationDetails.ri_user?.mandal || 'N/A'} - ${applicationDetails.ri_user?.district || 'N/A'}`}
+                </Descriptions.Item>
+                <Descriptions.Item label="MRO Details">
+                  {`${applicationDetails.mro_user?.mandal || 'N/A'} - ${applicationDetails.mro_user?.district || 'N/A'}`}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+          </div>
+        )}
+      </Modal>
+
+      <Drawer
+        title="Add Remarks"
+        placement="right"
+        onClose={closeRemarksDrawer}
+        open={remarksDrawerVisible}
+      >
+        <Form onFinish={submitRemarks}>
+          <Form.Item
+            name="remarks"
+            rules={[{ required: true, message: 'Please enter your remarks' }]}
+          >
+            <Input.TextArea rows={4} placeholder="Enter your remarks here" />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              Submit Remarks
+            </Button>
+          </Form.Item>
+        </Form>
+      </Drawer>
+
+      <Drawer
+        title="Resend Application"
+        placement="right"
+        onClose={() => {
+          setResendDrawerVisible(false);
+          setResendDescription('');
+        }}
+        visible={resendDrawerVisible}
+        width={400}
+        footer={
+          <div style={{ textAlign: 'right' }}>
+            <Button onClick={() => setResendDrawerVisible(false)} style={{ marginRight: 8 }}>
+              Cancel
+            </Button>
+            <Button 
+              type="primary" 
+              onClick={handleResendApplication}
+              loading={resendLoading}
+              style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
+            >
+              Submit
+            </Button>
+          </div>
+        }
+      >
+        <Form layout="vertical">
+          <Form.Item
+            label="Description"
+            required
+            rules={[{ required: true, message: 'Please provide a description' }]}
+          >
+            <Input.TextArea
+              rows={4}
+              value={resendDescription}
+              onChange={(e) => setResendDescription(e.target.value)}
+              placeholder="Please provide the reason for resending the application"
+            />
+          </Form.Item>
+        </Form>
+      </Drawer>
+    </SvroLayout>
+  );
+}

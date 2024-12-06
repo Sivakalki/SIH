@@ -202,9 +202,51 @@ export default function VRODashboard() {
 
   if (userLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" />
-      </div>
+      <Layout style={{ minHeight: '100vh', background: '#FFFFFF' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <Spin size="large" />
+        </div>
+      </Layout>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <Layout style={{ minHeight: '100vh', background: '#FFFFFF' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh' 
+        }}>
+          <Title level={3} style={{ color: '#f5222d', marginBottom: '24px' }}>{errorMessage}</Title>
+          <Button type="primary" onClick={() => navigate('/login')}>
+            Go to Login
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <Layout style={{ minHeight: '100vh', background: '#FFFFFF' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh' 
+        }}>
+          <Title level={3} style={{ color: '#f5222d', marginBottom: '24px' }}>
+            Unable to load user data. Please try again.
+          </Title>
+          <Button type="primary" onClick={() => navigate('/login')}>
+            Go to Login
+          </Button>
+        </div>
+      </Layout>
     );
   }
 
@@ -301,7 +343,9 @@ export default function VRODashboard() {
                     borderRadius: '20px'
                   }}
                 >
-                  <span style={{ marginLeft: '8px', color: '#FF4500' }}>{userData?.name || 'User'}</span>
+                  <span style={{ marginLeft: '8px', color: '#FF4500' }}>
+                    {userData ? userData.name : 'User'}
+                  </span>
                 </Button>
               </motion.div>
             </div>
@@ -323,16 +367,16 @@ export default function VRODashboard() {
             background: '#fff',
             borderRight: '1px solid #f0f0f0',
             overflow: 'auto',
-            height: '100vh',
+            height: 'calc(100vh - 108px)', 
             position: 'fixed',
             left: 0,
             top: 108,
-            bottom: 0,
-            zIndex: 1000
+            zIndex: 1,
+            boxShadow: '2px 0 8px rgba(0,0,0,0.1)'
           }}
           width={250}
         >
-          <div style={{ 
+          {/* <div style={{ 
             height: '64px', 
             display: 'flex', 
             alignItems: 'center',
@@ -342,13 +386,16 @@ export default function VRODashboard() {
             <Title level={4} style={{ margin: 0, color: '#4169E1' }}>
               CertiTrack
             </Title>
-          </div>
+          </div> */}
           <Menu
+
             mode="inline"
             selectedKeys={[activeNavItem]}
             style={{ 
               border: 'none',
-              padding: '16px 0'
+              padding: '16px 0',
+              marginTop:'32px'
+
             }}
             items={[
               {
@@ -377,11 +424,11 @@ export default function VRODashboard() {
           minHeight: 'calc(100vh - 108px)',
           background: '#f5f5f5'
         }}>
-          <div style={{ background: '#fff', padding: '24px', borderRadius: '8px' }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: '8px', marginTop: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
             <div className="dashboard-header">
               <div>
                 <Title level={2} className="dashboard-title">SVRO Dashboard</Title>
-                <p>Welcome, {userData?.name || 'svro5'}</p>
+                <p>Welcome, {userData?.name || 'User'}</p>
               </div>
             </div>
 
@@ -391,47 +438,45 @@ export default function VRODashboard() {
                   <Col xs={24} sm={12}>
                     <StatisticCard
                       title="Applications"
-                      count={dashboardData.totalApplications}
-                      onClick={() => navigate('/svro/applications')}
-                      status="all"
-                      backgroundColor="#F5F5F5"
-                      icon={<FileTextOutlined style={{ fontSize: '24px', opacity: 0.7 }} />}
+                      value={dashboardData.totalApplications}
+                      to="/svro/applications"
+                      backgroundColor="#e6f7ff"
+                      borderColor="#91d5ff"
+                      textColor="#1890ff"
+                      icon={<FileTextOutlined style={{ fontSize: '24px', color: '#1890ff' }} />}
                     />
                   </Col>
                   <Col xs={24} sm={12}>
                     <StatisticCard
                       title="Completed"
-                      count={dashboardData.completedApplications}
-                      onClick={() => {
-                        navigate('/svro/completed');
-                      }}
-                      status="completed"
-                      backgroundColor="#E6FFE6"
+                      value={dashboardData.completedApplications}
+                      to="/svro/completed"
+                      backgroundColor="#f6ffed"
+                      borderColor="#b7eb8f"
+                      textColor="#52c41a"
                       icon={<CheckCircleOutlined style={{ fontSize: '24px', color: '#52c41a' }} />}
                     />
                   </Col>
                   <Col xs={24} sm={12}>
                     <StatisticCard
                       title="Pending"
-                      count={dashboardData.pendingApplications}
-                      onClick={() => {
-                        navigate('/svro/pending');
-                      }}
-                      status="pending"
-                      backgroundColor="#FFF7E6"
+                      value={dashboardData.pendingApplications}
+                      to="/svro/Pending"
+                      backgroundColor="#fff7e6"
+                      borderColor="#ffd591"
+                      textColor="#faad14"
                       icon={<ClockCircleOutlined style={{ fontSize: '24px', color: '#faad14' }} />}
                     />
                   </Col>
                   <Col xs={24} sm={12}>
                     <StatisticCard
-                      title="Resent"
-                      count={dashboardData.reCheckApplications}
-                      onClick={() => {
-                        navigate('/svro/resent');
-                      }}
-                      status="resent"
-                      backgroundColor="#FFF1F0"
-                      icon={<CloseCircleOutlined style={{ fontSize: '24px', color: '#f5222d' }} />}
+                      title="Reports"
+                      value={dashboardData.reportNotificatios}
+                      to="/svro/reports"
+                      backgroundColor="#f9f0ff"
+                      borderColor="#d3adf7"
+                      textColor="#722ed1"
+                      icon={<FileSearchOutlined style={{ fontSize: '24px', color: '#722ed1' }} />}
                     />
                   </Col>
                 </Row>

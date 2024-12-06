@@ -55,12 +55,12 @@ const App = () => {
 
         {/* VRO Routes */}
         <Route path="/vro" element={<Vro />} />
-        <Route path="/svro2" element={<VRODashboard2 />} />
-        <Route path="/svro2/Completed" element={<CompletedApplications />} />
-        <Route path="/svro2/Pending" element={<PendingApplications />} />
-        <Route path="/svro2/Resent" element={<ResentApplications />} />
-        <Route path="/svro2/applications" element={<Applications />} />
-        <Route path="/svro2/myReports" element={<MyReports />} />
+        <Route path="/svro" element={<VRODashboard2 />} />
+        <Route path="/svro/Completed" element={<CompletedApplications />} />
+        <Route path="/svro/Pending" element={<PendingApplications />} />
+        <Route path="/svro/Resent" element={<ResentApplications />} />
+        <Route path="/svro/applications" element={<Applications />} />
+        <Route path="/svro/reports" element={<MyReports />} />
 
         {/* MRO Routes */}
         <Route path="/mro" element={<Mro />} />

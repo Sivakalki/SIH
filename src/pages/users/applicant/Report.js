@@ -11,18 +11,26 @@ import {
   Space,
   Tag,
   message,
-  Tooltip
+  Tooltip,
+  Modal,
+  Form,
+  Input,
+  Radio,
+  Upload
 } from 'antd';
 import {
   DownloadOutlined,
   PrinterOutlined,
   FilterOutlined,
   ReloadOutlined,
-  ExportOutlined
+  ExportOutlined,
+  UploadOutlined,
+  InboxOutlined
 } from '@ant-design/icons';
 import { UserContext } from '../../../components/userContext';
 import DashboardLayout from '../../../components/layout/DashboardLayout';
 import axios from 'axios';
+import moment from 'moment';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
@@ -38,6 +46,22 @@ const Report = () => {
     pageSize: 10,
     total: 0
   });
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [currentApplication, setCurrentApplication] = useState(null);
+  const [form] = Form.useForm();
+  const [fileList, setFileList] = useState({
+    address: [],
+    caste: [],
+    dob: []
+  });
+
+  const normFile = (e) => {
+    if (Array.isArray(e)) {
+      return e;
+    }
+    return e?.fileList;
+  };
 
   const columns = [
     {
@@ -48,14 +72,19 @@ const Report = () => {
     },
     {
       title: 'Full Name',
-      dataIndex: 'full_name',
-      key: 'full_name',
+      dataIndex: 'fullname',
+      key: 'fullname',
       sorter: true,
     },
     {
-      title: 'Submission Date',
-      dataIndex: 'submission_date',
-      key: 'submission_date',
+      title: 'Report Description',
+      dataIndex: 'reportDescription',
+      key: 'reportDescription',
+    },
+    {
+      title: 'Report Created',
+      dataIndex: 'reportCreated_at',
+      key: 'reportCreated_at',
       render: (date) => new Date(date).toLocaleDateString(),
       sorter: true,
     },
@@ -72,31 +101,121 @@ const Report = () => {
           {status}
         </Tag>
       ),
-      filters: [
-        { text: 'Pending', value: 'PENDING' },
-        { text: 'Approved', value: 'APPROVED' },
-        { text: 'Rejected', value: 'REJECTED' }
-      ],
     },
     {
-      title: 'Processing Time',
-      dataIndex: 'processing_time',
-      key: 'processing_time',
-      render: (days) => `${days} days`,
-      sorter: true,
-    },
-    {
-      title: 'Current Stage',
-      dataIndex: 'current_stage',
-      key: 'current_stage',
-      filters: [
-        { text: 'SVRO', value: 'SVRO' },
-        { text: 'MVRO', value: 'MVRO' },
-        { text: 'RI', value: 'RI' },
-        { text: 'MRO', value: 'MRO' }
-      ],
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Button 
+          type="primary"
+          onClick={() => handleEdit(record.application_id)}
+          loading={editLoading}
+        >
+          Edit Application
+        </Button>
+      ),
     }
   ];
+
+  const handleEdit = async (applicationId) => {
+    try {
+      setEditLoading(true);
+      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/edit_application/${applicationId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const formData = {
+        ...response.data,
+        ...response.data.address,
+        dob: response.data.dob ? moment(response.data.dob) : null,
+        proofs: response.data.proofs || { address: null, caste: null, dob: null }
+      };
+      
+      setCurrentApplication(response.data);
+      form.setFieldsValue(formData);
+      setEditModalVisible(true);
+    } catch (error) {
+      message.error('Failed to fetch application details');
+      console.error('Error fetching application details:', error);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleEditSubmit = async (values) => {
+    try {
+      setEditLoading(true);
+      const { 
+        address, pincode, state, district, mandal, sachivalayam, 
+        dob, proofs, ...restValues 
+      } = values;
+      
+      const formData = {
+        ...restValues,
+        dob: dob ? dob.format('YYYY-MM-DD') : null,
+        address: {
+          address,
+          pincode,
+          state,
+          district,
+          mandal,
+          sachivalayam
+        },
+        proofs: proofs || { address: null, caste: null, dob: null }
+      };
+
+      const response = await axios.put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/edit_application/${currentApplication.application_id}`,
+        formData,
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data && response.status === 200) {
+        message.success('Application updated successfully');
+        setEditModalVisible(false);
+        // Reset form and current application
+        form.resetFields();
+        setCurrentApplication(null);
+        // Refresh the table data
+        fetchReports();
+      } else {
+        throw new Error('Failed to update application');
+      }
+    } catch (error) {
+      console.error('Error updating application:', error);
+      if (error.response) {
+        // Handle specific error responses from backend
+        switch (error.response.status) {
+          case 400:
+            message.error('Invalid application data. Please check your inputs.');
+            break;
+          case 401:
+            message.error('Unauthorized. Please log in again.');
+            break;
+          case 403:
+            message.error('You do not have permission to edit this application.');
+            break;
+          case 404:
+            message.error('Application not found.');
+            break;
+          default:
+            message.error('Failed to update application. Please try again later.');
+        }
+      } else if (error.request) {
+        // Network error
+        message.error('Network error. Please check your connection.');
+      } else {
+        message.error('An unexpected error occurred. Please try again.');
+      }
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchReports();
@@ -105,7 +224,7 @@ const Report = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/reports`, {
+      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/recheck_applications`, {
         headers: { Authorization: `Bearer ${token}` },
         params: {
           startDate: dateRange?.[0]?.format('YYYY-MM-DD'),
@@ -115,14 +234,16 @@ const Report = () => {
           pageSize: pagination.pageSize
         }
       });
-      setReports(response.data.reports || []);
+      
+      // The response data is directly an array of applications
+      setReports(response.data || []);
       setPagination({
         ...pagination,
-        total: response.data.total || 0
+        total: response.data.length || 0
       });
     } catch (error) {
-      message.error('Failed to fetch reports');
-      console.error('Error fetching reports:', error);
+      message.error('Failed to fetch recheck applications');
+      console.error('Error fetching recheck applications:', error);
     } finally {
       setLoading(false);
     }
@@ -247,6 +368,205 @@ const Report = () => {
   return (
     <DashboardLayout loading={loading}>
       {content}
+      <Modal
+        title="Edit Application"
+        open={editModalVisible}
+        onCancel={() => setEditModalVisible(false)}
+        footer={null}
+        width={800}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleEditSubmit}
+          initialValues={currentApplication}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="full_name" label="Full Name">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="dob" label="Date of Birth">
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="gender" label="Gender">
+                <Select>
+                  <Select.Option value="MALE">Male</Select.Option>
+                  <Select.Option value="FEMALE">Female</Select.Option>
+                  <Select.Option value="OTHER">Other</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="religion" label="Religion">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="parent_religion" label="Parent Religion">
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="caste" label="Caste">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="sub_caste" label="Sub Caste">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="marital_status" label="Marital Status">
+                <Select>
+                  <Select.Option value="SINGLE">Single</Select.Option>
+                  <Select.Option value="MARRIED">Married</Select.Option>
+                  <Select.Option value="DIVORCED">Divorced</Select.Option>
+                  <Select.Option value="WIDOWED">Widowed</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="parent_guardian_type" label="Guardian Type">
+                <Select>
+                  <Select.Option value="FATHER">Father</Select.Option>
+                  <Select.Option value="MOTHER">Mother</Select.Option>
+                  <Select.Option value="GUARDIAN">Guardian</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="parent_guardian_name" label="Guardian Name">
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Typography.Title level={5}>Address Details</Typography.Title>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="address" label="Address">
+                <Input.TextArea />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="pincode" label="Pincode">
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="state" label="State">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="district" label="District">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="mandal" label="Mandal">
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item name="sachivalayam" label="Sachivalayam">
+            <Input />
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="phone_num" label="Phone Number">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="email" label="Email">
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="aadhar_num" label="Aadhar Number">
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Typography.Title level={5}>Proofs</Typography.Title>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name={["proofs", "address"]} label="Address Proof">
+                <Input placeholder="Address Proof URL" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name={["proofs", "caste"]} label="Caste Proof">
+                <Input placeholder="Caste Proof URL" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name={["proofs", "dob"]} label="DOB Proof">
+                <Input placeholder="DOB Proof URL" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="status" label="Status">
+                <Select disabled>
+                  <Select.Option value="PENDING">Pending</Select.Option>
+                  <Select.Option value="APPROVED">Approved</Select.Option>
+                  <Select.Option value="REJECTED">Rejected</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="current_stage" label="Current Stage">
+                <Select disabled>
+                  <Select.Option value="SVRO">SVRO</Select.Option>
+                  <Select.Option value="MVRO">MVRO</Select.Option>
+                  <Select.Option value="RI">RI</Select.Option>
+                  <Select.Option value="MRO">MRO</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {currentApplication?.rejection_reason && (
+            <Form.Item name="rejection_reason" label="Rejection Reason">
+              <Input.TextArea disabled />
+            </Form.Item>
+          )}
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={editLoading}>
+                Update Application
+              </Button>
+              <Button onClick={() => setEditModalVisible(false)}>Cancel</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </DashboardLayout>
   );
 };

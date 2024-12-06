@@ -4,6 +4,7 @@ import { EyeOutlined, UserOutlined, LogoutOutlined, FileTextOutlined } from '@an
 import axios from 'axios';
 import { UserContext } from '../../../components/userContext';
 import { useNavigate } from 'react-router-dom';
+import SvroLayout from '../../../components/layout/SvroLayout';
 
 const { Title } = Typography;
 
@@ -13,11 +14,11 @@ export default function PendingApplications() {
     const [modalVisible, setModalVisible] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [loading, setLoading] = useState(false);
-    const { token, logout } = useContext(UserContext);
-    const [userData, setUserData] = useState(null);
-    const [role, setRole] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
     const [userLoading, setUserLoading] = useState(true);
+    const [role, setRole] = useState("");
+    const [userData, setUserData] = useState(null);
+    const { token, logout } = useContext(UserContext);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -73,19 +74,23 @@ export default function PendingApplications() {
 
     if (userLoading) {
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
-                <Spin size="large" />
-                <Title level={3} style={{ marginTop: '20px' }}>Loading...</Title>
-            </div>
+            <SvroLayout logout={logout}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
+                    <Spin size="large" />
+                    <Title level={3} style={{ marginTop: '20px' }}>Loading...</Title>
+                </div>
+            </SvroLayout>
         );
     }
 
     if (errorMessage) {
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
-                <Title level={3} style={{ color: '#f5222d' }}>{errorMessage}</Title>
-                <Button type="primary" onClick={() => navigate('/login')}>Go to Login</Button>
-            </div>
+            <SvroLayout logout={logout}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
+                    <Title level={3} style={{ color: '#f5222d' }}>{errorMessage}</Title>
+                    <Button type="primary" onClick={() => navigate('/login')}>Go to Login</Button>
+                </div>
+            </SvroLayout>
         );
     }
 
@@ -99,6 +104,11 @@ export default function PendingApplications() {
             title: 'Name',
             dataIndex: 'full_name',
             key: 'name',
+        },
+        {
+            title: 'Current Stage',
+            dataIndex: 'current_stage',
+            key: 'current_stage',
         },
         {
             title: 'Status',
@@ -134,41 +144,43 @@ export default function PendingApplications() {
     };
 
     return (
-        <div className="pending-applications">
-            <Card>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <Title level={2} style={{ margin: 0, color: '#1890ff' }}>Pending Applications</Title>
-                    <Button onClick={() => navigate('/svro2')}>Back to Dashboard</Button>
-                </div>
-                <Table
-                    columns={columns}
-                    dataSource={applications}
-                    rowKey="application_id"
-                    pagination={{ pageSize: 10 }}
-                    loading={loading}
-                />
-            </Card>
-
-            <Modal
-                title={<Title level={3}>Application Details</Title>}
-                visible={modalVisible}
-                onCancel={() => setModalVisible(false)}
-                footer={null}
-                width={800}
-            >
-                {selectedApplication && (
-                    <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                        <Card title="Applicant Information" style={{ marginBottom: '16px' }}>
-                            <Descriptions column={2}>
-                                <Descriptions.Item label="Full Name">{selectedApplication.full_name}</Descriptions.Item>
-                                <Descriptions.Item label="Application ID">{selectedApplication.application_id}</Descriptions.Item>
-                                <Descriptions.Item label="Status">Pending</Descriptions.Item>
-                                <Descriptions.Item label="Current Stage">{selectedApplication.current_stage}</Descriptions.Item>
-                            </Descriptions>
-                        </Card>
+        <SvroLayout logout={logout}>
+            <div className="pending-applications">
+                <Card>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <Title level={2} style={{ margin: 0, color: '#1890ff' }}>Pending Applications</Title>
+                        <Button onClick={() => navigate('/svro')}>Back to Dashboard</Button>
                     </div>
-                )}
-            </Modal>
-        </div>
+                    <Table
+                        columns={columns}
+                        dataSource={applications}
+                        rowKey="application_id"
+                        pagination={{ pageSize: 10 }}
+                        loading={loading}
+                    />
+                </Card>
+
+                <Modal
+                    title={<Title level={3}>Application Details</Title>}
+                    visible={modalVisible}
+                    onCancel={() => setModalVisible(false)}
+                    footer={null}
+                    width={800}
+                >
+                    {selectedApplication && (
+                        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                            <Card title="Applicant Information" style={{ marginBottom: '16px' }}>
+                                <Descriptions column={2}>
+                                    <Descriptions.Item label="Full Name">{selectedApplication.full_name}</Descriptions.Item>
+                                    <Descriptions.Item label="Application ID">{selectedApplication.application_id}</Descriptions.Item>
+                                    <Descriptions.Item label="Status">Pending</Descriptions.Item>
+                                    <Descriptions.Item label="Current Stage">{selectedApplication.current_stage}</Descriptions.Item>
+                                </Descriptions>
+                            </Card>
+                        </div>
+                    )}
+                </Modal>
+            </div>
+        </SvroLayout>
     );
 }
