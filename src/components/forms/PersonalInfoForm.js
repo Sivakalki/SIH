@@ -2,6 +2,7 @@ import React from 'react';
 import { Form, Input, DatePicker, Radio, Select, Button, Space } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import moment from 'moment';
+import { Controller } from 'react-hook-form';
 
 const { Option } = Select;
 
@@ -26,217 +27,249 @@ const parentGuardianTypes = [
 ];
 
 const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, verifyingAadhar }) => {
-  const aadharNumber = Form.useWatch('aadharNumber', control);
-  const isAadharValid = aadharNumber?.length === 12;
-
-  const handleVerifyClick = () => {
-    if (isAadharValid) {
-      onAadharVerify(aadharNumber);
-    }
-  };
-
   return (
     <Space direction="vertical" style={{ width: '100%' }} size="large">
       <Form.Item
-        name="aadharNumber"
         label="Aadhar Number"
-        rules={[
-          { required: true, message: 'Please enter your Aadhar number' },
-          { 
-            pattern: /^\d{12}$/, 
-            message: 'Aadhar number must be exactly 12 digits' 
-          }
-        ]}
-        extra={isAadharVerified && (
-          <span style={{ color: '#52c41a' }}>
-            <CheckCircleOutlined /> Verified
-          </span>
-        )}
+        validateStatus={errors.aadharNumber ? "error" : ""}
+        help={errors.aadharNumber?.message}
       >
-        <Space>
-          <Input
-            placeholder="Enter 12-digit Aadhar number"
-            maxLength={12}
-            disabled={isAadharVerified}
-            style={{ width: '200px' }}
-          />
-          <Button
-            type="primary"
-            onClick={handleVerifyClick}
-            loading={verifyingAadhar}
-            disabled={!isAadharValid || isAadharVerified}
-          >
-            {isAadharVerified ? 'Verified' : 'Verify Aadhar'}
-          </Button>
-        </Space>
+        <Controller
+          name="aadharNumber"
+          control={control}
+          render={({ field }) => (
+            <Space>
+              <Input
+                {...field}
+                placeholder="Enter 12-digit Aadhar number"
+                maxLength={12}
+                disabled={isAadharVerified}
+                style={{ width: '200px' }}
+              />
+              <Button
+                type="primary"
+                onClick={() => onAadharVerify(field.value)}
+                loading={verifyingAadhar}
+                disabled={!field.value?.length === 12 || isAadharVerified}
+              >
+                {isAadharVerified ? 'Verified' : 'Verify Aadhar'}
+              </Button>
+            </Space>
+          )}
+        />
       </Form.Item>
 
       {isAadharVerified && (
         <>
           <Form.Item
-            name="fullName"
             label="Full Name"
-            rules={[
-              { required: true, message: 'Please enter your full name' }
-            ]}
+            validateStatus={errors.fullName ? "error" : ""}
+            help={errors.fullName?.message}
           >
-            <Input placeholder="Enter your full name" />
-          </Form.Item>
-
-          <Form.Item
-            name="dateOfBirth"
-            label="Date of Birth"
-            rules={[
-              { required: true, message: 'Please select your date of birth' }
-            ]}
-          >
-            <DatePicker
-              style={{ width: '100%' }}
-              format="YYYY-MM-DD"
-              placeholder="Select your date of birth"
+            <Controller
+              name="fullName"
+              control={control}
+              render={({ field }) => (
+                <Input {...field} placeholder="Enter your full name" />
+              )}
             />
           </Form.Item>
 
           <Form.Item
-            name="gender"
+            label="Date of Birth"
+            validateStatus={errors.dateOfBirth ? "error" : ""}
+            help={errors.dateOfBirth?.message}
+          >
+            <Controller
+              name="dateOfBirth"
+              control={control}
+              render={({ field }) => (
+                <DatePicker
+                  {...field}
+                  style={{ width: '100%' }}
+                  format="YYYY-MM-DD"
+                  placeholder="Select your date of birth"
+                  onChange={(date) => {
+                    const dateObj = date ? date.toDate() : null;
+                    field.onChange(dateObj);
+                  }}
+                  value={field.value ? moment(field.value) : null}
+                />
+              )}
+            />
+          </Form.Item>
+
+          <Form.Item
             label="Gender"
-            rules={[
-              { required: true, message: 'Please select your gender' }
-            ]}
+            validateStatus={errors.gender ? "error" : ""}
+            help={errors.gender?.message}
           >
-            <Radio.Group>
-              <Radio value="MALE">Male</Radio>
-              <Radio value="FEMALE">Female</Radio>
-              <Radio value="OTHER">Other</Radio>
-            </Radio.Group>
+            <Controller
+              name="gender"
+              control={control}
+              render={({ field }) => (
+                <Radio.Group {...field}>
+                  <Radio value="MALE">Male</Radio>
+                  <Radio value="FEMALE">Female</Radio>
+                  <Radio value="OTHER">Other</Radio>
+                </Radio.Group>
+              )}
+            />
           </Form.Item>
 
           <Form.Item
-            name="religion_id"
             label="Religion"
-            rules={[
-              { required: true, message: 'Please select your religion' }
-            ]}
+            validateStatus={errors.religion_id ? "error" : ""}
+            help={errors.religion_id?.message}
           >
-            <Select placeholder="Select your religion">
-              {religions.map(religion => (
-                <Option key={religion.religion_id} value={religion.religion_id}>
-                  {religion.name}
-                </Option>
-              ))}
-            </Select>
+            <Controller
+              name="religion_id"
+              control={control}
+              render={({ field }) => (
+                <Select {...field} placeholder="Select your religion">
+                  {religions.map(religion => (
+                    <Option key={religion.religion_id} value={religion.religion_id.toString()}>
+                      {religion.name}
+                    </Option>
+                  ))}
+                </Select>
+              )}
+            />
           </Form.Item>
 
           <Form.Item
-            name="caste_id"
             label="Caste"
-            rules={[
-              { required: true, message: 'Please select your caste' }
-            ]}
+            validateStatus={errors.caste_id ? "error" : ""}
+            help={errors.caste_id?.message}
           >
-            <Select placeholder="Select your caste">
-              {castes.map(caste => (
-                <Option key={caste.caste_id} value={caste.caste_id}>
-                  {caste.name}
-                </Option>
-              ))}
-            </Select>
+            <Controller
+              name="caste_id"
+              control={control}
+              render={({ field }) => (
+                <Select {...field} placeholder="Select your caste">
+                  {castes.map(caste => (
+                    <Option key={caste.caste_id} value={caste.caste_id.toString()}>
+                      {caste.name}
+                    </Option>
+                  ))}
+                </Select>
+              )}
+            />
           </Form.Item>
 
           <Form.Item
-            name="subCaste"
             label="Sub Caste"
-            rules={[
-              { required: true, message: 'Please enter your sub caste' }
-            ]}
+            validateStatus={errors.subCaste ? "error" : ""}
+            help={errors.subCaste?.message}
           >
-            <Input placeholder="Enter your sub caste" />
+            <Controller
+              name="subCaste"
+              control={control}
+              render={({ field }) => (
+                <Input {...field} placeholder="Enter your sub caste" />
+              )}
+            />
           </Form.Item>
 
           <Form.Item
-            name="parentReligion_id"
             label="Parent Religion"
-            rules={[
-              { required: true, message: 'Please select parent religion' }
-            ]}
+            validateStatus={errors.parentReligion_id ? "error" : ""}
+            help={errors.parentReligion_id?.message}
           >
-            <Select placeholder="Select parent religion">
-              {religions.map(religion => (
-                <Option key={religion.religion_id} value={religion.religion_id}>
-                  {religion.name}
-                </Option>
-              ))}
-            </Select>
+            <Controller
+              name="parentReligion_id"
+              control={control}
+              render={({ field }) => (
+                <Select {...field} placeholder="Select parent religion">
+                  {religions.map(religion => (
+                    <Option key={religion.religion_id} value={religion.religion_id.toString()}>
+                      {religion.name}
+                    </Option>
+                  ))}
+                </Select>
+              )}
+            />
           </Form.Item>
 
           <Form.Item
-            name="parentGuardianType"
             label="Parent/Guardian Type"
-            rules={[
-              { required: true, message: 'Please select parent/guardian type' }
-            ]}
+            validateStatus={errors.parentGuardianType ? "error" : ""}
+            help={errors.parentGuardianType?.message}
           >
-            <Select placeholder="Select parent/guardian type">
-              {parentGuardianTypes.map(type => (
-                <Option key={type.id} value={type.type}>
-                  {type.type}
-                </Option>
-              ))}
-            </Select>
+            <Controller
+              name="parentGuardianType"
+              control={control}
+              render={({ field }) => (
+                <Select {...field} placeholder="Select parent/guardian type">
+                  {parentGuardianTypes.map(type => (
+                    <Option key={type.id} value={type.type}>
+                      {type.type}
+                    </Option>
+                  ))}
+                </Select>
+              )}
+            />
           </Form.Item>
 
           <Form.Item
-            name="parentGuardianName"
             label="Parent/Guardian Name"
-            rules={[
-              { required: true, message: 'Please enter parent/guardian name' }
-            ]}
+            validateStatus={errors.parentGuardianName ? "error" : ""}
+            help={errors.parentGuardianName?.message}
           >
-            <Input placeholder="Enter parent/guardian name" />
+            <Controller
+              name="parentGuardianName"
+              control={control}
+              render={({ field }) => (
+                <Input {...field} placeholder="Enter parent/guardian name" />
+              )}
+            />
           </Form.Item>
 
           <Form.Item
-            name="maritalStatus"
             label="Marital Status"
-            rules={[
-              { required: true, message: 'Please select your marital status' }
-            ]}
+            validateStatus={errors.maritalStatus ? "error" : ""}
+            help={errors.maritalStatus?.message}
           >
-            <Radio.Group>
-              <Radio value="SINGLE">Single</Radio>
-              <Radio value="MARRIED">Married</Radio>
-              <Radio value="DIVORCED">Divorced</Radio>
-              <Radio value="WIDOWED">Widowed</Radio>
-            </Radio.Group>
+            <Controller
+              name="maritalStatus"
+              control={control}
+              render={({ field }) => (
+                <Radio.Group {...field}>
+                  <Radio value="SINGLE">Single</Radio>
+                  <Radio value="MARRIED">Married</Radio>
+                  <Radio value="DIVORCED">Divorced</Radio>
+                  <Radio value="WIDOWED">Widowed</Radio>
+                </Radio.Group>
+              )}
+            />
           </Form.Item>
 
           <Form.Item
-            name="phone"
             label="Phone Number"
-            rules={[
-              { required: true, message: 'Please enter your phone number' },
-              { 
-                pattern: /^\d{10}$/, 
-                message: 'Phone number must be exactly 10 digits' 
-              }
-            ]}
+            validateStatus={errors.phoneNumber ? "error" : ""}
+            help={errors.phoneNumber?.message}
           >
-            <Input placeholder="Enter your 10-digit phone number" maxLength={10} />
+            <Controller
+              name="phoneNumber"
+              control={control}
+              render={({ field }) => (
+                <Input {...field} placeholder="Enter your 10-digit phone number" maxLength={10} />
+              )}
+            />
           </Form.Item>
 
           <Form.Item
-            name="email"
             label="Email"
-            rules={[
-              { required: true, message: 'Please enter your email' },
-              { type: 'email', message: 'Please enter a valid email' },
-              {
-                pattern: /^[a-zA-Z0-9._%+-]+@gmail\.com$/,
-                message: 'Please enter a valid Gmail address'
-              }
-            ]}
+            validateStatus={errors.email ? "error" : ""}
+            help={errors.email?.message}
           >
-            <Input placeholder="Enter your Gmail address" />
+            <Controller
+              name="email"
+              control={control}
+              render={({ field }) => (
+                <Input {...field} placeholder="Enter your Gmail address" />
+              )}
+            />
           </Form.Item>
         </>
       )}

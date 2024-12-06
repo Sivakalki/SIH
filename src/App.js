@@ -12,6 +12,7 @@ import ApplicationForm from './pages/users/applicant/ApplicationForm';
 import MyApplications from './pages/users/applicant/MyApplications';
 import ApplicationStatus from './pages/users/applicant/ApplicationStatus';
 import Report from './pages/users/applicant/Report';
+import RenewCertificate from './pages/users/applicant/RenewCertificate';
 
 // Admin Pages
 import Admin from './pages/dashboards/Admin';
@@ -49,6 +50,7 @@ const App = () => {
         <Route path="/applicant/applications" element={<MyApplications />} />
         <Route path="/applicant/status" element={<ApplicationStatus />} />
         <Route path="/applicant/reports" element={<Report />} />
+        <Route path="/applicant/renewal" element={<RenewCertificate />} />
 
         {/* Admin Routes */}
         <Route path="/admin" element={<Admin />} />

@@ -39,36 +39,28 @@ const { Title } = Typography;
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB
 
 const schema = z.object({
-  aadharNumber: z.string().refine((value) => value?.replace(/\s/g, '').length === 12, {
-    message: "Aadhar number must be 12 digits",
-  }),
+  aadharNumber: z.string().min(12, "Aadhar number must be 12 digits").max(12, "Aadhar number must be 12 digits"),
   fullName: z.string().min(1, "Full name is required"),
-  dateOfBirth: z.any().refine((val) => val instanceof Date, {
-    message: "Date of birth is required"
-  }),
+  dateOfBirth: z.any().refine((val) => val instanceof Date || val === null, "Date of birth is required"),
   gender: z.string({ required_error: "Gender is required" }),
-  religion_id: z.number({ required_error: "Religion is required" }),
-  caste_id: z.number({ required_error: "Caste is required" }),
+  religion_id: z.any().refine((val) => val !== undefined && val !== null && val !== '', "Religion is required"),
+  caste_id: z.any().refine((val) => val !== undefined && val !== null && val !== '', "Caste is required"),
   subCaste: z.string().min(1, "Sub caste is required"),
-  parentReligion_id: z.number({ required_error: "Parent religion is required" }),
+  parentReligion_id: z.any().refine((val) => val !== undefined && val !== null && val !== '', "Parent religion is required"),
   parentGuardianType: z.string().min(1, "Guardian type is required"),
   parentGuardianName: z.string().min(1, "Guardian name is required"),
   maritalStatus: z.string({ required_error: "Marital status is required" }),
-  phoneNumber: z.string().min(10, "Phone number must be 10 digits"),
-  email: z.string().email("Invalid email address").refine((email) => email.endsWith("@gmail.com"), {
-    message: "Only Gmail addresses are allowed",
-  }),
-  // Address fields
-  pincode: z.string().optional(),
-  state: z.string().optional(),
-  district: z.string().optional(),
-  mandal: z.string().optional(),
-  address: z.string().optional(),
-  sachivalayam: z.string().optional(),
-  // Document proof fields
-  proofOfResidence: z.string().optional(),
-  proofOfDOB: z.string().optional(),
-  proofOfCaste: z.string().optional(),
+  phoneNumber: z.string().length(10, "Phone number must be exactly 10 digits"),
+  email: z.string().email("Invalid email address"),
+  pincode: z.string().min(1, "Pincode is required"),
+  state: z.string().min(1, "State is required"),
+  district: z.string().min(1, "District is required"),
+  mandal: z.string().min(1, "Mandal is required"),
+  address: z.string().min(1, "Address is required"),
+  sachivalayam: z.string().min(1, "Sachivalayam is required"),
+  proofOfResidence: z.string().min(1, "Proof of residence type is required"),
+  proofOfDOB: z.string().min(1, "Proof of DOB type is required"),
+  proofOfCaste: z.string().min(1, "Proof of caste type is required"),
   aadharCardImage: z.any().optional(),
   electricityBillImage: z.any().optional(),
   gasBillImage: z.any().optional(),
@@ -86,6 +78,24 @@ function ApplicationForm() {
       proofOfResidence: '',
       proofOfDOB: '',
       proofOfCaste: '',
+      aadharNumber: '',
+      fullName: '',
+      gender: '',
+      religion_id: '',
+      caste_id: '',
+      subCaste: '',
+      parentReligion_id: '',
+      parentGuardianType: '',
+      parentGuardianName: '',
+      maritalStatus: '',
+      phoneNumber: '',
+      email: '',
+      pincode: '',
+      state: '',
+      district: '',
+      mandal: '',
+      address: '',
+      sachivalayam: ''
     }
   });
 
@@ -109,124 +119,101 @@ function ApplicationForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleFinalSubmit = () => {
-    console.log("Final Submit");
+  const handleFinalSubmit = async () => {
     if (!isAadharVerified) {
       message.error('Please verify your Aadhar number before submitting');
       return;
     }
+
     setIsSubmitting(true);
-    handleSubmit(
-      async (data) => {
-        try {
-          console.log("Submitting application...", data);
 
-          const formData = new FormData();
+    try {
+      const formData = await handleSubmit(async (data) => {
+        // Create FormData object
+        const formData = new FormData();
 
-          // Convert date to string format
-          const dob = data.dateOfBirth ? data.dateOfBirth.format('YYYY-MM-DD') : null;
+        // Add personal info fields
+        formData.append('aadharNumber', data.aadharNumber || '');
+        formData.append('fullName', data.fullName || '');
+        formData.append('dateOfBirth', data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : '');
+        formData.append('gender', data.gender || '');
+        formData.append('religion_id', data.religion_id || '');
+        formData.append('caste_id', data.caste_id || '');
+        formData.append('subCaste', data.subCaste || '');
+        formData.append('parentReligion_id', data.parentReligion_id || '');
+        formData.append('parentGuardianType', data.parentGuardianType || '');
+        formData.append('parentGuardianName', data.parentGuardianName || '');
+        formData.append('maritalStatus', data.maritalStatus || '');
+        formData.append('phoneNumber', data.phoneNumber || '');
+        formData.append('email', data.email || '');
 
-          // Prepare the JSON data
-          const jsonData = {
-            full_name: data.fullName,
-            dob: dob,
-            gender: data.gender,
-            religion: data.religion_id,
-            caste: data.caste_id,
-            sub_caste: data.subCaste,
-            parent_religion: data.parentReligion_id,
-            parent_guardian_type: data.parentGuardianType,
-            parent_guardian_name: data.parentGuardianName,
-            marital_status: data.maritalStatus,
-            aadhar_num: data.aadharNumber,
-            phone_num: data.phoneNumber,
-            email: data.email,
-            addressDetails: {
-              pincode: data.pincode,
-              state: data.state,
-              district: data.district,
-              mandal: data.mandal,
-              address: data.address,
-              sachivalayam: data.sachivalayam
-            }
-          };
+        // Add address fields
+        formData.append('pincode', data.pincode || '');
+        formData.append('state', data.state || '');
+        formData.append('district', data.district || '');
+        formData.append('mandal', data.mandal || '');
+        formData.append('address', data.address || '');
+        formData.append('sachivalayam', data.sachivalayam || '');
 
-          // Append the JSON data
-          formData.append('data', JSON.stringify(jsonData));
+        // Add document proof types
+        formData.append('proofOfResidence', data.proofOfResidence || '');
+        formData.append('proofOfDOB', data.proofOfDOB || '');
+        formData.append('proofOfCaste', data.proofOfCaste || '');
 
-          // Log the data being sent
-          console.log('Sending data:', jsonData);
-
-          // Append file uploads based on proof types
-          if (data.proofOfResidence) {
-            if (data.proofOfResidence === 'aadhaar' && data.aadharCardImage?.[0]) {
-              formData.append('addressProof', data.aadharCardImage[0].originFileObj);
-              formData.append("addressProofType", "AADHAR");
-            } else if (data.proofOfResidence === 'electricity' && data.electricityBillImage?.[0]) {
-              formData.append('addressProof', data.electricityBillImage[0].originFileObj);
-              formData.append("addressProofType", "ELECTRICITY");
-            } else if (data.proofOfResidence === 'gas' && data.gasBillImage?.[0]) {
-              formData.append('addressProof', data.gasBillImage[0].originFileObj);
-              formData.append("addressProofType", "GAS");
-            }
-          }
-
-          // Add DOB proof
-          if (data.proofOfDOB) {
-            if (data.proofOfDOB === 'aadhar' && data.aadharCardImageForDOB?.[0]) {
-              formData.append('dobProof', data.aadharCardImageForDOB[0].originFileObj);
-              formData.append("dobProofType", "AADHAR");
-            } else if (data.proofOfDOB === 'pan' && data.panCardImage?.[0]) {
-              formData.append('dobProof', data.panCardImage[0].originFileObj);
-              formData.append("dobProofType", "PAN");
-            } else if (data.proofOfDOB === 'ssc' && data.sscCertificateImage?.[0]) {
-              formData.append('dobProof', data.sscCertificateImage[0].originFileObj);
-              formData.append("dobProofType", "SSC");
-            }
-          }
-
-          // Add caste proof
-          if (data.proofOfCaste) {
-            if (data.fatherCasteCertificateImage?.[0]) {
-              formData.append('casteProof', data.fatherCasteCertificateImage[0].originFileObj);
-              formData.append("casteProofType", "FATHER");
-            } else if (data.motherCasteCertificateImage?.[0]) {
-              formData.append('casteProof', data.motherCasteCertificateImage[0].originFileObj);
-              formData.append("casteProofType", "MOTHER");
-            }
-          }
-
-          const response = await axios.post(
-            `${process.env.REACT_APP_BACKEND_URL}/api/application`,
-            formData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          console.log('Application submitted successfully:', response.data);
-          message.success('Application submitted successfully');
-          navigate('/applicant/applications');
-        } catch (error) {
-          console.error('Error submitting application:', error);
-          if (error.response?.data?.message) {
-            message.error(`Error: ${error.response.data.message}`);
-          } else {
-            message.error('Failed to submit application. Please try again.');
-          }
-        } finally {
-          setIsSubmitting(false);
+        // Add document files
+        if (data.aadharCardImage?.[0]) {
+          formData.append('aadharCardImage', data.aadharCardImage[0]);
         }
-      },
-      (errors) => {
-        console.error('Validation errors:', errors);
-        message.error('Please check all required fields');
-        setIsSubmitting(false);
+        if (data.electricityBillImage?.[0]) {
+          formData.append('electricityBillImage', data.electricityBillImage[0]);
+        }
+        if (data.gasBillImage?.[0]) {
+          formData.append('gasBillImage', data.gasBillImage[0]);
+        }
+        if (data.aadharCardImageForDOB?.[0]) {
+          formData.append('aadharCardImageForDOB', data.aadharCardImageForDOB[0]);
+        }
+        if (data.panCardImage?.[0]) {
+          formData.append('panCardImage', data.panCardImage[0]);
+        }
+        if (data.sscCertificateImage?.[0]) {
+          formData.append('sscCertificateImage', data.sscCertificateImage[0]);
+        }
+        if (data.fatherCasteCertificateImage?.[0]) {
+          formData.append('fatherCasteCertificateImage', data.fatherCasteCertificateImage[0]);
+        }
+        if (data.motherCasteCertificateImage?.[0]) {
+          formData.append('motherCasteCertificateImage', data.motherCasteCertificateImage[0]);
+        }
+
+        return formData;
+      })();
+
+      // Make the API call
+      const response = await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/applications`,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      console.log('Application submitted successfully:', response.data);
+      message.success('Application submitted successfully');
+      navigate('/applicant/applications');
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      if (error.response?.data?.message) {
+        message.error(`Error: ${error.response.data.message}`);
+      } else {
+        message.error('Please fill in all required fields correctly');
       }
-    )();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const menuItems = [
