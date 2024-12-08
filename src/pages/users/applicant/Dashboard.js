@@ -131,6 +131,12 @@ const ApplicantDashboard = () => {
       onClick: () => navigate('/applicant/status')
     },
     {
+      key: 'application-renewal',
+      icon: <FileSearchOutlined />,
+      label: 'Application renewal',
+      onClick: () => navigate('/applicant/renewal')
+    },
+    {
       key: 'reports',
       icon: <BarsOutlined />,
       label: 'Reports',
