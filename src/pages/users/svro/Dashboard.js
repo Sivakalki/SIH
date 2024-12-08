@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Select, Button, Space, Typography, message, Card, Row, Col, Drawer, Avatar, Badge, Spin, Layout, Menu } from 'antd';
+import { Table, Select, Button, Space, Typography, message, Card, Row, Col, Drawer, Avatar, Badge, Spin, Layout, Menu, Calendar, Tooltip } from 'antd';
 import { 
   UserOutlined, 
   LogoutOutlined, 
@@ -12,15 +12,18 @@ import {
   HomeOutlined,
   PlusCircleOutlined,
   FileSearchOutlined,
-  BarsOutlined
+  BarsOutlined,
+  CalendarOutlined
 } from '@ant-design/icons';
 import { Line } from '@ant-design/plots';
 import StatisticCard from './utils/statistic-card';
 import NotificationDrawer from './utils/notification-drawer';
+import ApplicationDetailsModal from '../../../components/modals/ApplicationDetailsModal';
 import { UserContext } from '../../../components/userContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import dayjs from 'dayjs';
 import '../../../styles/Dashboard.css';
 
 const { Option } = Select;
@@ -142,6 +145,11 @@ export default function VRODashboard() {
     'New field verification protocol implemented'
   ]);
 
+  const [loading, setLoading] = useState(true);
+  const [scheduledApplications, setScheduledApplications] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedApplicationId, setSelectedApplicationId] = useState(null);
+
   useEffect(() => {
     if (!token) {
       setErrorMessage("You are not logged in. Please log in to access this page.");
@@ -150,6 +158,7 @@ export default function VRODashboard() {
     }
     fetchData();
     fetchDashboardData();
+    // fetchScheduledApplications();
   }, [token]);
 
   useEffect(() => {
@@ -170,6 +179,7 @@ export default function VRODashboard() {
         if (response.data) {
           console.log("Dashboard data:", response.data);
           setDashboardData(response.data);
+          setLoading(false);
         } else {
           console.error("Unexpected response format:", response);
           message.error("Invalid response from the server");
@@ -197,6 +207,112 @@ export default function VRODashboard() {
       setUserData(null); // Reset userData if the request fails
     } finally {
       setUserLoading(false); // Stop loading after data is fetched
+    }
+  };
+
+  // const fetchScheduledApplications = async () => {
+  //   try {
+  //     const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/scheduled_applications`, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+  //     if (response.data && response.data.data) {
+  //       setScheduledApplications(response.data.data);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching scheduled applications:', error);
+  //     message.error('Failed to fetch scheduled applications');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const dateCellRender = (value) => {
+    const date = value.format('YYYY-MM-DD');
+    const eventsForDate = dashboardData?.upcomingEvents?.filter(event => {
+      const eventDate = dayjs(event.date).format('YYYY-MM-DD');
+      return eventDate === date;
+    }) || [];
+
+    if (eventsForDate.length === 0) return null;
+
+    return (
+      <motion.ul
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.2 }}
+        style={{ listStyle: 'none', margin: 0, padding: 0 }}
+      >
+        {eventsForDate.map((event, index) => (
+          <motion.li
+            key={event.event_id}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Tooltip 
+              title={`Application ID: ${event.application_id}\nApplicant: ${event.applicant_name}`}
+            >
+              <div
+                style={{
+                  backgroundColor: '#1890ff',
+                  color: '#fff',
+                  borderRadius: '4px',
+                  padding: '2px 4px',
+                  marginBottom: '2px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  textOverflow: 'ellipsis',
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 2px 4px rgba(24, 144, 255, 0.2)',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.backgroundColor = '#40a9ff';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.backgroundColor = '#1890ff';
+                }}
+              >
+                <a
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedApplicationId(event.application_id);
+                    setModalVisible(true);
+                  }}
+                  style={{ color: '#fff' }}
+                >
+                  {event.applicant_name} (#{event.application_id})
+                </a>
+              </div>
+            </Tooltip>
+          </motion.li>
+        ))}
+      </motion.ul>
+    );
+  };
+
+  const calendarStyle = {
+    '.ant-picker-calendar': {
+      backgroundColor: '#ffffff',
+      borderRadius: '8px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+    },
+    '.ant-picker-cell': {
+      transition: 'all 0.3s ease',
+    },
+    '.ant-picker-cell:hover': {
+      backgroundColor: '#f0f5ff',
+    },
+    '.ant-picker-calendar-date-today': {
+      borderColor: '#1890ff',
+    },
+    '.ant-picker-cell-selected .ant-picker-calendar-date': {
+      backgroundColor: '#e6f7ff',
     }
   };
 
@@ -262,6 +378,12 @@ export default function VRODashboard() {
       icon: <FileTextOutlined />,
       label: 'Applications',
       onClick: () => navigate('/svro/applications')
+    },
+    {
+      key: 'schedule',
+      icon: <CalendarOutlined />,
+      label: 'Schedule Applications',
+      onClick: () => navigate('/svro/schedule')
     },
     {
       key: 'reports',
@@ -411,6 +533,12 @@ export default function VRODashboard() {
                 onClick: () => navigate('/svro/applications')
               },
               {
+                key: 'schedule',
+                icon: <CalendarOutlined style={{ fontSize: '18px' }} />,
+                label: 'Schedule Applications',
+                onClick: () => navigate('/svro/schedule')
+              },
+              {
                 key: 'reports',
                 icon: <BarsOutlined style={{ fontSize: '18px' }} />,
                 label: 'Reports',
@@ -432,19 +560,22 @@ export default function VRODashboard() {
               </div>
             </div>
 
-            <Row gutter={[16, 16]} className="dashboard-content">
+            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col xs={24} lg={12}>
                 <Row gutter={[16, 16]}>
                   <Col xs={24} sm={12}>
-                    <StatisticCard
-                      title="Applications"
-                      value={dashboardData.totalApplications}
-                      to="/svro/applications"
-                      backgroundColor="#e6f7ff"
-                      borderColor="#91d5ff"
-                      textColor="#1890ff"
-                      icon={<FileTextOutlined style={{ fontSize: '24px', color: '#1890ff' }} />}
-                    />
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <StatisticCard
+                        title="Total Applications"
+                        value={dashboardData.total_applications || 0}
+                        icon={<FileTextOutlined />}
+                        color="#1890ff"
+                      />
+                    </motion.div>
                   </Col>
                   <Col xs={24} sm={12}>
                     <StatisticCard
@@ -481,79 +612,128 @@ export default function VRODashboard() {
                   </Col>
                 </Row>
               </Col>
+            </Row>
+
+            <Row gutter={[16, 16]}>
+              {/* Left Column - Graph */}
               <Col xs={24} lg={12}>
-                <Card 
-                  title="Monthly Applications" 
-                  style={{ 
-                    height: '100%',
-                    minHeight: '300px'
-                  }}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                  <Line 
-                    data={dashboardData.monthlyData || [
-                      { month: 'Jan', applications: 30, year: '2023' },
-                      { month: 'Feb', applications: 45, year: '2023' },
-                      { month: 'Mar', applications: 35, year: '2023' },
-                      { month: 'Apr', applications: 50, year: '2023' },
-                      { month: 'May', applications: 40, year: '2023' },
-                      { month: 'Jun', applications: 60, year: '2023' }
-                    ]}
-                    xField="month"
-                    yField="applications"
-                    seriesField="year"
-                    smooth={true}
-                    animation={{
-                      appear: {
-                        animation: 'path-in',
-                        duration: 1000,
-                      },
-                    }}
-                    tooltip={{
-                      showMarkers: true,
-                      shared: true,
-                      showCrosshairs: true,
-                      crosshairs: {
-                        type: 'xy',
-                      },
-                    }}
-                    xAxis={{
-                      label: {
-                        autoRotate: false,
-                        style: {
-                          fill: '#666',
-                          fontSize: 12,
+                  <Card 
+                    title="Application Statistics"
+                    style={{ height: '100%' }}
+                    bodyStyle={{ height: 'calc(100% - 87px)', padding: '12px' }}
+                  >
+                    <Line 
+                      data={dashboardData.monthlyData || [
+                        { month: 'Jan', applications: 30, year: '2023' },
+                        { month: 'Feb', applications: 45, year: '2023' },
+                        { month: 'Mar', applications: 35, year: '2023' },
+                        { month: 'Apr', applications: 50, year: '2023' },
+                        { month: 'May', applications: 40, year: '2023' },
+                        { month: 'Jun', applications: 60, year: '2023' }
+                      ]}
+                      xField="month"
+                      yField="applications"
+                      seriesField="year"
+                      smooth={true}
+                      animation={{
+                        appear: {
+                          animation: 'path-in',
+                          duration: 1000,
                         },
-                      },
-                    }}
-                    yAxis={{
-                      label: {
-                        style: {
-                          fill: '#666',
-                          fontSize: 12,
+                      }}
+                      tooltip={{
+                        showMarkers: true,
+                        shared: true,
+                        showCrosshairs: true,
+                        crosshairs: {
+                          type: 'xy',
                         },
-                      },
-                      grid: {
-                        line: {
+                      }}
+                      xAxis={{
+                        label: {
+                          autoRotate: false,
                           style: {
-                            stroke: '#f0f0f0',
-                            lineWidth: 1,
-                            lineDash: [4, 4],
+                            fill: '#666',
+                            fontSize: 12,
                           },
                         },
-                      },
+                      }}
+                      yAxis={{
+                        label: {
+                          style: {
+                            fill: '#666',
+                            fontSize: 12,
+                          },
+                        },
+                        grid: {
+                          line: {
+                            style: {
+                              stroke: '#f0f0f0',
+                              lineWidth: 1,
+                              lineDash: [4, 4],
+                            },
+                          },
+                        },
+                      }}
+                      point={{
+                        size: 5,
+                        shape: 'circle',
+                        style: {
+                          fill: '#4169E1',
+                          stroke: '#fff',
+                          lineWidth: 2,
+                        },
+                      }}
+                      color="#4169E1"
+                      height={400}
+                      style={{ height: '100%' }}
+                    />
+                  </Card>
+                </motion.div>
+              </Col>
+
+              {/* Right Column - Calendar */}
+              <Col xs={24} lg={12}>
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                >
+                  <Card 
+                    title={
+                      <Space>
+                        <CalendarOutlined style={{ color: '#1890ff' }} />
+                        <span style={{ color: '#1890ff', fontWeight: 'bold' }}>
+                          Upcoming Appointments
+                        </span>
+                      </Space>
+                    }
+                    loading={loading}
+                    style={{ 
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                      height: '100%'
                     }}
-                    point={{
-                      size: 5,
-                      shape: 'circle',
-                      style: {
-                        fill: '#4169E1',
-                        stroke: '#fff',
-                        lineWidth: 2,
-                      },
+                    bodyStyle={{ 
+                      padding: '12px',
+                      height: 'calc(100% - 87px)',
+                      overflow: 'auto'
                     }}
-                    color="#4169E1"
-                  />
-                </Card>
+                  >
+                    <Calendar 
+                      dateCellRender={dateCellRender}
+                      style={{ 
+                        ...calendarStyle,
+                      }}
+                      fullscreen={false}
+                    />
+                  </Card>
+                </motion.div>
               </Col>
             </Row>
           </div>
@@ -599,6 +779,15 @@ export default function VRODashboard() {
           </Button>
         </div>
       </Drawer>
+
+      <ApplicationDetailsModal
+        visible={modalVisible}
+        applicationId={selectedApplicationId}
+        onCancel={() => {
+          setModalVisible(false);
+          setSelectedApplicationId(null);
+        }}
+      />
     </Layout>
   );
 }

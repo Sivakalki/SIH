@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Button, Space, Typography, message, Card, Drawer, Avatar, Modal, Form, Input, Spin, Descriptions } from 'antd';
+import { Table, Button, Space, Typography, message, Card, Drawer, Avatar, Modal, Form, Input, Spin, Descriptions, Badge, Empty } from 'antd';
 import { EyeOutlined, UserOutlined, LogoutOutlined, FileTextOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { UserContext } from '../../../components/userContext';
@@ -18,6 +18,12 @@ export default function PendingApplications() {
     const [userLoading, setUserLoading] = useState(true);
     const [role, setRole] = useState("");
     const [userData, setUserData] = useState(null);
+    const [applicationDetails, setApplicationDetails] = useState(null);
+    const [loadingDetails, setLoadingDetails] = useState(false);
+    const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
+    const [resendDrawerVisible, setResendDrawerVisible] = useState(false);
+    const [resendDescription, setResendDescription] = useState('');
+    const [resendLoading, setResendLoading] = useState(false);
     const { token, logout } = useContext(UserContext);
     const navigate = useNavigate();
 
@@ -70,6 +76,104 @@ export default function PendingApplications() {
         } finally {
             setUserLoading(false);
         }
+    };
+
+    const handleViewApplication = (application) => {
+        setSelectedApplication(application);
+        setModalVisible(true);
+        fetchApplicationDetails(application.application_id);
+    };
+
+    const fetchApplicationDetails = async (applicationId) => {
+        setLoadingDetails(true);
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${applicationId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            setApplicationDetails(response.data.data);
+        } catch (error) {
+            console.error('Error fetching details:', error);
+            message.error('Failed to fetch application details');
+        } finally {
+            setLoadingDetails(false);
+        }
+    };
+
+    const openRemarksForm = () => {
+        setRemarksDrawerVisible(true);
+    };
+
+    const closeRemarksDrawer = () => {
+        setRemarksDrawerVisible(false);
+    };
+
+    const submitRemarks = async (values) => {
+        try {
+            await axios.post(
+                `${process.env.REACT_APP_BACKEND_URL}/svro/create_report/${applicationDetails.application_id}`,
+                { description: values.remarks },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            message.success('Remarks submitted successfully');
+            setRemarksDrawerVisible(false);
+            fetchApplications();
+        } catch (error) {
+            if (handleApiError(error)) return;
+            console.error('Error submitting remarks:', error);
+            message.error('Failed to submit remarks');
+        }
+    };
+
+    const handleResendApplication = async () => {
+        if (!resendDescription.trim()) {
+            message.error('Please provide a description');
+            return;
+        }
+
+        setResendLoading(true);
+        try {
+            await axios.post(
+                `${process.env.REACT_APP_BACKEND_URL}/svro/recheck/${applicationDetails.application_id}`,
+                {
+                    description: resendDescription
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            message.success('Application resent successfully');
+            setResendDrawerVisible(false);
+            setResendDescription('');
+            fetchApplications(); // Refresh the applications list
+        } catch (error) {
+            if (handleApiError(error)) return;
+            message.error('Failed to resend application');
+        } finally {
+            setResendLoading(false);
+        }
+    };
+
+    const handleApiError = (error) => {
+        if (error.response) {
+            if (error.response.status === 401) {
+                message.error('Session expired. Please login again.');
+                return true;
+            }
+            message.error(error.response.data.message || 'An error occurred');
+        } else if (error.request) {
+            message.error('Network error. Please check your connection.');
+        } else {
+            message.error('An error occurred');
+        }
+        return false;
     };
 
     if (userLoading) {
@@ -138,11 +242,6 @@ export default function PendingApplications() {
         },
     ];
 
-    const handleViewApplication = (application) => {
-        setSelectedApplication(application);
-        setModalVisible(true);
-    };
-
     return (
         <SvroLayout logout={logout}>
             <div className="pending-applications">
@@ -163,23 +262,176 @@ export default function PendingApplications() {
                 <Modal
                     title={<Title level={3}>Application Details</Title>}
                     visible={modalVisible}
-                    onCancel={() => setModalVisible(false)}
-                    footer={null}
+                    onCancel={() => {
+                        setModalVisible(false);
+                        setSelectedApplication(null);
+                        setApplicationDetails(null);
+                    }}
+                    footer={[
+                        <Button 
+                            key="remarks" 
+                            type="primary" 
+                            onClick={openRemarksForm}
+                            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                            disabled={applicationDetails?.reCheck?.length > 0 && applicationDetails.reCheck[0].status !== 'COMPLETED'}
+                        >
+                            Add Remarks
+                        </Button>,
+                        <Button 
+                            key="resend" 
+                            type="primary" 
+                            onClick={() => setResendDrawerVisible(true)}
+                            style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
+                            disabled={applicationDetails?.reCheck?.length > 0}
+                        >
+                            Resend Application
+                        </Button>,
+                        <Button 
+                            key="close" 
+                            onClick={() => {
+                                setModalVisible(false);
+                                setSelectedApplication(null);
+                                setApplicationDetails(null);
+                            }}
+                        >
+                            Close
+                        </Button>
+                    ]}
                     width={800}
                 >
-                    {selectedApplication && (
-                        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                            <Card title="Applicant Information" style={{ marginBottom: '16px' }}>
-                                <Descriptions column={2}>
-                                    <Descriptions.Item label="Full Name">{selectedApplication.full_name}</Descriptions.Item>
-                                    <Descriptions.Item label="Application ID">{selectedApplication.application_id}</Descriptions.Item>
-                                    <Descriptions.Item label="Status">Pending</Descriptions.Item>
-                                    <Descriptions.Item label="Current Stage">{selectedApplication.current_stage}</Descriptions.Item>
-                                </Descriptions>
-                            </Card>
+                    {loadingDetails ? (
+                        <div style={{ textAlign: 'center', padding: '50px' }}>
+                            <Spin size="large" />
                         </div>
+                    ) : applicationDetails ? (
+                        <>
+                            <Descriptions title="Personal Information" bordered column={2}>
+                                <Descriptions.Item label="Full Name">{applicationDetails.full_name || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Date of Birth">
+                                    {applicationDetails.dob ? new Date(applicationDetails.dob).toLocaleDateString() : 'N/A'}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Gender">{applicationDetails.gender || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Marital Status">{applicationDetails.marital_status || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Religion">{applicationDetails.religion || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Caste">
+                                    {applicationDetails.caste?.caste_type || 'N/A'}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Sub Caste">{applicationDetails.sub_caste || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Parent Religion">{applicationDetails.parent_religion || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Parent/Guardian Type">
+                                    {applicationDetails.parent_guardian_type?.type || 'N/A'}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Parent/Guardian Name">{applicationDetails.parent_guardian_name || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Aadhar Number">{applicationDetails.aadhar_num || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Phone Number">{applicationDetails.phone_num || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Email">{applicationDetails.email || 'N/A'}</Descriptions.Item>
+                            </Descriptions>
+
+                            <Descriptions title="Address Details" bordered column={2} style={{ marginTop: '20px' }}>
+                                <Descriptions.Item label="Address">{applicationDetails.address?.address || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Pincode">{applicationDetails.address?.pincode || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="State">{applicationDetails.address?.state || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="District">{applicationDetails.address?.district || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Mandal">{applicationDetails.address?.mandal || 'N/A'}</Descriptions.Item>
+                                <Descriptions.Item label="Sachivalayam">{applicationDetails.address?.sachivalayam || 'N/A'}</Descriptions.Item>
+                            </Descriptions>
+
+                            {applicationDetails.reCheck && applicationDetails.reCheck.length > 0 && (
+                                <Descriptions title="Recheck Information" bordered column={1} style={{ marginTop: '20px' }}>
+                                    <Descriptions.Item label="Status">
+                                        <Badge 
+                                            status={applicationDetails.reCheck[0].status === 'PENDING' ? 'processing' : 'success'} 
+                                            text={applicationDetails.reCheck[0].status}
+                                        />
+                                    </Descriptions.Item>
+                                    <Descriptions.Item label="Description">{applicationDetails.reCheck[0].description}</Descriptions.Item>
+                                    <Descriptions.Item label="Created At">
+                                        {new Date(applicationDetails.reCheck[0].created_at).toLocaleString()}
+                                    </Descriptions.Item>
+                                    {applicationDetails.reCheck[0].status === 'COMPLETED' && (
+                                        <>
+                                            <Descriptions.Item label="Completed At">
+                                                {new Date(applicationDetails.reCheck[0].updated_at).toLocaleString()}
+                                            </Descriptions.Item>
+                                            <Descriptions.Item label="Response">
+                                                {applicationDetails.reCheck[0].response || 'No response provided'}
+                                            </Descriptions.Item>
+                                        </>
+                                    )}
+                                </Descriptions>
+                            )}
+
+                            {applicationDetails.report && applicationDetails.report.length > 0 && (
+                                <Descriptions title="Report Information" bordered column={1} style={{ marginTop: '20px' }}>
+                                    <Descriptions.Item label="Description">{applicationDetails.report[0].description}</Descriptions.Item>
+                                    <Descriptions.Item label="Created At">
+                                        {new Date(applicationDetails.report[0].created_at).toLocaleString()}
+                                    </Descriptions.Item>
+                                </Descriptions>
+                            )}
+                        </>
+                    ) : (
+                        <Empty description="No application details available" />
                     )}
                 </Modal>
+
+                {/* Add Remarks Drawer */}
+                <Drawer
+                    title="Add Remarks"
+                    placement="right"
+                    onClose={closeRemarksDrawer}
+                    open={remarksDrawerVisible}
+                >
+                    <Form onFinish={submitRemarks}>
+                        <Form.Item
+                            name="remarks"
+                            rules={[{ required: true, message: 'Please enter your remarks' }]}
+                        >
+                            <Input.TextArea rows={4} placeholder="Enter your remarks here" />
+                        </Form.Item>
+                        <Form.Item>
+                            <Button type="primary" htmlType="submit">
+                                Submit
+                            </Button>
+                        </Form.Item>
+                    </Form>
+                </Drawer>
+
+                {/* Resend Application Drawer */}
+                <Drawer
+                    title="Resend Application"
+                    placement="right"
+                    onClose={() => {
+                        setResendDrawerVisible(false);
+                        setResendDescription('');
+                    }}
+                    open={resendDrawerVisible}
+                >
+                    <Form layout="vertical">
+                        <Form.Item
+                            label="Description"
+                            required
+                            validateStatus={!resendDescription.trim() ? 'error' : ''}
+                            help={!resendDescription.trim() ? 'Please provide a description' : ''}
+                        >
+                            <Input.TextArea
+                                rows={4}
+                                value={resendDescription}
+                                onChange={(e) => setResendDescription(e.target.value)}
+                                placeholder="Enter reason for resending"
+                            />
+                        </Form.Item>
+                        <Form.Item>
+                            <Button
+                                type="primary"
+                                onClick={handleResendApplication}
+                                loading={resendLoading}
+                            >
+                                Submit
+                            </Button>
+                        </Form.Item>
+                    </Form>
+                </Drawer>
             </div>
         </SvroLayout>
     );

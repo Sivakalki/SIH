@@ -24,6 +24,7 @@ import PendingApplications from './pages/users/svro/PendingApplications';
 import ResentApplications from './pages/users/svro/ResentApplications';
 import Applications from './pages/users/svro/Applications';
 import MyReports from './pages/users/svro/MyReports';
+import ScheduleApplications from './pages/users/svro/ScheduleApplications';
 
 // MRO Pages
 import Mro from './pages/dashboards/Mro';
@@ -56,10 +57,11 @@ const App = () => {
         {/* VRO Routes */}
         <Route path="/vro" element={<Vro />} />
         <Route path="/svro" element={<VRODashboard2 />} />
-        <Route path="/svro/Completed" element={<CompletedApplications />} />
-        <Route path="/svro/Pending" element={<PendingApplications />} />
-        <Route path="/svro/Resent" element={<ResentApplications />} />
         <Route path="/svro/applications" element={<Applications />} />
+        <Route path="/svro/pending" element={<PendingApplications />} />
+        <Route path="/svro/schedule" element={<ScheduleApplications />} />
+        <Route path="/svro/completed" element={<CompletedApplications />} />
+        <Route path="/svro/Resent" element={<ResentApplications />} />
         <Route path="/svro/reports" element={<MyReports />} />
 
         {/* MRO Routes */}

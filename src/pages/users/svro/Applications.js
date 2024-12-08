@@ -121,6 +121,7 @@ export default function Applications() {
           },
         }
       );
+      console.log('Application details:', response.data);
       setApplicationDetails(response.data.data);
     } catch (error) {
       if (handleApiError(error)) return;
@@ -241,8 +242,9 @@ export default function Applications() {
 
     setResendLoading(true);
     try {
+      console.log(applicationDetails)
       await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/svro/recheck/${selectedApplication.application_id}`,
+        `${process.env.REACT_APP_BACKEND_URL}/svro/recheck/${applicationDetails.application_id}`,
         {
           description: resendDescription
         },
@@ -320,33 +322,39 @@ export default function Applications() {
         visible={modalVisible}
         onCancel={() => {
           setModalVisible(false);
+          setSelectedApplication(null);
           setApplicationDetails(null);
         }}
         footer={[
-          <Button key="close" onClick={() => setModalVisible(false)}>
-            Close
+          <Button 
+            key="remarks" 
+            type="primary" 
+            onClick={openRemarksForm}
+            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+            disabled={applicationDetails?.recheck?.status !== 'COMPLETED'}
+          >
+            Add Remarks
           </Button>,
-          selectedApplication && selectedApplication.current_stage === "SVRO" && (
-            <Button
-              key="resend"
-              type="primary"
-              onClick={() => setResendDrawerVisible(true)}
-              style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
-            >
-              Resend Application
-            </Button>
-          ),
-          selectedApplication && selectedApplication.current_stage === "SVRO" && (
-            <Button 
-              key="remarks" 
-              type="primary" 
-              onClick={openRemarksForm}
-              style={{ marginLeft: 8 }}
-            >
-              Add Remarks
-            </Button>
-          )
-        ].filter(Boolean)}
+          <Button 
+            key="resend" 
+            type="primary" 
+            onClick={() => setResendDrawerVisible(true)}
+            style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
+            disabled={applicationDetails?.recheck !== null}
+          >
+            Resend Application
+          </Button>,
+          <Button 
+            key="close" 
+            onClick={() => {
+              setModalVisible(false);
+              setSelectedApplication(null);
+              setApplicationDetails(null);
+            }}
+          >
+            Close
+          </Button>
+        ]}
         width={800}
       >
         {loadingDetails ? (
@@ -525,14 +533,14 @@ export default function Applications() {
         <Form layout="vertical">
           <Form.Item
             label="Description"
-            required
+            name="description"
             rules={[{ required: true, message: 'Please provide a description' }]}
           >
-            <Input.TextArea
-              rows={4}
+            <Input.TextArea 
+              rows={4} 
               value={resendDescription}
               onChange={(e) => setResendDescription(e.target.value)}
-              placeholder="Please provide the reason for resending the application"
+              placeholder="Enter reason for resending application"
             />
           </Form.Item>
         </Form>
