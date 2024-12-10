@@ -1,70 +1,67 @@
-import React, { useState, useContext } from 'react';
-import { Card, Button, message, Typography, Spin, Layout, Input, Form } from 'antd';
-import { useNavigate } from 'react-router-dom';
-import { UserContext } from '../../../components/userContext';
+import React, { useState } from 'react';
+import { Card, Button, message, Typography, Layout, Input, Form, Modal } from 'antd';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 const { Content } = Layout;
 
 const RenewCertificate = () => {
-  const navigate = useNavigate();
-  const { token } = useContext(UserContext);
   const [loading, setLoading] = useState(false);
-  const [certificateDetails, setCertificateDetails] = useState(null);
+  const [verifyingAadhar, setVerifyingAadhar] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const navigate = useNavigate();
+  const token = localStorage.getItem('token');
 
-  const checkCertificateStatus = async (values) => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/check-certificate/${values.aadhar_num}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.hasExistingCertificate) {
-        setCertificateDetails(response.data);
-        if (!response.data.isValid) {
-          message.warning('Your certificate has expired. You can proceed with renewal.');
-        }
-      } else {
-        message.info('No existing certificate found. Please apply for a new certificate.');
-        setCertificateDetails(null);
-      }
-    } catch (error) {
-      console.error('Error checking certificate:', error);
-      message.error('Failed to check certificate status');
-    } finally {
-      setLoading(false);
-    }
+  const handleNewApplication = () => {
+    navigate('/applicant/new-application');
   };
 
-  const handleRenewal = async () => {
+  const handleRenew = () => {
+    // Add renew logic here
+    setIsModalVisible(false);
+    message.success('Proceeding with certificate renewal...');
+  };
+
+  const verifyAadhar = async (values) => {
+    const { aadhar_num } = values;
+    
+    if (!aadhar_num) {
+      message.error('Please enter Aadhar number first');
+      return;
+    }
+
     try {
-      setLoading(true);
-      const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/renew-certificate`,
+      setVerifyingAadhar(true);
+      const response = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/check_aadhaar/${aadhar_num}`,
         {
-          aadhar_num: form.getFieldValue('aadhar_num')
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` }
         }
       );
 
-      message.success('Renewal application submitted successfully');
-      navigate('/applicant/applications');
+      if (response.data.numOfApplications === 0) {
+        message.error('No certificate found for this Aadhar number. Please create a new application.');
+        handleNewApplication();
+      } 
+      else if(response.data.numOfApplications >= 1) {
+        setIsModalVisible(true);
+        message.info('Existing certificate found for this Aadhar number');
+      }
+      else {
+        message.error('Invalid Aadhar number. Please check and try again.');
+      }
     } catch (error) {
-      console.error('Error renewing certificate:', error);
-      message.error('Failed to submit renewal application');
+      console.error('Error verifying Aadhar:', error);
+      if (error.response?.status === 401) {
+        message.error('Session expired. Please login again.');
+        // Add logout logic here if needed
+      } else {
+        message.error('Failed to verify Aadhar. Please try again.');
+      }
     } finally {
-      setLoading(false);
+      setVerifyingAadhar(false);
     }
   };
 
@@ -75,7 +72,7 @@ const RenewCertificate = () => {
         
         <Form
           form={form}
-          onFinish={checkCertificateStatus}
+          onFinish={verifyAadhar}
           layout="vertical"
         >
           <Form.Item
@@ -95,31 +92,27 @@ const RenewCertificate = () => {
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading}>
-              Check Certificate Status
+            <Button type="primary" htmlType="submit" loading={verifyingAadhar}>
+              Verify Aadhar
             </Button>
           </Form.Item>
         </Form>
 
-        {certificateDetails && (
-          <div style={{ marginTop: '24px' }}>
-            <Title level={4}>Certificate Details</Title>
-            <p><strong>Status:</strong> {certificateDetails.isValid ? 'Valid' : 'Expired'}</p>
-            <p><strong>Valid Until:</strong> {new Date(certificateDetails.validUntil).toLocaleDateString()}</p>
-            <p>{certificateDetails.message}</p>
-            
-            {!certificateDetails.isValid && (
-              <Button 
-                type="primary"
-                onClick={handleRenewal}
-                loading={loading}
-                style={{ marginTop: '16px' }}
-              >
-                Submit Renewal Application
-              </Button>
-            )}
-          </div>
-        )}
+        <Modal
+          title="Certificate Found"
+          open={isModalVisible}
+          onCancel={() => setIsModalVisible(false)}
+          footer={[
+            <Button key="back" onClick={() => setIsModalVisible(false)}>
+              Cancel
+            </Button>,
+            <Button key="renew" type="primary" onClick={handleRenew}>
+              Renew Certificate
+            </Button>,
+          ]}
+        >
+          <p>An existing certificate was found for this Aadhar number. Would you like to renew it?</p>
+        </Modal>
       </Card>
     </Content>
   );
