@@ -1,22 +1,22 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { 
-  Layout, 
-  Menu, 
-  Typography, 
-  Card, 
-  Row, 
-  Col, 
-  Badge, 
-  Button, 
-  Space, 
-  Spin, 
-  Calendar, 
+import {
+  Layout,
+  Menu,
+  Typography,
+  Card,
+  Row,
+  Col,
+  Badge,
+  Button,
+  Space,
+  Spin,
+  Calendar,
   Select,
   message,
   Avatar,
   Drawer
 } from 'antd';
-import { 
+import {
   HomeOutlined,
   FileTextOutlined,
   CalendarOutlined,
@@ -78,8 +78,8 @@ const monthRanges = {
 
 const NewsTicker = ({ news }) => {
   return (
-    <div style={{ 
-      overflow: 'hidden', 
+    <div style={{
+      overflow: 'hidden',
       whiteSpace: 'nowrap',
       background: '#4169E1',
       padding: '8px 0',
@@ -89,7 +89,7 @@ const NewsTicker = ({ news }) => {
       <motion.div
         initial={{ x: "100%" }}
         animate={{ x: "-100%" }}
-        transition={{ 
+        transition={{
           duration: 20,
           repeat: Infinity,
           ease: "linear"
@@ -125,6 +125,7 @@ export default function MVRODashboard() {
     reportNotifications: 0,
     reCheckApplications: 0,
     reportSubmissions: 0,
+    readyToReview: 0,
     monthlyData: []
   });
   const [selectedYear, setSelectedYear] = useState('2023');
@@ -213,6 +214,16 @@ export default function MVRODashboard() {
     },
   };
 
+  const openProfileDrawer = () => {
+    setProfileDrawerVisible(true);
+  };
+
+  const handleLogout = () => {
+    logout();
+    message.success('Logged out successfully!');
+    navigate('/login');
+  };
+
   if (userLoading) {
     // Display a loading spinner while user data is being fetched
     return (
@@ -238,10 +249,10 @@ export default function MVRODashboard() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <div className="news-ticker" style={{ 
-        background: '#4169E1', 
-        color: 'white', 
-        padding: '28px', 
+      <div className="news-ticker" style={{
+        background: '#4169E1',
+        color: 'white',
+        padding: '28px',
         textAlign: 'center',
         marginBottom: '2px',
         width: '100%',
@@ -256,7 +267,7 @@ export default function MVRODashboard() {
         <motion.div
           initial={{ x: "100%" }}
           animate={{ x: "-100%" }}
-          transition={{ 
+          transition={{
             duration: 20,
             repeat: Infinity,
             ease: "linear"
@@ -268,9 +279,9 @@ export default function MVRODashboard() {
       </div>
 
       <Layout style={{ minHeight: '100vh', marginTop: '80px' }}>
-        <Sider 
+        <Sider
           collapsible={false}
-          style={{ 
+          style={{
             background: '#fff',
             boxShadow: '1px 0 0 0 #f0f0f0',
             position: 'fixed',
@@ -281,12 +292,12 @@ export default function MVRODashboard() {
           }}
           width={250}
         >
-          <div style={{ 
+          <div style={{
             padding: '16px 24px',
             borderBottom: '1px solid #f0f0f0'
           }}>
-            <Title level={3} style={{ 
-              margin: 0, 
+            <Title level={3} style={{
+              margin: 0,
               color: '#1890ff',
               fontWeight: 600,
               letterSpacing: '0.5px'
@@ -310,10 +321,11 @@ export default function MVRODashboard() {
                 label: 'Applications',
               },
               {
-                key: '/mvro/field-verification',
-                icon: <CalendarOutlined />,
-                label: 'Field Verification',
+                key: '/mvro/completed',
+                icon: <FileTextOutlined />,
+                label: 'Completed Applications',
               },
+
               {
                 key: '/mvro/reports',
                 icon: <BarsOutlined />,
@@ -330,11 +342,11 @@ export default function MVRODashboard() {
         </Sider>
 
         <Layout style={{ marginLeft: '250px' }}>
-          <Header style={{ 
-            padding: '0 16px', 
-            background: '#ffffff', 
-            display: 'flex', 
-            alignItems: 'center', 
+          <Header style={{
+            padding: '0 16px',
+            background: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'flex-end',
             boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
             position: 'fixed',
@@ -353,7 +365,7 @@ export default function MVRODashboard() {
                 </Badge>
               </motion.div>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <Button type="text" icon={<UserOutlined />} onClick={() => setProfileDrawerVisible(true)}>
+                <Button type="text" icon={<UserOutlined />} onClick={openProfileDrawer}>
                   {userData?.name}
                 </Button>
               </motion.div>
@@ -369,13 +381,16 @@ export default function MVRODashboard() {
             <Row gutter={[16, 16]}>
               <Col span={10}>
                 <Space direction="vertical" style={{ width: '100%' }} size={16}>
-                  <Card 
-                    style={{ 
+                  
+                  <Card
+                    style={{
                       background: '#f5f5f5',
                       borderRadius: '12px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                     }}
                     bodyStyle={{ padding: '24px' }}
+                    onClick={() => navigate('/mvro/applications')}
+                    hoverable
                   >
                     <Space direction="vertical" size={8}>
                       <Space size={12}>
@@ -388,13 +403,36 @@ export default function MVRODashboard() {
                     </Space>
                   </Card>
 
-                  <Card 
-                    style={{ 
+                  <Card
+                    style={{
+                      background: '#e6fffb',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                      cursor: 'pointer'
+                    }}
+                    bodyStyle={{ padding: '24px' }}
+                    onClick={() => navigate('/mvro/pending')}
+                    hoverable
+                  >
+                    <Space direction="vertical" size={8}>
+                      <Space size={12}>
+                        <BarChartOutlined style={{ fontSize: '24px', color: '#13c2c2' }} />
+                        <Typography.Text strong style={{ color: '#13c2c2' }}>Ready to Review</Typography.Text>
+                      </Space>
+                      <Typography.Title level={2} style={{ margin: 0, color: '#13c2c2' }}>
+                        {dashboardData.readyApplications || 0}
+                      </Typography.Title>
+                    </Space>
+                  </Card>
+                  <Card
+                    style={{
                       background: '#f6ffed',
                       borderRadius: '12px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                     }}
                     bodyStyle={{ padding: '24px' }}
+                    onClick={() => navigate('/mvro/completed')}
+                    hoverable
                   >
                     <Space direction="vertical" size={8}>
                       <Space size={12}>
@@ -407,13 +445,15 @@ export default function MVRODashboard() {
                     </Space>
                   </Card>
 
-                  <Card 
-                    style={{ 
+                  <Card
+                    style={{
                       background: '#fff7e6',
                       borderRadius: '12px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                     }}
                     bodyStyle={{ padding: '24px' }}
+                    onClick={() => navigate('/mvro/pending')}
+                    hoverable
                   >
                     <Space direction="vertical" size={8}>
                       <Space size={12}>
@@ -426,13 +466,16 @@ export default function MVRODashboard() {
                     </Space>
                   </Card>
 
-                  <Card 
-                    style={{ 
+
+                  <Card
+                    style={{
                       background: '#f9f0ff',
                       borderRadius: '12px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                     }}
                     bodyStyle={{ padding: '24px' }}
+                    onClick={() => navigate('/mvro/reports')}
+                    hoverable
                   >
                     <Space direction="vertical" size={8}>
                       <Space size={12}>
@@ -440,7 +483,7 @@ export default function MVRODashboard() {
                         <Typography.Text strong style={{ color: '#722ed1' }}>Reports</Typography.Text>
                       </Space>
                       <Typography.Title level={2} style={{ margin: 0, color: '#722ed1' }}>
-                        {dashboardData.reports}
+                        {dashboardData.reportSubmissions}
                       </Typography.Title>
                     </Space>
                   </Card>
@@ -448,9 +491,9 @@ export default function MVRODashboard() {
               </Col>
 
               <Col span={14}>
-                <Card 
-                  title="Application Statistics" 
-                  style={{ 
+                <Card
+                  title="Application Statistics"
+                  style={{
                     background: '#fff',
                     borderRadius: '12px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
@@ -464,6 +507,20 @@ export default function MVRODashboard() {
           </Content>
         </Layout>
       </Layout>
+      <Drawer
+        title="User Profile"
+        placement="right"
+        onClose={() => setProfileDrawerVisible(false)}
+        visible={profileDrawerVisible}
+        bodyStyle={{ padding: '20px' }}
+      >
+        <p style={{ fontWeight: 'bold' }}><strong>Name:</strong> {userData?.name}</p>
+        <p style={{ fontWeight: 'bold' }}><strong>Email:</strong> {userData?.email}</p>
+        <p style={{ fontWeight: 'bold' }}><strong>Role:</strong> {userData?.role}</p>
+        <Button type="primary" danger onClick={handleLogout} style={{ marginTop: '20px' }}>
+          Logout
+        </Button>
+      </Drawer>
     </div>
   );
 }

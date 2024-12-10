@@ -26,6 +26,8 @@ import ResentApplications from './pages/users/svro/ResentApplications';
 import Applications from './pages/users/svro/Applications';
 import MyReports from './pages/users/svro/MyReports';
 import ScheduleApplications from './pages/users/svro/ScheduleApplications';
+import PendingApplicationsMVRO from './pages/users/mvro/PendingApplications';
+import CompletedApplicationsMVRO from './pages/users/mvro/Completed';
 
 // MRO Pages
 import Mro from './pages/dashboards/Mro';
@@ -70,7 +72,9 @@ const App = () => {
         <Route path="/mro" element={<Mro />} />
         <Route path="/mvro" element={<MVRODashboard />} />
         <Route path="/mvro/Applications" element={<ApplicationsMvro />} />
-        <Route path="/mvro/myReports" element={<MVROMyReports />} />
+        <Route path="/mvro/pending" element={<PendingApplicationsMVRO />} />
+        <Route path='/mvro/completed' element={<CompletedApplicationsMVRO />} />
+        <Route path="/mvro/reports" element={<MVROMyReports />} />
 
         {/* DO Routes */}
         <Route path="/do" element={<Do />} />
