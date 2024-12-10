@@ -7,17 +7,17 @@ import { Controller } from 'react-hook-form';
 const { Option } = Select;
 
 const castes = [
-  { caste_id: 1, name: 'OC' },
-  { caste_id: 2, name: 'OBC' },
-  { caste_id: 3, name: 'ST' },
-  { caste_id: 4, name: 'SC' },
+  { caste_id: '1', name: 'OC' },
+  { caste_id: '2', name: 'OBC' },
+  { caste_id: '3', name: 'ST' },
+  { caste_id: '4', name: 'SC' },
 ];
 
 const religions = [
-  { religion_id: 1, name: 'HINDU' },
-  { religion_id: 2, name: 'CHRISTIAN' },
-  { religion_id: 3, name: 'MUSLIM' },
-  { religion_id: 4, name: 'NOA' },
+  { religion_id: '1', name: 'HINDU' },
+  { religion_id: '2', name: 'CHRISTIAN' },
+  { religion_id: '3', name: 'MUSLIM' },
+  { religion_id: '4', name: 'NOA' },
 ];
 
 const parentGuardianTypes = [
@@ -45,6 +45,17 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
                 maxLength={12}
                 disabled={isAadharVerified}
                 style={{ width: '200px' }}
+                type="number"
+                onKeyDown={(e) => {
+                  if (!/[0-9]/.test(e.key) &&
+                      e.key !== 'Backspace' &&
+                      e.key !== 'Delete' &&
+                      e.key !== 'ArrowLeft' &&
+                      e.key !== 'ArrowRight' &&
+                      e.key !== 'Tab') {
+                    e.preventDefault();
+                  }
+                }}
               />
               <Button
                 type="primary"
@@ -126,9 +137,17 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
               name="religion_id"
               control={control}
               render={({ field }) => (
-                <Select {...field} placeholder="Select your religion">
+                <Select
+                  {...field}
+                  showSearch
+                  placeholder="Select your religion"
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }
+                >
                   {religions.map(religion => (
-                    <Option key={religion.religion_id} value={religion.religion_id.toString()}>
+                    <Option key={religion.religion_id} value={religion.religion_id}>
                       {religion.name}
                     </Option>
                   ))}
@@ -146,9 +165,17 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
               name="caste_id"
               control={control}
               render={({ field }) => (
-                <Select {...field} placeholder="Select your caste">
+                <Select
+                  {...field}
+                  showSearch
+                  placeholder="Select your caste"
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }
+                >
                   {castes.map(caste => (
-                    <Option key={caste.caste_id} value={caste.caste_id.toString()}>
+                    <Option key={caste.caste_id} value={caste.caste_id}>
                       {caste.name}
                     </Option>
                   ))}
@@ -180,9 +207,17 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
               name="parentReligion_id"
               control={control}
               render={({ field }) => (
-                <Select {...field} placeholder="Select parent religion">
+                <Select
+                  {...field}
+                  showSearch
+                  placeholder="Select parent religion"
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }
+                >
                   {religions.map(religion => (
-                    <Option key={religion.religion_id} value={religion.religion_id.toString()}>
+                    <Option key={religion.religion_id} value={religion.religion_id}>
                       {religion.name}
                     </Option>
                   ))}
@@ -200,7 +235,15 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
               name="parentGuardianType"
               control={control}
               render={({ field }) => (
-                <Select {...field} placeholder="Select parent/guardian type">
+                <Select
+                  {...field}
+                  showSearch
+                  placeholder="Select parent/guardian type"
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }
+                >
                   {parentGuardianTypes.map(type => (
                     <Option key={type.id} value={type.type}>
                       {type.type}

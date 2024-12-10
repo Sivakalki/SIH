@@ -10,6 +10,7 @@ const RenewCertificate = () => {
   const [loading, setLoading] = useState(false);
   const [verifyingAadhar, setVerifyingAadhar] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [profileData, setProfileData] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
@@ -47,6 +48,7 @@ const RenewCertificate = () => {
       } 
       else if(response.data.numOfApplications >= 1) {
         setIsModalVisible(true);
+        setProfileData(response.data.profileData);
         message.info('Existing certificate found for this Aadhar number');
       }
       else {
@@ -87,6 +89,17 @@ const RenewCertificate = () => {
             <Input
               placeholder="Enter your 12-digit Aadhar number"
               maxLength={12}
+              type="number"
+              onKeyDown={(e) => {
+                if (!/[0-9]/.test(e.key) && 
+                    e.key !== 'Backspace' && 
+                    e.key !== 'Delete' && 
+                    e.key !== 'ArrowLeft' && 
+                    e.key !== 'ArrowRight' && 
+                    e.key !== 'Tab') {
+                  e.preventDefault();
+                }
+              }}
               style={{ width: '100%', maxWidth: '300px' }}
             />
           </Form.Item>
@@ -97,6 +110,25 @@ const RenewCertificate = () => {
             </Button>
           </Form.Item>
         </Form>
+
+        {profileData && (
+          <Card title="Profile Information" style={{ marginTop: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div>
+                <p><strong>Full Name:</strong> {profileData.fullName}</p>
+                <p><strong>Date of Birth:</strong> {profileData.dateOfBirth}</p>
+                <p><strong>Gender:</strong> {profileData.gender}</p>
+                <p><strong>Religion:</strong> {profileData.religion}</p>
+              </div>
+              <div>
+                <p><strong>Caste:</strong> {profileData.caste}</p>
+                <p><strong>Address:</strong> {profileData.address}</p>
+                <p><strong>District:</strong> {profileData.district}</p>
+                <p><strong>State:</strong> {profileData.state}</p>
+              </div>
+            </div>
+          </Card>
+        )}
 
         <Modal
           title="Certificate Found"

@@ -72,7 +72,7 @@ const schema = z.object({
 });
 
 function ApplicationForm() {
-  const { control, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+  const { control, handleSubmit, watch, setValue, formState: { errors }, trigger, getValues } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
       proofOfResidence: '',
@@ -119,80 +119,167 @@ function ApplicationForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Comprehensive Proof Type Mapping
+  const getProofType = (proofKey) => {
+    const proofTypeMap = {
+      // Address Proof Types
+      'aadharCardImage': 'AADHAR',
+      'electricityBillImage': 'ELECTRICITY_BILL',
+      'gasBillImage': 'GAS_BILL',
+
+      // DOB Proof Types
+      'aadharCardImageForDOB': 'AADHAR',
+      'panCardImage': 'PAN_CARD',
+      'sscCertificateImage': 'SSC_CERTIFICATE',
+
+      // Caste Proof Types
+      'fatherCasteCertificateImage': 'FATHER_CASTE_CERTIFICATE',
+      'motherCasteCertificateImage': 'MOTHER_CASTE_CERTIFICATE'
+    };
+    return proofTypeMap[proofKey] || 'UNKNOWN';
+  };
+
   const handleFinalSubmit = async () => {
+    // Validate Aadhar verification
     if (!isAadharVerified) {
       message.error('Please verify your Aadhar number before submitting');
+      return;
+    }
+
+    // Trigger form validation
+    const isValid = await trigger();
+    if (!isValid) {
+      message.error('Please fill out all required fields correctly');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const formData = await handleSubmit(async (data) => {
-        // Create FormData object
-        const formData = new FormData();
+      // Collect form data
+      const formData = new FormData();
 
-        // Add personal info fields
-        formData.append('aadharNumber', data.aadharNumber || '');
-        formData.append('fullName', data.fullName || '');
-        formData.append('dateOfBirth', data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : '');
-        formData.append('gender', data.gender || '');
-        formData.append('religion_id', data.religion_id || '');
-        formData.append('caste_id', data.caste_id || '');
-        formData.append('subCaste', data.subCaste || '');
-        formData.append('parentReligion_id', data.parentReligion_id || '');
-        formData.append('parentGuardianType', data.parentGuardianType || '');
-        formData.append('parentGuardianName', data.parentGuardianName || '');
-        formData.append('maritalStatus', data.maritalStatus || '');
-        formData.append('phoneNumber', data.phoneNumber || '');
-        formData.append('email', data.email || '');
+      // Personal Information
+      const personalFields = [
+        { key: 'full_name', value: getValues('fullName') },
+        { 
+          key: 'dob', 
+          value: getValues('dateOfBirth') 
+            ? new Date(getValues('dateOfBirth')).toISOString().split('T')[0] 
+            : null 
+        },
+        { key: 'gender', value: getValues('gender') },
+        { key: 'religion', value: getValues('religion_id') },
+        { key: 'caste', value: getValues('caste_id') },
+        { key: 'sub_caste', value: getValues('subCaste') },
+        { key: 'parent_religion', value: getValues('parentReligion_id') },
+        { key: 'parent_guardian_type', value: getValues('parentGuardianType') },
+        { key: 'parent_guardian_name', value: getValues('parentGuardianName') },
+        { key: 'marital_status', value: getValues('maritalStatus') },
+        { key: 'aadhar_num', value: getValues('aadharNumber') },
+        { key: 'phone_num', value: getValues('phoneNumber') },
+        { key: 'email', value: getValues('email') }
+      ];
 
-        // Add address fields
-        formData.append('pincode', data.pincode || '');
-        formData.append('state', data.state || '');
-        formData.append('district', data.district || '');
-        formData.append('mandal', data.mandal || '');
-        formData.append('address', data.address || '');
-        formData.append('sachivalayam', data.sachivalayam || '');
+      // Debug log
+      console.log('Form Values:', {
+        caste_id: getValues('caste_id'),
+        parsed_caste: parseInt(getValues('caste_id')),
+        all_values: getValues()
+      });
 
-        // Add document proof types
-        formData.append('proofOfResidence', data.proofOfResidence || '');
-        formData.append('proofOfDOB', data.proofOfDOB || '');
-        formData.append('proofOfCaste', data.proofOfCaste || '');
+      // Create a JSON object for personal and address data
+      const jsonData = {};
+      
+      // Add personal fields to JSON
+      personalFields.forEach(field => {
+        if (field.value !== null && field.value !== undefined) {
+          jsonData[field.key] = field.value;
+        }
+      });
 
-        // Add document files
-        if (data.aadharCardImage?.[0]) {
-          formData.append('aadharCardImage', data.aadharCardImage[0]);
-        }
-        if (data.electricityBillImage?.[0]) {
-          formData.append('electricityBillImage', data.electricityBillImage[0]);
-        }
-        if (data.gasBillImage?.[0]) {
-          formData.append('gasBillImage', data.gasBillImage[0]);
-        }
-        if (data.aadharCardImageForDOB?.[0]) {
-          formData.append('aadharCardImageForDOB', data.aadharCardImageForDOB[0]);
-        }
-        if (data.panCardImage?.[0]) {
-          formData.append('panCardImage', data.panCardImage[0]);
-        }
-        if (data.sscCertificateImage?.[0]) {
-          formData.append('sscCertificateImage', data.sscCertificateImage[0]);
-        }
-        if (data.fatherCasteCertificateImage?.[0]) {
-          formData.append('fatherCasteCertificateImage', data.fatherCasteCertificateImage[0]);
-        }
-        if (data.motherCasteCertificateImage?.[0]) {
-          formData.append('motherCasteCertificateImage', data.motherCasteCertificateImage[0]);
-        }
+      // Add address details
+      const addressDetails = {
+        pincode: getValues('pincode'),
+        state: getValues('state'),
+        district: getValues('district'),
+        mandal: getValues('mandal'),
+        address: getValues('address'),
+        sachivalayam: getValues('sachivalayam')
+      };
+      jsonData['addressDetails'] = addressDetails;
 
-        return formData;
-      })();
+      // Convert the JSON data to a string and append to FormData
+      formData.append('jsonData', JSON.stringify(jsonData));
 
-      // Make the API call
+      // Proof of Residence
+      const residenceProofOptions = [
+        { file: getValues('aadharCardImage')?.[0], key: 'aadharCardImage' },
+        { file: getValues('electricityBillImage')?.[0], key: 'electricityBillImage' },
+        { file: getValues('gasBillImage')?.[0], key: 'gasBillImage' }
+      ];
+      const residenceProof = residenceProofOptions.find(proof => proof.file);
+      
+      if (!residenceProof) {
+        throw new Error('Proof of Residence is required (Aadhar Card, Electricity Bill, or Gas Bill)');
+      }
+      
+      formData.append('addressProof', residenceProof.file);
+      formData.append('addressProofType', getProofType(residenceProof.key));
+
+      // Proof of DOB
+      const dobProofOptions = [
+        { file: getValues('aadharCardImageForDOB')?.[0], key: 'aadharCardImageForDOB' },
+        { file: getValues('panCardImage')?.[0], key: 'panCardImage' },
+        { file: getValues('sscCertificateImage')?.[0], key: 'sscCertificateImage' }
+      ];
+      const dobProof = dobProofOptions.find(proof => proof.file);
+      
+      if (!dobProof) {
+        throw new Error('Proof of Date of Birth is required (Aadhar Card, Pan Card, or SSC Certificate)');
+      }
+      
+      formData.append('dobProof', dobProof.file);
+      formData.append('dobProofType', getProofType(dobProof.key));
+
+      // Proof of Caste
+      const casteProofOptions = [
+        { file: getValues('fatherCasteCertificateImage')?.[0], key: 'fatherCasteCertificateImage' },
+        { file: getValues('motherCasteCertificateImage')?.[0], key: 'motherCasteCertificateImage' }
+      ];
+      const casteProof = casteProofOptions.find(proof => proof.file);
+      
+      if (!casteProof) {
+        throw new Error('Proof of Caste is required (Father\'s or Mother\'s Caste Certificate)');
+      }
+      
+      formData.append('casteProof', casteProof.file);
+      formData.append('casteProofType', getProofType(casteProof.key));
+
+      // Optional Additional Files
+      const optionalFiles = [
+        { key: 'sscCertificateImage', file: getValues('sscCertificateImage')?.[0] },
+        { key: 'panCardImage', file: getValues('panCardImage')?.[0] },
+        { key: 'gasBillImage', file: getValues('gasBillImage')?.[0] },
+        { key: 'electricityBillImage', file: getValues('electricityBillImage')?.[0] }
+      ];
+
+      optionalFiles.forEach(({ key, file }) => {
+        if (file && key !== dobProof.key && key !== residenceProof.key && key !== casteProof.key) {
+          formData.append(key, file);
+        }
+      });
+
+      // Debug: Log form data contents
+      console.log('Submission Payload:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: `, value);
+      }
+
+      // Submit application
       const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/applications`,
-        formData,
+        `${process.env.REACT_APP_BACKEND_URL}/api/application`, 
+        formData, 
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -201,15 +288,32 @@ function ApplicationForm() {
         }
       );
 
-      console.log('Application submitted successfully:', response.data);
+      // Success handling
       message.success('Application submitted successfully');
       navigate('/applicant/applications');
+
     } catch (error) {
-      console.error('Error submitting application:', error);
-      if (error.response?.data?.message) {
-        message.error(`Error: ${error.response.data.message}`);
+      // Comprehensive error handling
+      console.error('Submission Error:', error);
+
+      if (error.response) {
+        // Backend returned an error response
+        const errorMessage = error.response.data.message || 
+                             error.response.data.error || 
+                             'Backend submission error';
+        message.error(errorMessage);
+        console.error('Backend Error Details:', {
+          errorMessage,
+          fullErrorResponse: error.response.data
+        });
+      } else if (error.request) {
+        // Request made but no response received
+        message.error('No response from server. Please check your network connection.');
+        console.error('No response received:', error.request);
       } else {
-        message.error('Please fill in all required fields correctly');
+        // Error in setting up the request
+        message.error(error.message || 'Error preparing application submission');
+        console.error('Request Setup Error:', error.message);
       }
     } finally {
       setIsSubmitting(false);
@@ -240,6 +344,12 @@ function ApplicationForm() {
       icon: <FileSearchOutlined />,
       label: 'Application Status',
       onClick: () => navigate('/applicant/status')
+    },
+    {
+      key: 'application-renewal',
+      icon: <FileSearchOutlined />,
+      label: 'Application renewal',
+      onClick: () => navigate('/applicant/renewal')
     },
     {
       key: 'reports',
@@ -329,14 +439,19 @@ function ApplicationForm() {
 
   const handlePincodeChange = (value) => {
     const selectedAddresses = addressData.filter(item => item.pincode === value);
+    console.log('Selected Addresses:', selectedAddresses);
 
     if (selectedAddresses.length > 0) {
       const sachivalayams = selectedAddresses.map(item => item.sachivalayam);
+      const uniqueSachivalayams = [...new Set(sachivalayams)];
+      console.log('All Sachivalayams:', sachivalayams);
+      console.log('Unique Sachivalayams:', uniqueSachivalayams);
+      
       setValue('sachivalayam', '');
       setValue('state', selectedAddresses[0].state);
       setValue('district', selectedAddresses[0].district);
       setValue('mandal', selectedAddresses[0].mandal);
-      setSachivalayamOptions(sachivalayams);
+      setSachivalayamOptions(uniqueSachivalayams);
     } else {
       setSachivalayamOptions([]);
     }
