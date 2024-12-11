@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Select, Button, Space, Typography, message, Card, Drawer, Avatar, Modal, Badge, Spin, Descriptions, Form, Input, Tag } from 'antd';
-import { EyeOutlined, UserOutlined, LogoutOutlined, FileTextOutlined, BellOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { Table, Select, Button, Space, Typography, message, Card,  Drawer, Avatar,Modal, Badge, Spin, Descriptions, Tag } from 'antd';
+import {EyeOutlined, UserOutlined, LogoutOutlined, FileTextOutlined,  BellOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Line } from '@ant-design/plots';
 import { Link } from 'react-router-dom';
 import StatisticCard from './utils/statistic-card';
@@ -8,10 +8,8 @@ import NotificationDrawer from './utils/notification-drawer';
 import { UserContext } from '../../../components/userContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import MroLayout from '../../../components/layout/MroLayout';
-import MroApplicationModal from '../../../components/modals/MroApplicationModal';
-import MroHeader from '../../../components/header/MroHeader';
 import { motion } from 'framer-motion';
+
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -20,7 +18,8 @@ const NavItem = ({ to, children, isActive, onClick }) => (
     <motion.div
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className={`px-4 py-2 rounded-md cursor-pointer ${isActive ? 'bg-secondary text-white' : 'text-white hover:bg-secondary/10'}`}
+        className={`px-4 py-2 rounded-md cursor-pointer ${isActive ? 'bg-secondary text-white' : 'text-white hover:bg-secondary/10'
+            }`}
         onClick={onClick} // Attach onClick for navigation
     >
         <Link to={to}>{children}</Link>
@@ -37,11 +36,12 @@ const mockNotifications = [
 
 export default function Applications() {
     const [applications, setApplications] = useState([]);
-    const [selectedApplicationId, setSelectedApplicationId] = useState(null);
+    const [selectedApplication, setSelectedApplication] = useState(null);
     const [profileDrawerVisible, setProfileDrawerVisible] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [notificationDrawerVisible, setNotificationDrawerVisible] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
+    const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
     const [userData, setUserData] = useState(null);
     const [notifications, setNotifications] = useState(mockNotifications);
     const { token, logout } = useContext(UserContext);
@@ -49,14 +49,11 @@ export default function Applications() {
     const [errorMessage, setErrorMessage] = useState("");
     const [userLoading, setUserLoading] = useState(true);
     const [activeNavItem, setActiveNavItem] = useState('applications');
+    const [report, SetReport] = useState([]);
     const [role, setRole] = useState("");
-    const navigate = useNavigate();
+    const navigate = useNavigate()
     const [filterStatus, setFilterStatus] = useState('All');
     const [loadingApplicationId, setLoadingApplicationId] = useState(null);
-    const [report, SetReport] = useState([]);
-    const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
-    const [filter, setFilter] = useState('All');
-
     useEffect(() => {
         if (!token) {
             setErrorMessage("You are not logged in. Please log in to access this page.");
@@ -68,8 +65,8 @@ export default function Applications() {
     }, [token]);
 
     useEffect(() => {
-        if (userData && role && role !== "MRO") {
-            setErrorMessage("Access denied. Only mros are allowed to view this page.");
+        if (userData && role && role !== "SVRO") {
+            setErrorMessage("Access denied. Only SVROs are allowed to view this page.");
             setUserLoading(false);
         }
     }, [role]);
@@ -77,7 +74,7 @@ export default function Applications() {
     const fetchApplications = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/mro/pending_applications`, {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/pending_applications`, {
                 headers: {
                     Authorization: `Bearer ${token}`, // Include token in Authorization header
                 },
@@ -141,11 +138,11 @@ export default function Applications() {
         },
         {
             title: 'Status',
-            dataIndex: 'current_stage',
-            key: 'current_stage',
+            dataIndex: 'role_type',
+            key: 'role_type',
             render: (status) => (
                 <span style={{
-                    color: status === 'mro' ? '#faad14' : status === 'MVRO' ? '#f5222d' : status === 'SVRO' ? '#f5222d': '#52c41a',
+                    color: status === 'pending' ? '#faad14' : status === 'completed' ? '#52c41a' : '#f5222d',
                     textTransform: 'capitalize',
                     fontWeight: 'bold',
                 }}>
@@ -168,9 +165,18 @@ export default function Applications() {
         },
     ];
 
-    const handleViewApplication = (id) => {
-        setSelectedApplicationId(id);
-        setModalVisible(true);
+    const handleViewApplication = async (id) => {
+        setLoadingApplicationId(id);
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${id}`);
+            setSelectedApplication(response.data.data);
+            SetReport(response.data.report)
+            setModalVisible(true);
+        } catch (error) {
+            message.error('Failed to load application details');
+        } finally {
+            setLoadingApplicationId(null);
+        }
     };
 
     const openDrawer = () => {
@@ -183,7 +189,7 @@ export default function Applications() {
 
     const openRemarksForm = () => {
         setRemarksDrawerVisible(true);
-    };
+      };
 
     const openProfileDrawer = () => {
         setProfileDrawerVisible(true);
@@ -205,52 +211,21 @@ export default function Applications() {
         setFilterStatus(value);
     };
 
-    const filteredApplications = applications.filter(app =>
+    const filteredApplications = applications.filter(app => 
         filterStatus === 'All' || app.role_type === filterStatus
     );
 
-    const filteredApplicationsByStage = applications.filter(application => {
-        return filter === 'All' || application.current_stage === filter;
-    });
-
-    const submitRemarks = async (values) => {
-        try {
-            console.log(values);
-            await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/mro/create_report/${selectedApplicationId}`,
-                { description: values.remarks }, 
-                 // This is the request body
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            message.success('Remarks submitted successfully');
-            setModalVisible(false);
-            fetchApplications(); // Refresh the applications list
-        } catch (error) {
-            console.error('Error submitting remarks:', error);
-            message.error('Failed to submit remarks');
-        }
-    };
-
     const unreadNotificationsCount = notifications.filter(n => !n.read).length;
     const handleNavigate = (path) => {
-        const basePath = "/mro"; // Define your base path
-        if (path === 'dashboard') {
+        const basePath = "/svro2"; // Define your base path
+        if(path === 'dashboard'){
             console.log("ented here")
             navigate(`${basePath}`)
-        } else {
-            console.log("NEthered herre")
+        }else{
+            console.log("NEthered herre")       
             navigate(`${basePath}/${path}`);
         }
     }
-
-    const handleFilterChangeStage = (value) => {
-        setFilter(value);
-    };
-
     return (
         <div className="vro-dashboard bg-background min-h-screen">
             <nav className="bg-primary text-white p-4 flex items-center justify-between">
@@ -431,3 +406,4 @@ export default function Applications() {
         </div>
     );
 }
+
