@@ -77,6 +77,11 @@ export default function SvroLayout({ children, logout }) {
               label: 'Completed Applications',
             },
             {
+              key: '/svro/reports',
+              icon: <FileTextOutlined />,
+              label: 'Reports',
+            },
+            {
               key: 'logout',
               icon: <LogoutOutlined />,
               label: 'Logout',

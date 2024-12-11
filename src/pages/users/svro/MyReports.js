@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Button, Typography, message, Card, Modal, Descriptions, Spin, Tag } from 'antd';
-import { EyeOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Table, Button, Typography, message, Card, Modal, Descriptions, Spin, Tag, Drawer, Avatar } from 'antd';
+import { EyeOutlined, FileTextOutlined, UserOutlined } from '@ant-design/icons';
 import { UserContext } from '../../../components/userContext';
 import StatisticCard from './utils/statistic-card';
 import SvroLayout from '../../../components/layout/SvroLayout';
@@ -32,6 +32,8 @@ export default function MyReports() {
     const [userLoading, setUserLoading] = useState(true);
     const [role, setRole] = useState("");
     const [modalLoading, setModalLoading] = useState(false);
+    const [drawerVisible, setDrawerVisible] = useState(false);
+    const [userData, setUserData] = useState(null);
     const { token, logout } = useContext(UserContext);
 
     useEffect(() => {
@@ -59,6 +61,7 @@ export default function MyReports() {
                 },
             });
             setRole(res.data.role);
+            setUserData(res.data.user);
         } catch (e) {
             if (handleApiError(e)) return;
             setErrorMessage("Token expired. Login again");
@@ -106,6 +109,14 @@ export default function MyReports() {
         }
     };
 
+    const openDrawer = () => {
+        setDrawerVisible(true);
+    };
+
+    const closeDrawer = () => {
+        setDrawerVisible(false);
+    };
+
     const columns = [
         {
             title: 'Report ID',
@@ -118,7 +129,7 @@ export default function MyReports() {
             key: 'application_id',
         },
         {
-            title:'Applicant Name',
+            title: 'Applicant Name',
             dataIndex: 'applicant_name',
             key: 'applicant_name',
         },
@@ -176,7 +187,10 @@ export default function MyReports() {
     return (
         <SvroLayout logout={logout}>
             <div className="mb-6">
-                <Title level={2}>My Reports</Title>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Title level={2}>My Reports</Title>
+                    <Button icon={<UserOutlined />} onClick={openDrawer}>Profile</Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -259,6 +273,28 @@ export default function MyReports() {
                     </div>
                 )}
             </Modal>
+
+            <Drawer
+                title="User Profile"
+                placement="right"
+                onClose={closeDrawer}
+                visible={drawerVisible}
+                width={400}
+            >
+                <Card>
+                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                        <Avatar size={64} icon={<UserOutlined />} />
+                        <Title level={4} style={{ marginTop: '10px', marginBottom: '0' }}>
+                            {userData?.name || 'User'}
+                        </Title>
+                        <p>{userData?.email || 'No email available'}</p>
+                    </div>
+                    <Descriptions column={1}>
+                        <Descriptions.Item label="Role">SVRO</Descriptions.Item>
+                        <Descriptions.Item label="Status">Active</Descriptions.Item>
+                    </Descriptions>
+                </Card>
+            </Drawer>
         </SvroLayout>
     );
 }

@@ -12,6 +12,7 @@ export default function CompletedApplications() {
     const [selectedApplication, setSelectedApplication] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
+    const [profileDrawerVisible, setProfileDrawerVisible] = useState(false);
     const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
