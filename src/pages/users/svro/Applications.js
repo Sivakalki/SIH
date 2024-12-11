@@ -40,7 +40,7 @@ export default function Applications() {
   const [modalVisible, setModalVisible] = useState(false);
   const [applicationDetails, setApplicationDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
-  const [currentStageFilter, setCurrentStageFilter] = useState(null);
+  const [currentStageFilter, setCurrentStageFilter] = useState('ALL');
   const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
   const [resendDrawerVisible, setResendDrawerVisible] = useState(false);
   const [resendDescription, setResendDescription] = useState('');
@@ -148,8 +148,15 @@ export default function Applications() {
 
   const filteredApplications = applications.filter(app => {
     if (!currentStageFilter || currentStageFilter === 'ALL') return true;
-    return app.current_stage?.role_type === currentStageFilter;
+    console.log('Filtering for stage:', currentStageFilter); // Log the current stage filter
+    return app.current_stage === currentStageFilter; // Compare directly with current_stage
   });
+
+  console.log('Filtered Applications:', filteredApplications); // Log the filtered applications
+
+  console.log('Applications:', applications);
+  console.log('Application Objects:', applications);
+  console.log('DataSource for Table:', filteredApplications);
 
   const columns = [
     {
@@ -306,14 +313,12 @@ export default function Applications() {
       <Card className="shadow-md">
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
           <Select
-            style={{ width: 200 }}
-            placeholder="Filter by Current Stage"
-            allowClear
+            placeholder="Select Current Stage"
             onChange={handleStageFilterChange}
-            value={currentStageFilter}
             defaultValue="ALL"
+            style={{ width: 200, marginBottom: 20 }}
           >
-            <Select.Option value="ALL">All Applications</Select.Option>
+            <Select.Option value="ALL">All</Select.Option>
             <Select.Option value="SVRO">SVRO</Select.Option>
             <Select.Option value="MVRO">MVRO</Select.Option>
             <Select.Option value="RI">RI</Select.Option>
@@ -325,6 +330,11 @@ export default function Applications() {
           dataSource={filteredApplications}
           loading={loading}
           rowKey="app_id"
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} items`,
+          }}
         />
       </Card>
 
@@ -464,7 +474,7 @@ export default function Applications() {
                     color: '#1890ff',
                     fontWeight: 'bold'
                   }}>
-                    {applicationDetails.current_stage?.role_type || 'Not Started'}
+                    {applicationDetails.current_stage || 'Not Started'}
                   </div>
                 </Descriptions.Item>
                 <Descriptions.Item label="Created At">{new Date(applicationDetails.created_at).toLocaleString()}</Descriptions.Item>

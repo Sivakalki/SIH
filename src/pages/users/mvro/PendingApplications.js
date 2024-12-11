@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Button, Space, Typography, message, Card, Spin, Empty, Badge } from 'antd';
-import { EyeOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Typography, message, Card, Spin, Empty, Badge, Drawer, Avatar } from 'antd';
+import { EyeOutlined, UserOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { UserContext } from '../../../components/userContext';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +18,7 @@ export default function PendingApplicationsMVRO() {
     const [userLoading, setUserLoading] = useState(true);
     const [role, setRole] = useState("");
     const [userData, setUserData] = useState(null);
+    const [drawerVisible, setDrawerVisible] = useState(false);
     const { token, logout } = useContext(UserContext);
     const navigate = useNavigate();
 
@@ -173,7 +174,10 @@ export default function PendingApplicationsMVRO() {
                 <Card>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                         <Title level={2} style={{ margin: 0, color: '#1890ff' }}>Ready to Review Applications</Title>
-                        <Button onClick={() => navigate('/mvro')}>Back to Dashboard</Button>
+                        <Space>
+                            <Button onClick={() => navigate('/mvro')}>Back to Dashboard</Button>
+                            <Button icon={<UserOutlined />} onClick={() => setDrawerVisible(true)}>Profile</Button>
+                        </Space>
                     </div>
                     
                     {applications.length === 0 ? (
@@ -214,6 +218,29 @@ export default function PendingApplicationsMVRO() {
                     }}
                     onUpdate={fetchApplications}
                 />
+
+                <Drawer
+                    title="User Profile"
+                    placement="right"
+                    onClose={() => setDrawerVisible(false)}
+                    open={drawerVisible}
+                >
+                    {userData && (
+                        <div className="space-y-4">
+                            <div className="flex items-center space-x-4">
+                                <Avatar size={64} icon={<UserOutlined />} />
+                                <div>
+                                    <h2 className="text-xl font-semibold">{userData.name}</h2>
+                                    <p className="text-gray-500">{role}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500">Email</p>
+                                <p>{userData.email}</p>
+                            </div>
+                        </div>
+                    )}
+                </Drawer>
             </div>
         </MvroLayout>
     );

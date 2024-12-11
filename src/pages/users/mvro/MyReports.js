@@ -16,7 +16,7 @@ export default function MVROMyReports() {
     const [selectedApplication, setSelectedApplication] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [userData, setUserData] = useState(null);
-    const { token } = useContext(UserContext);
+    const { token, logout } = useContext(UserContext);
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [userLoading, setUserLoading] = useState(true);
@@ -109,17 +109,23 @@ export default function MVROMyReports() {
 
     if (userLoading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <Spin size="large" />
-            </div>
+            <MvroLayout logout={logout}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
+                    <Spin size="large" />
+                    <Title level={3} style={{ marginTop: '20px' }}>Loading...</Title>
+                </div>
+            </MvroLayout>
         );
     }
 
     if (errorMessage) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <Title level={3} className="text-red-500">{errorMessage}</Title>
-            </div>
+            <MvroLayout logout={logout}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
+                    <Title level={3} style={{ color: '#f5222d' }}>{errorMessage}</Title>
+                    <Button type="primary" onClick={() => navigate('/login')}>Go to Login</Button>
+                </div>
+            </MvroLayout>
         );
     }
 
@@ -171,7 +177,7 @@ export default function MVROMyReports() {
     };
 
     return (
-        <MvroLayout style={{ overflow: 'hidden' }}>
+        <MvroLayout logout={logout}>
             <div className="p-6" style={{ overflow: 'hidden' }}>
                 <Card className="w-full">
                     <div className="flex justify-between items-center mb-4">

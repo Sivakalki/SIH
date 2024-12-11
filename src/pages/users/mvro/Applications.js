@@ -253,7 +253,10 @@ export default function ApplicationsMvro() {
         <MvroLayout logout={logout}>
             <div style={{ padding: '24px' }}>
                 <Card>
-                    <Title level={2} style={{ marginBottom: '24px' }}>Applications</Title>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                        <Title level={2}>Applications</Title>
+                        <Button icon={<UserOutlined />} onClick={openDrawer}>Profile</Button>
+                    </div>
                     <Select
                         placeholder="Select Current Stage"
                         onChange={handleFilterChangeStage}
@@ -288,6 +291,28 @@ export default function ApplicationsMvro() {
                     }}
                     onUpdate={fetchApplications}
                 />
+                <Drawer
+                    title="User Profile"
+                    placement="right"
+                    onClose={closeDrawer}
+                    open={drawerVisible}
+                >
+                    {userData && (
+                        <div className="space-y-4">
+                            <div className="flex items-center space-x-4">
+                                <Avatar size={64} icon={<UserOutlined />} />
+                                <div>
+                                    <h2 className="text-xl font-semibold">{userData.name}</h2>
+                                    <p className="text-gray-500">{role}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500">Email</p>
+                                <p>{userData.email}</p>
+                            </div>
+                        </div>
+                    )}
+                </Drawer>
             </div>
         </MvroLayout>
     );

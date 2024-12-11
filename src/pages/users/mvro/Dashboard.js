@@ -516,7 +516,7 @@ export default function MVRODashboard() {
       >
         <p style={{ fontWeight: 'bold' }}><strong>Name:</strong> {userData?.name}</p>
         <p style={{ fontWeight: 'bold' }}><strong>Email:</strong> {userData?.email}</p>
-        <p style={{ fontWeight: 'bold' }}><strong>Role:</strong> {userData?.role}</p>
+        <p style={{ fontWeight: 'bold' }}><strong>Role:</strong> {role}</p>
         <Button type="primary" danger onClick={handleLogout} style={{ marginTop: '20px' }}>
           Logout
         </Button>

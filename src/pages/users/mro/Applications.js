@@ -33,7 +33,6 @@ const mockNotifications = [
     { id: 3, message: 'Reminder: Review pending applications', read: false },
 ];
 
-
 export default function Applications() {
     const [applications, setApplications] = useState([]);
     const [selectedApplication, setSelectedApplication] = useState(null);
@@ -257,19 +256,8 @@ export default function Applications() {
             </nav>
             <Card>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <Title level={2} style={{ margin: 0, color: '#1890ff' }}>VRO Dashboard</Title>
+                    <Title level={2}>Applications</Title>
                     <Space>
-                        <Select
-                            defaultValue="All"
-                            style={{ width: 120 }}
-                            onChange={handleFilterChange}
-                        >
-                            <Option value="All">All</Option>
-                            <Option value="SVRO">SVRO</Option>
-                            <Option value="MVRO">MVRO</Option>
-                            <Option value="MRO">MRO</Option>
-                            <Option value="RI">RI</Option>
-                        </Select>
                         <Button icon={<UserOutlined />} onClick={openDrawer}>Profile</Button>
                     </Space>
                 </div>
@@ -367,34 +355,24 @@ export default function Applications() {
             <Drawer
                 title="User Profile"
                 placement="right"
-                onClose={closeProfileDrawer}
-                open={profileDrawerVisible}
+                onClose={closeDrawer}
+                open={drawerVisible}
             >
-                <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                        <Avatar size={64} icon={<UserOutlined />} />
+                {userData && (
+                    <div className="space-y-4">
+                        <div className="flex items-center space-x-4">
+                            <Avatar size={64} icon={<UserOutlined />} />
+                            <div>
+                                <h2 className="text-xl font-semibold">{userData.name}</h2>
+                                <p className="text-gray-500">{role}</p>
+                            </div>
+                        </div>
                         <div>
-                            <h2 className="text-xl font-semibold">{userData.name}</h2>
-                            <p className="text-gray-500">{userData.role}</p>
+                            <p className="text-sm text-gray-500">Email</p>
+                            <p>{userData.email}</p>
                         </div>
                     </div>
-                    <div>
-                        <p className="text-sm text-gray-500">Email</p>
-                        <p>{userData.email}</p>
-                    </div>
-                    <Button block onClick={() => {
-                        message.info('Navigating to full profile page');
-                        closeProfileDrawer();
-                    }}>
-                        View Full Profile
-                    </Button>
-                    <Button danger block onClick={() => {
-                        logout();
-                        closeProfileDrawer();
-                    }}>
-                        <LogoutOutlined /> Logout
-                    </Button>
-                </div>
+                )}
             </Drawer>
 
             <NotificationDrawer
@@ -406,4 +384,3 @@ export default function Applications() {
         </div>
     );
 }
-

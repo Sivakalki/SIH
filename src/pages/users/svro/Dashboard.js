@@ -149,7 +149,6 @@ export default function VRODashboard() {
   const [scheduledApplications, setScheduledApplications] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedApplicationId, setSelectedApplicationId] = useState(null);
-  const [reportCount, setReportCount] = useState(0);
 
   useEffect(() => {
     if (!token) {
@@ -159,7 +158,6 @@ export default function VRODashboard() {
     }
     fetchData();
     fetchDashboardData();
-    fetchReportCount();
     // fetchScheduledApplications();
   }, [token]);
 
@@ -209,23 +207,6 @@ export default function VRODashboard() {
       setUserData(null); // Reset userData if the request fails
     } finally {
       setUserLoading(false); // Stop loading after data is fetched
-    }
-  };
-
-  const fetchReportCount = async () => {
-    try {
-      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/get_reports`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setReportCount(response.data.data.length);
-    } catch (error) {
-      if (error.response.status === 401) {
-        message.error('Session expired. Please login again.');
-      } else {
-        message.error('Failed to fetch report count');
-      }
     }
   };
 
@@ -590,9 +571,10 @@ export default function VRODashboard() {
                     >
                       <StatisticCard
                         title="Total Applications"
-                        value={dashboardData.total_applications || 0}
+                        value={dashboardData.totalApplications || 0}
                         icon={<FileTextOutlined />}
                         color="#1890ff"
+                        to="/svro/applications"
                       />
                     </motion.div>
                   </Col>
@@ -621,7 +603,7 @@ export default function VRODashboard() {
                   <Col xs={24} sm={12}>
                     <StatisticCard
                       title="Reports"
-                      value={reportCount}
+                      value={dashboardData.reportNotificatios}
                       to="/svro/reports"
                       backgroundColor="#f9f0ff"
                       borderColor="#d3adf7"

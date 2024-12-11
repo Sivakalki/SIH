@@ -73,6 +73,11 @@ export default function MvroLayout({ children, logout }) {
               label: 'Completed Applications',
             },
             {
+              key: '/mvro/reports',
+              icon: <FileTextOutlined />,
+              label: 'Reports',
+            },
+            {
               key: 'logout',
               icon: <LogoutOutlined />,
               label: 'Logout',
