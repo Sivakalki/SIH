@@ -90,6 +90,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
             <Controller
               name="full_name"
               control={control}
+              rules={{ required: 'Full name is required' }}
               render={({ field }) => (
                 <Input {...field} placeholder="Enter your full name" />
               )}
@@ -104,6 +105,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
             <Controller
               name="dob"
               control={control}
+              rules={{ required: 'Date of Birth is required' }}
               render={({ field }) => (
                 <DatePicker
                   {...field}
@@ -128,6 +130,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
             <Controller
               name="gender"
               control={control}
+              rules={{ required: 'Gender is required' }}
               render={({ field }) => (
                 <Radio.Group {...field}>
                   <Radio value="MALE">Male</Radio>
@@ -146,6 +149,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
             <Controller
               name="religion"
               control={control}
+              rules={{ required: 'Religion is required' }}
               render={({ field }) => (
                 <Select
                   {...field}
@@ -237,13 +241,14 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
           </Form.Item>
 
           <Form.Item
-            label="Parent Guardian Type"
+            label="Parent/Guardian Type"
             validateStatus={errors.parent_guardian_type ? "error" : ""}
             help={errors.parent_guardian_type?.message}
           >
             <Controller
               name="parent_guardian_type"
               control={control}
+              rules={{ required: 'Guardian type is required' }}
               render={({ field }) => (
                 <Select
                   {...field}
@@ -265,15 +270,16 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
           </Form.Item>
 
           <Form.Item
-            label="Parent Guardian Name"
+            label="Parent/Guardian Name"
             validateStatus={errors.parent_guardian_name ? "error" : ""}
             help={errors.parent_guardian_name?.message}
           >
             <Controller
               name="parent_guardian_name"
               control={control}
+              rules={{ required: 'Guardian name is required' }}
               render={({ field }) => (
-                <Input {...field} placeholder="Enter parent guardian name" />
+                <Input {...field} placeholder="Enter guardian name" />
               )}
             />
           </Form.Item>
@@ -286,6 +292,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
             <Controller
               name="marital_status"
               control={control}
+              rules={{ required: 'Marital status is required' }}
               render={({ field }) => (
                 <Select
                   {...field}
@@ -314,6 +321,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
             <Controller
               name="phone_num"
               control={control}
+              rules={{ required: 'Phone number is required' }}
               render={({ field: { onChange, value, ...field } }) => (
                 <Input 
                   {...field}
@@ -356,6 +364,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
             <Controller
               name="email"
               control={control}
+              rules={{ required: 'Email is required' }}
               render={({ field }) => (
                 <Input {...field} placeholder="Enter your email address" />
               )}

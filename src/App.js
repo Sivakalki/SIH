@@ -45,6 +45,7 @@ import MVROMyReports from './pages/users/mvro/MyReports';
 // DO Pages
 import Do from './pages/dashboards/Do';
 import ReadyToReviewRI from './pages/users/ri/ReadyToReview';
+import ApplicationForm2 from './pages/users/applicant/ApplicationForm2';
 
 const App = () => {
   return (
@@ -58,6 +59,7 @@ const App = () => {
         {/* Applicant Routes */}
         <Route path="/applicant" element={<ApplicantDashboard />} />
         <Route path="/applicant/new-application" element={<ApplicationForm />} />
+        <Route path="/applicant/new-application2" element={<ApplicationForm2 />} />
         <Route path="/applicant/applications" element={<MyApplications />} />
         <Route path="/applicant/status" element={<ApplicationStatus />} />
         <Route path="/applicant/reports" element={<Report />} />

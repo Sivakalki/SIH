@@ -41,6 +41,7 @@ const { Title } = Typography;
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB
 
 const applicationSchema = z.object({
+
   // Personal Info Validation
   full_name: z.string().min(2, { message: "Full name must be at least 2 characters" }),
   dob: z.date().refine(date => {
@@ -142,10 +143,11 @@ function ApplicationForm() {
 
   const onSubmit = async (data) => {
     // Validate entire form data
+    console.log("function called successfully",data)
     try {
       // Validate using Zod schema
       const validatedData = applicationSchema.parse(data);
-      
+      console.log(validatedData, " is the valeidated data");
       // Prepare form data for submission
       const formData = new FormData();
 
@@ -526,7 +528,7 @@ function ApplicationForm() {
 
             <Form 
               layout="vertical"
-              onSubmit={handleSubmit(onSubmit)}
+              onFinish={handleSubmit(onSubmit)}
             >
               {steps[currentStep].content}
 
@@ -558,7 +560,7 @@ function ApplicationForm() {
                     loading={isSubmitting}
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Submitting...' : 'Submit Application'}
+                    {isSubmitting ? 'Submitting...' : 'Submit the Application'}
                   </Button>
                 )}
               </div>
