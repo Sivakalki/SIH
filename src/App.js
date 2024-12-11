@@ -40,9 +40,12 @@ import RIReports from './pages/users/ri/MyReports';
 
 // MRO Pages
 import Mro from './pages/dashboards/Mro';
-import MVRODashboard from './pages/users/mvro/Dashboard';
-import ApplicationsMvro from './pages/users/mvro/Applications';
-import MVROMyReports from './pages/users/mvro/MyReports';
+import MroDashboard from './pages/users/mro/Dashboard';
+import ApplicationsMro from './pages/users/mro/Applications';
+import MroReports from './pages/users/mro/MyReports';
+import PendingApplicationsMrO from './pages/users/mro/PendingApplications';
+import CompletedApplicationsMRO from './pages/users/mro/Completed';
+import ScheduleApplicationsMro from './pages/users/mro/ScheduleApplications';
 
 // DO Pages
 import Do from './pages/dashboards/Do';
@@ -91,14 +94,12 @@ const App = () => {
 
 
         {/* MRO Routes */}
-        <Route path="/mro" element={<Mro />} />
-        <Route path="/mvro" element={<MVRODashboard />} />
-        <Route path="/mvro/Applications" element={<ApplicationsMvro />} />
-        <Route path="/mvro/pending" element={<PendingApplicationsMVRO />} />
-        <Route path='/mvro/completed' element={<CompletedApplicationsMVRO />} />
-        <Route path="/mvro/reports" element={<MVROMyReports />} />
-
-
+        <Route path="/mro" element={<MroDashboard />} />
+        <Route path="/mro/applications" element={<ApplicationsMro />} />
+        <Route path="/mro/pending" element={<PendingApplicationsMrO />} />
+        <Route path="/mro/completed" element={<CompletedApplicationsMRO />} />
+        <Route path="/mro/reports" element={<MroReports />} />
+        <Route path="/mro/schedule" element={<ScheduleApplicationsMro />} />
 
         {/* DO Routes */}
         <Route path="/do" element={<Do />} />
