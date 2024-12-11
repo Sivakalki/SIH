@@ -29,6 +29,13 @@ import ScheduleApplications from './pages/users/svro/ScheduleApplications';
 import PendingApplicationsMVRO from './pages/users/mvro/PendingApplications';
 import CompletedApplicationsMVRO from './pages/users/mvro/Completed';
 
+
+// Ri pages
+import ApplicationsRi from './pages/users/ri/Applications';
+import RIDashboard from './pages/users/ri/Dashboard';
+import CompletedApplicationsRI from './pages/users/ri/Completed';
+import PendingApplicationsRI from './pages/users/ri/Pending';
+
 // MRO Pages
 import Mro from './pages/dashboards/Mro';
 import MVRODashboard from './pages/users/mvro/Dashboard';
@@ -37,6 +44,7 @@ import MVROMyReports from './pages/users/mvro/MyReports';
 
 // DO Pages
 import Do from './pages/dashboards/Do';
+import ReadyToReviewRI from './pages/users/ri/ReadyToReview';
 
 const App = () => {
   return (
@@ -68,6 +76,14 @@ const App = () => {
         <Route path="/svro/Resent" element={<ResentApplications />} />
         <Route path="/svro/reports" element={<MyReports />} />
 
+        {/* RI Routes */}
+        {/* <Route path="/ri" element={<RiDashboard />} /> */}
+        <Route path="/ri/Applications" element={<ApplicationsRi />} />
+        <Route path="/ri" element={<RIDashboard />} />
+        <Route path="/ri/completed" element={<CompletedApplicationsRI />} />
+        <Route path="/ri/pending" element={<PendingApplicationsRI />} />
+        <Route path="/ri/ready_to_review" element={<ReadyToReviewRI />} />
+
         {/* MRO Routes */}
         <Route path="/mro" element={<Mro />} />
         <Route path="/mvro" element={<MVRODashboard />} />
@@ -75,6 +91,8 @@ const App = () => {
         <Route path="/mvro/pending" element={<PendingApplicationsMVRO />} />
         <Route path='/mvro/completed' element={<CompletedApplicationsMVRO />} />
         <Route path="/mvro/reports" element={<MVROMyReports />} />
+
+
 
         {/* DO Routes */}
         <Route path="/do" element={<Do />} />

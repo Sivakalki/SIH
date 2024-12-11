@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Typography, Descriptions, Spin, message, Button, Badge, Space, Form, Input, Drawer, Upload, Tag } from 'antd';
 import { FileTextOutlined, UploadOutlined, CheckCircleOutlined, CloseCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { set } from 'react-hook-form';
 
 const { Title } = Typography;
 
-const MvroApplicationModal = ({ visible, applicationId, onCancel, onUpdate }) => {
+const RiApplicationModal = ({ visible, applicationId, onCancel, onUpdate }) => {
     const [loading, setLoading] = useState(false);
     const [applicationData, setApplicationData] = useState(null);
     const [verificationFormVisible, setVerificationFormVisible] = useState(false);
     const [form] = Form.useForm();
 
     useEffect(() => {
+        console.log(applicationId, visible);
         if (visible && applicationId) {
             fetchApplicationDetails();
         }
@@ -30,6 +32,7 @@ const MvroApplicationModal = ({ visible, applicationId, onCancel, onUpdate }) =>
                     },
                 }
             );
+            console.log(response.data.data);
             setApplicationData(response.data.data);
         } catch (error) {
             console.error('Error fetching application details:', error);
@@ -42,9 +45,8 @@ const MvroApplicationModal = ({ visible, applicationId, onCancel, onUpdate }) =>
     const handleVerificationSubmit = async (values) => {
         try {
             const token = localStorage.getItem('token');
-            
             const response = await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/mvro/create_report/${applicationId}`,
+                `${process.env.REACT_APP_BACKEND_URL}/ri/create_report/${applicationId}`,
                 {
                     description: values.remarks
                 },
@@ -73,17 +75,17 @@ const MvroApplicationModal = ({ visible, applicationId, onCancel, onUpdate }) =>
                 visible={visible}
                 onCancel={onCancel}
                 footer={[
-                    applicationData?.current_stage?.role_type === 'SVRO' ? (
+                    applicationData?.current_stage?.role_type === 'SVRO' || applicationData?.current_stage?.role_type === 'MVRO' ? (
                         <Button 
-                            key="svro-pending" 
+                            key="mvro-pending" 
                             type="default"
                             disabled
                             icon={<QuestionCircleOutlined />}
                         >
-                            Awaiting SVRO Report
+                            Awaiting MVRO Report
                         </Button>
                     ) : (
-                        applicationData?.current_stage?.role_type === 'RI' || applicationData?.current_stage?.role_type === 'MRO' ? (
+                        applicationData?.current_stage?.role_type === 'MRO' ? (
                             <Button key="submitted" type="default" disabled>
                                 Report Already Submitted
                             </Button>
@@ -120,9 +122,9 @@ const MvroApplicationModal = ({ visible, applicationId, onCancel, onUpdate }) =>
                                     } 
                                     text={applicationData.current_stage?.role_type || 'N/A'}
                                 />
-                                {applicationData.current_stage?.role_type === 'SVRO' && (
+                                {applicationData.current_stage?.role_type === 'MVRO' && (
                                     <Tag color="orange" style={{ marginLeft: '8px' }}>
-                                        Waiting for SVRO Report
+                                        Waiting for MVRO Report
                                     </Tag>
                                 )}
                             </Descriptions.Item>
@@ -219,4 +221,4 @@ const MvroApplicationModal = ({ visible, applicationId, onCancel, onUpdate }) =>
     );
 };
 
-export default MvroApplicationModal;
+export default RiApplicationModal;
