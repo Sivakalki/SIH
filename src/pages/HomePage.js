@@ -9,13 +9,14 @@ import {
   Col, 
   Typography, 
   Statistic, 
-  Modal, 
   Form, 
   Input, 
   Divider, 
   Menu, 
   Alert,
-  SubMenu
+  Space,
+  Modal,
+  message
 } from 'antd';
 import { 
   UserOutlined, 
@@ -31,21 +32,20 @@ import {
   LinkOutlined,
   CustomerServiceOutlined,
   MailOutlined,
-  InfoCircleOutlined
+  LockOutlined
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserContext } from '../components/userContext';
 import axios from 'axios';
-import Login from './Login';
+import SignUp from './SignUp';
 
 const { Header, Content, Footer } = Layout;
 const { Title, Paragraph, Text } = Typography;
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { token, logout } = useContext(UserContext);
+  const { token, login, logout } = useContext(UserContext);
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [loginModalVisible, setLoginModalVisible] = useState(false);
   const [userData, setUserData] = useState(null);
   const [role, setRole] = useState("");
   const [stats, setStats] = useState({
@@ -54,6 +54,10 @@ const HomePage = () => {
     processingTime: "2-3 days",
     userSatisfaction: "98%"
   });
+  const [loading, setLoading] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const [form] = Form.useForm();
 
   const fetchData = async () => {
     try {
@@ -76,12 +80,45 @@ const HomePage = () => {
     }
   }, [token]);
 
-  const handleStartApplication = () => {
-    if (token) {
-      navigate('/application-form');
-    } else {
-      setLoginModalVisible(true);
+  const onFinish = async (values) => {
+    setLoading(true);
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/users/login`, values);
+      
+      if (res.status === 200) {
+        const { token, role } = res.data;
+        login(token);
+        
+        message.success('Login successful!');
+
+        // Role-based navigation
+        const roleRoutes = {
+          'ADMIN': '/admin',
+          'SVRO': '/svro',
+          'MVRO': '/mvro',
+          'RI': '/ri',
+          'MRO': '/mro',
+          'APPLICANT': '/applicant'
+        };
+
+        navigate(roleRoutes[role] || '/applicant');
+      } else {
+        message.error(res.data.message || 'Login failed');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      message.error(error.response?.data?.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const showModal = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
   };
 
   const navigationItems = [
@@ -169,12 +206,6 @@ const HomePage = () => {
       message: 'Important: New Online Certificate Application Process', 
       description: 'Simplified digital application process now available for all government certificates.',
       type: 'info',
-      showIcon: true
-    },
-    { 
-      message: 'System Maintenance', 
-      description: 'Scheduled maintenance on 15th December, 2023. Minimal disruption expected.',
-      type: 'warning',
       showIcon: true
     }
   ];
@@ -293,7 +324,7 @@ const HomePage = () => {
           top: '64px', 
           width: '100%', 
           zIndex: 9, 
-          background: '#f0f2f5', 
+          background: '#EAEDFC', 
           height: '40px', 
           overflowY: 'hidden'
         }}
@@ -305,7 +336,6 @@ const HomePage = () => {
             description={alert.description}
             type={alert.type}
             showIcon={alert.showIcon}
-            closable
             style={{ 
               margin: '0',
               borderRadius: '0',
@@ -324,9 +354,9 @@ const HomePage = () => {
             padding: '2rem'
           }}
         >
-          {/* Full width text content */}
-          <Col xs={24}>
-            <div className="text-left max-w-4xl mx-auto pl-8">
+          {/* Left side: Content */}
+          <Col xs={24} md={12} style={{ padding: '0 2rem' }}>
+            <div className="text-left max-w-xl mx-auto">
               <Title 
                 level={2} 
                 style={{ 
@@ -350,7 +380,7 @@ const HomePage = () => {
               <Button 
                 type="primary" 
                 size="large"
-                onClick={handleStartApplication}
+                onClick={() => navigate('/application-form')}
                 style={{ 
                   background: 'linear-gradient(to right, #1890ff, #722ed1)',
                   borderColor: 'transparent'
@@ -359,6 +389,78 @@ const HomePage = () => {
                 Start Application
               </Button>
             </div>
+          </Col>
+          
+          {/* Right side: Login Form */}
+          <Col xs={24} md={12} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Card 
+              style={{ 
+                width: '100%', 
+                maxWidth: '400px',
+                borderRadius: '8px', 
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                
+              }}
+            >
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <Text strong style={{ color: '#1890ff', fontSize: '18px' }}>
+                    Login
+                  </Text>
+                </div>
+
+                <Form
+                  form={form}
+                  name="login"
+                  onFinish={onFinish}
+                  layout="vertical"
+                  autoComplete="off"
+                >
+                  <Form.Item
+                    name="email"
+                    rules={[
+                      { required: true, message: 'Please input your email!' },
+                      { type: 'email', message: 'Please enter a valid email!' }
+                    ]}
+                  >
+                    <Input
+                      prefix={<MailOutlined style={{ color: '#1890ff' }} />}
+                      placeholder="Email"
+                      size="large"
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="password"
+                    rules={[{ required: true, message: 'Please input your password!' }]}
+                  >
+                    <Input.Password
+                      prefix={<LockOutlined style={{ color: '#1890ff' }} />}
+                      placeholder="Password"
+                      size="large"
+                    />
+                  </Form.Item>
+
+                  <Form.Item>
+                    <Button 
+                      type="primary" 
+                      htmlType="submit" 
+                      block 
+                      loading={loading}
+                      size="large"
+                    >
+                      Login
+                    </Button>
+                  </Form.Item>
+                </Form>
+
+                <div style={{ textAlign: 'center' }}>
+                  <Text type="secondary">
+                    Don't have an account? <a onClick={showModal}>Sign Up</a>
+                  </Text>
+                </div>
+              </Space>
+            </Card>
           </Col>
         </Row>
 
@@ -456,18 +558,20 @@ const HomePage = () => {
         )}
       </Drawer>
 
-      {/* Login Modal */}
-      <Modal
-        title={null}
-        open={loginModalVisible}
-        onCancel={() => setLoginModalVisible(false)}
+      {/* Sign Up Modal */}
+      <Modal 
+        title="Sign Up" 
+        visible={isModalVisible} 
+        onCancel={handleCancel} 
         footer={null}
-        width={400}
+        style={{ top: 20 }}
+        bodyStyle={{ padding: '20px' }}
       >
-        <Login />
+        <SignUp />
       </Modal>
     </Layout>
   );
 };
 
 export default HomePage;
+

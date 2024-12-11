@@ -48,9 +48,10 @@ export default function Applications() {
   const { token, logout } = useContext(UserContext);
   const [userData, setUserData] = useState(null);
   const [role, setRole] = useState("");
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [userLoading, setUserLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [userLoading, setUserLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -70,23 +71,6 @@ export default function Applications() {
     }
   }, [role]);
 
-  const fetchApplications = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/all_applications`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setApplications(response.data.data);
-    } catch (error) {
-      if (handleApiError(error)) return;
-      message.error('Failed to fetch applications');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchData = async () => {
     try {
       const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/users/user`, {
@@ -104,6 +88,31 @@ export default function Applications() {
     } finally {
       setUserLoading(false);
     }
+  };
+
+  const fetchApplications = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/all_applications`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setApplications(response.data.data);
+    } catch (error) {
+      if (handleApiError(error)) return;
+      message.error('Failed to fetch applications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openDrawer = () => {
+    setDrawerVisible(true);
+  };
+
+  const closeDrawer = () => {
+    setDrawerVisible(false);
   };
 
   const handleViewApplication = async (application) => {
@@ -133,6 +142,7 @@ export default function Applications() {
   };
 
   const handleStageFilterChange = (value) => {
+    console.log('Selected stage:', value); // Log the selected stage
     setCurrentStageFilter(value);
   };
 
@@ -288,8 +298,9 @@ export default function Applications() {
 
   return (
     <SvroLayout logout={logout}>
-      <div className="mb-6">
+      <div className="mb-6" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Title level={2}>Applications</Title>
+        <Button icon={<UserOutlined />} onClick={openDrawer}>Profile</Button>
       </div>
 
       <Card className="shadow-md">
@@ -544,6 +555,28 @@ export default function Applications() {
             />
           </Form.Item>
         </Form>
+      </Drawer>
+
+      <Drawer
+        title="User Profile"
+        placement="right"
+        onClose={closeDrawer}
+        visible={drawerVisible}
+        width={400}
+      >
+        <Card>
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <Avatar size={64} icon={<UserOutlined />} />
+            <Title level={4} style={{ marginTop: '10px', marginBottom: '0' }}>
+              {userData?.name || 'User'}
+            </Title>
+            <p>{userData?.email || 'No email available'}</p>
+          </div>
+          <Descriptions column={1}>
+            <Descriptions.Item label="Role">{role}</Descriptions.Item>
+            <Descriptions.Item label="Status">Active</Descriptions.Item>
+          </Descriptions>
+        </Card>
       </Drawer>
     </SvroLayout>
   );
