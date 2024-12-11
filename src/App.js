@@ -36,6 +36,7 @@ import ApplicationsRi from './pages/users/ri/Applications';
 import RIDashboard from './pages/users/ri/Dashboard';
 import CompletedApplicationsRI from './pages/users/ri/Completed';
 import PendingApplicationsRI from './pages/users/ri/Pending';
+import RIReports from './pages/users/ri/MyReports';
 
 // MRO Pages
 import Mro from './pages/dashboards/Mro';
@@ -86,6 +87,8 @@ const App = () => {
         <Route path="/ri/completed" element={<CompletedApplicationsRI />} />
         <Route path="/ri/pending" element={<PendingApplicationsRI />} />
         <Route path="/ri/ready_to_review" element={<ReadyToReviewRI />} />
+        <Route path="/ri/reports" element={<RIReports />} />
+
 
         {/* MRO Routes */}
         <Route path="/mro" element={<Mro />} />

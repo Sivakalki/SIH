@@ -324,8 +324,8 @@ const HomePage = () => {
           top: '64px', 
           width: '100%', 
           zIndex: 9, 
-          background: '#EAEDFC', 
-          height: '40px', 
+          background: '#ff6700', 
+          height: '100px', 
           overflowY: 'hidden'
         }}
       >
