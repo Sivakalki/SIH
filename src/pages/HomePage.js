@@ -305,15 +305,7 @@ const HomePage = () => {
               ))}
             </Menu>
           </Col>
-          <Col>
-            <div className="flex justify-end">
-              <Button
-                icon={<UserOutlined />}
-                onClick={() => setDrawerVisible(true)}
-                shape="circle"
-              />
-            </div>
-          </Col>
+          
         </Row>
       </Header>
 
@@ -528,35 +520,6 @@ const HomePage = () => {
         </div>
       </Footer>
 
-      {/* User Profile Drawer */}
-      <Drawer
-        title="User Profile"
-        placement="right"
-        onClose={() => setDrawerVisible(false)}
-        open={drawerVisible}
-      >
-        {userData && (
-          <div className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <Avatar size={64} icon={<UserOutlined />} />
-              <div>
-                <Title level={4}>{userData.name}</Title>
-                <Text type="secondary">{userData.email}</Text>
-              </div>
-            </div>
-            <Divider />
-            <Button 
-              type="primary" 
-              danger 
-              icon={<LogoutOutlined />} 
-              onClick={logout} 
-              block
-            >
-              Logout
-            </Button>
-          </div>
-        )}
-      </Drawer>
 
       {/* Sign Up Modal */}
       <Modal 
