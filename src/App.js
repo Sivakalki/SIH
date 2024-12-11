@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import SignUp from './pages/SignUp';
 import Login from './pages/Login';
+import ContactUs from './pages/ContactUs';
 
 // Applicant Pages
 import ApplicantDashboard from './pages/users/applicant/Dashboard';
@@ -55,6 +56,7 @@ const App = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/contactus" element={<ContactUs />} />
 
         {/* Applicant Routes */}
         <Route path="/applicant" element={<ApplicantDashboard />} />

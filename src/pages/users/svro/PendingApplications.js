@@ -101,6 +101,14 @@ export default function PendingApplications() {
         }
     };
 
+    const openDrawer = () => {
+        setDrawerVisible(true);
+    };
+
+    const closeDrawer = () => {
+        setDrawerVisible(false);
+    };
+
     const openRemarksForm = () => {
         setRemarksDrawerVisible(true);
     };
@@ -248,7 +256,10 @@ export default function PendingApplications() {
                 <Card>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                         <Title level={2} style={{ margin: 0, color: '#1890ff' }}>Pending Applications</Title>
-                        <Button onClick={() => navigate('/svro')}>Back to Dashboard</Button>
+                        <Space>
+                            <Button onClick={() => navigate('/svro')}>Back to Dashboard</Button>
+                            <Button icon={<UserOutlined />} onClick={openDrawer}>Profile</Button>
+                        </Space>
                     </div>
                     <Table
                         columns={columns}
@@ -295,7 +306,7 @@ export default function PendingApplications() {
                             }}
                         >
                             Close
-                        </Button>
+                        </Button>,
                     ]}
                     width={800}
                 >
@@ -399,38 +410,25 @@ export default function PendingApplications() {
 
                 {/* Resend Application Drawer */}
                 <Drawer
-                    title="Resend Application"
+                    title="User Profile"
                     placement="right"
-                    onClose={() => {
-                        setResendDrawerVisible(false);
-                        setResendDescription('');
-                    }}
-                    open={resendDrawerVisible}
+                    onClose={closeDrawer}
+                    visible={drawerVisible}
+                    width={400}
                 >
-                    <Form layout="vertical">
-                        <Form.Item
-                            label="Description"
-                            required
-                            validateStatus={!resendDescription.trim() ? 'error' : ''}
-                            help={!resendDescription.trim() ? 'Please provide a description' : ''}
-                        >
-                            <Input.TextArea
-                                rows={4}
-                                value={resendDescription}
-                                onChange={(e) => setResendDescription(e.target.value)}
-                                placeholder="Enter reason for resending"
-                            />
-                        </Form.Item>
-                        <Form.Item>
-                            <Button
-                                type="primary"
-                                onClick={handleResendApplication}
-                                loading={resendLoading}
-                            >
-                                Submit
-                            </Button>
-                        </Form.Item>
-                    </Form>
+                    <Card>
+                        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                            <Avatar size={64} icon={<UserOutlined />} />
+                            <Title level={4} style={{ marginTop: '10px', marginBottom: '0' }}>
+                                {userData?.name || 'User'}
+                            </Title>
+                            <p>{userData?.email || 'No email available'}</p>
+                        </div>
+                        <Descriptions column={1}>
+                            <Descriptions.Item label="Role">SVRO</Descriptions.Item>
+                            <Descriptions.Item label="Status">Active</Descriptions.Item>
+                        </Descriptions>
+                    </Card>
                 </Drawer>
             </div>
         </SvroLayout>
