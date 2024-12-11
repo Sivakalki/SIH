@@ -1,5 +1,5 @@
 import {  LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons'
-import { Button, ConfigProvider, Form, Input, Select, Typography, message } from 'antd'
+import { Button, ConfigProvider, Form, Input, Select, Typography, message, Space } from 'antd'
 import { useContext, useState } from 'react'
 import { Link,useNavigate } from 'react-router-dom'
 import axios from 'axios'
@@ -50,90 +50,102 @@ export default function SignUp() {
         },
       }}
     >
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
-          <div className="text-center">
-            <Title level={2} className="text-gray-800">Create your account</Title>
-          </div>
-          <Form
-            name="signup"
-            onFinish={onFinish}
-            layout="vertical"
-            requiredMark={true}
+      <div style={{ padding: '20px' }}>
+        <Title level={3} style={{ textAlign: 'center', marginBottom: '20px' }}>
+          Create your account
+        </Title>
+        <Form
+          name="signup"
+          onFinish={onFinish}
+          layout="vertical"
+          autoComplete="off"
+        >
+          <Form.Item
+            name="username"
+            rules={[{ required: true, message: 'Please input your username!' }]}
           >
-            <Form.Item
-              name="username"
-              label={<span className="flex items-center">Username </span>}
-              rules={[{ required: true, message: 'Please input your username!' }]}
-            >
-              <Input prefix={<UserOutlined className="text-gray-400" />} placeholder="Username" />
-            </Form.Item>
-            <Form.Item
-              name="email"
-              label={<span className="flex items-center">Email </span>}
-              rules={[
-                { required: true, message: 'Please input your email!' },
-                { type: 'email', message: 'Please enter a valid email!' },
-              ]}
-            >
-              <Input prefix={<MailOutlined className="text-gray-400" />} placeholder="Email" />
-            </Form.Item>
-            <Form.Item
-              name="password"
-              label={<span className="flex items-center">Password </span>}
-              rules={[
-                { required: true, message: 'Please input your password!' },
-                { min: 8, message: 'Password must be at least 8 characters long' },
-                {
-                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/,
-                  message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+            <Input
+              prefix={<UserOutlined style={{ color: '#1890ff' }} />}
+              placeholder="Username"
+              size="large"
+            />
+          </Form.Item>
+          <Form.Item
+            name="email"
+            rules={[
+              { required: true, message: 'Please input your email!' },
+              { type: 'email', message: 'Please enter a valid email!' },
+            ]}
+          >
+            <Input
+              prefix={<MailOutlined style={{ color: '#1890ff' }} />}
+              placeholder="Email"
+              size="large"
+            />
+          </Form.Item>
+          <Form.Item
+            name="password"
+            rules={[
+              { required: true, message: 'Please input your password!' },
+              { min: 8, message: 'Password must be at least 8 characters long' },
+              {
+                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/,
+                message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+              },
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined style={{ color: '#1890ff' }} />}
+              placeholder="Password"
+              size="large"
+            />
+          </Form.Item>
+          <Form.Item
+            name="confirm_password"
+            dependencies={['password']}
+            rules={[
+              { required: true, message: 'Please confirm your password!' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('password') === value) {
+                    return Promise.resolve()
+                  }
+                  return Promise.reject(new Error('The two passwords do not match!'))
                 },
-              ]}
-            >
-              <Input.Password prefix={<LockOutlined className="text-gray-400" />} placeholder="Password" />
-            </Form.Item>
-            <Form.Item
-              name="confirm_password"
-              label={<span className="flex items-center">Confirm Password </span>}
-              dependencies={['password']}
-              rules={[
-                { required: true, message: 'Please confirm your password!' },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue('password') === value) {
-                      return Promise.resolve()
-                    }
-                    return Promise.reject(new Error('The two passwords do not match!'))
-                  },
-                }),
-              ]}
-            >
-              <Input.Password prefix={<LockOutlined className="text-gray-400" />} placeholder="Confirm Password" />
-            </Form.Item>
-            <Form.Item
-              name="phone"
-              label={<span className="flex items-center">Phone number </span>}
-              rules={[
-                { required: true, message: 'Please enter your phone number' },
-              ]}
-            >
-              <Input.TextArea prefix={<LockOutlined className="text-gray-400" />} placeholder="+91 242334322" />
-            </Form.Item>
-            
-            <Form.Item>
-              <Button type="primary" htmlType="submit" className="w-full h-10 text-lg" loading={loading}>
-                Sign Up
-              </Button>
-            </Form.Item>
-          </Form>
-          <div className="text-center">
-            <Text type="secondary">Already have an account?</Text>
-            <Link to="/login">
-              <Button type="link" className="font-bold">
-                Log in
-              </Button>
-            </Link>
-          </div>
+              }),
+            ]}
+          >
+            <Input.Password
+              prefix={<LockOutlined style={{ color: '#1890ff' }} />}
+              placeholder="Confirm Password"
+              size="large"
+            />
+          </Form.Item>
+          <Form.Item
+            name="phone"
+            rules={[
+              { required: true, message: 'Please enter your phone number' },
+            ]}
+          >
+            <Input.TextArea
+              prefix={<LockOutlined style={{ color: '#1890ff' }} />}
+              placeholder="+91 242334322"
+              size="large"
+            />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block size="large" loading={loading}>
+              Sign Up
+            </Button>
+          </Form.Item>
+        </Form>
+        <div className="text-center">
+          <Text type="secondary">Already have an account?</Text>
+          <Link to="/login">
+            <Button type="link" className="font-bold">
+              Log in
+            </Button>
+          </Link>
         </div>
       </div>
     </ConfigProvider>
