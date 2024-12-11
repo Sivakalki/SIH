@@ -10,7 +10,7 @@ import RiHeader from '../../../components/header/RiHeader';
 
 const { Title } = Typography;
 
-export default function CompletedApplicationsRI() {
+export default function ReadyToReviewRI() {
     const [applications, setApplications] = useState([]);
     const [selectedApplicationId, setSelectedApplicationId] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -30,8 +30,13 @@ export default function CompletedApplicationsRI() {
             return;
         }
         fetchUserProfile();
-        fetchApplications();
     }, [token]);
+
+    useEffect(() => {
+        if (userData && role === "RI") {
+            fetchApplications();
+        }
+    }, [userData, role]);
 
     useEffect(() => {
         if (userData && role && role !== "RI") {
@@ -50,8 +55,8 @@ export default function CompletedApplicationsRI() {
             setUserData(res.data.user);
             setRole(res.data.role);
         } catch (e) {
-            setErrorMessage("Token expired. Login again")
-            console.error('There is an error in getting profile details', e);
+            setErrorMessage("Token expired. Login again");
+            console.error('Error fetching user profile:', e);
         } finally {
             setUserLoading(false);
         }
@@ -59,14 +64,15 @@ export default function CompletedApplicationsRI() {
 
     const fetchApplications = async () => {
         setLoading(true);
+        console.log("called this")
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/ri/completed_applications`, {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/ri/ready_to_review`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             });
             // Ensure the response data is an array and add key property
-            const formattedData = Array.isArray(response.data) ? response.data : [];
+            const formattedData = Array.isArray(response.data.data) ? response.data.data : [];
             setApplications(formattedData.map(app => ({
                 ...app,
                 key: app.id || app.application_id // Ensure each row has a unique key
@@ -96,11 +102,11 @@ export default function CompletedApplicationsRI() {
             key: 'current_stage',
             render: (status) => (
                 <span style={{
-                    color: '#52c41a',
+                    color: '#faad14',
                     textTransform: 'capitalize',
                     fontWeight: 'bold',
                 }}>
-                    Completed
+                    Pending
                 </span>
             ),
         },
@@ -151,7 +157,7 @@ export default function CompletedApplicationsRI() {
                 overflowY: 'auto'
             }}>
                 <Card>
-                    <Title level={2} style={{ marginBottom: '24px' }}>Completed Applications</Title>
+                    <Title level={2} style={{ marginBottom: '24px' }}>Ready To Review Applications</Title>
                     <Table
                         columns={columns}
                         dataSource={applications}
