@@ -11,7 +11,8 @@ import {
   message,
   Layout,
   Menu,
-  Avatar
+  Avatar,
+  Timeline
 } from 'antd';
 import { 
   MailOutlined, 
@@ -27,7 +28,8 @@ import {
   AppstoreOutlined,
   PictureOutlined,
   DownloadOutlined,
-  LinkOutlined
+  LinkOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../components/userContext';
@@ -411,7 +413,7 @@ const ContactUs = () => {
               <Card 
                 title="Our Location" 
                 style={{ 
-                  height: '100%', 
+                  height: '55%', 
                   boxShadow: '0 4px 6px rgba(0,0,0,0.1)' 
                 }}
               >
@@ -426,6 +428,43 @@ const ContactUs = () => {
                     referrerPolicy="no-referrer-when-downgrade"
                   ></iframe>
                 </div>
+              </Card>
+              <Card 
+                title="Office Hours" 
+                style={{ 
+                  marginTop: '1rem', 
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)' 
+                }}
+              >
+                <Timeline mode="left">
+                  <Timeline.Item label="Monday - Friday">
+                    <Text>9:00 AM - 5:00 PM</Text>
+                  </Timeline.Item>
+                  <Timeline.Item label="Saturday">
+                    <Text>10:00 AM - 2:00 PM</Text>
+                  </Timeline.Item>
+                  <Timeline.Item label="Sunday" dot={<ClockCircleOutlined style={{ fontSize: '16px' }} />}>
+                    <Text type="secondary">Closed</Text>
+                  </Timeline.Item>
+                </Timeline>
+              </Card>
+
+              <Card 
+                title="Additional Information" 
+                style={{ 
+                  marginTop: '1rem', 
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)' 
+                }}
+              >
+                <Paragraph>
+                  For urgent matters outside of office hours, please contact our 24/7 helpline at <Text strong>+91-80-1234-5678</Text>.
+                </Paragraph>
+                <Paragraph>
+                  For general inquiries, you can also reach us at <Text strong>info@certitrack.gov.in</Text>.
+                </Paragraph>
+                <Paragraph>
+                  Please note that response times may vary depending on the nature and complexity of your query.
+                </Paragraph>
               </Card>
             </Col>
           </Row>
