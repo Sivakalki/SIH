@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Select, Button, Space, Typography, message, Card,  Drawer, Avatar,Modal, Badge, Spin, Descriptions, Tag } from 'antd';
-import {EyeOutlined, UserOutlined, LogoutOutlined, FileTextOutlined,  BellOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { Table, Select, Button, Space, Typography, message, Card, Drawer, Avatar, Modal, Badge, Spin, Descriptions, Form, Input, Tag } from 'antd';
+import { EyeOutlined, UserOutlined, LogoutOutlined, FileTextOutlined, BellOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Line } from '@ant-design/plots';
 import { Link } from 'react-router-dom';
 import StatisticCard from './utils/statistic-card';
@@ -8,8 +8,10 @@ import NotificationDrawer from './utils/notification-drawer';
 import { UserContext } from '../../../components/userContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import MroLayout from '../../../components/layout/MroLayout';
+import MroApplicationModal from '../../../components/modals/MroApplicationModal';
+import MroHeader from '../../../components/header/MroHeader';
 import { motion } from 'framer-motion';
-
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -18,8 +20,7 @@ const NavItem = ({ to, children, isActive, onClick }) => (
     <motion.div
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className={`px-4 py-2 rounded-md cursor-pointer ${isActive ? 'bg-secondary text-white' : 'text-white hover:bg-secondary/10'
-            }`}
+        className={`px-4 py-2 rounded-md cursor-pointer ${isActive ? 'bg-secondary text-white' : 'text-white hover:bg-secondary/10'}`}
         onClick={onClick} // Attach onClick for navigation
     >
         <Link to={to}>{children}</Link>
@@ -33,14 +34,14 @@ const mockNotifications = [
     { id: 3, message: 'Reminder: Review pending applications', read: false },
 ];
 
+
 export default function Applications() {
     const [applications, setApplications] = useState([]);
-    const [selectedApplication, setSelectedApplication] = useState(null);
+    const [selectedApplicationId, setSelectedApplicationId] = useState(null);
     const [profileDrawerVisible, setProfileDrawerVisible] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [notificationDrawerVisible, setNotificationDrawerVisible] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
-    const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
     const [userData, setUserData] = useState(null);
     const [notifications, setNotifications] = useState(mockNotifications);
     const { token, logout } = useContext(UserContext);
@@ -48,11 +49,14 @@ export default function Applications() {
     const [errorMessage, setErrorMessage] = useState("");
     const [userLoading, setUserLoading] = useState(true);
     const [activeNavItem, setActiveNavItem] = useState('applications');
-    const [report, SetReport] = useState([]);
     const [role, setRole] = useState("");
-    const navigate = useNavigate()
+    const navigate = useNavigate();
     const [filterStatus, setFilterStatus] = useState('All');
     const [loadingApplicationId, setLoadingApplicationId] = useState(null);
+    const [report, SetReport] = useState([]);
+    const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
+    const [filter, setFilter] = useState('All');
+
     useEffect(() => {
         if (!token) {
             setErrorMessage("You are not logged in. Please log in to access this page.");
@@ -64,8 +68,8 @@ export default function Applications() {
     }, [token]);
 
     useEffect(() => {
-        if (userData && role && role !== "SVRO") {
-            setErrorMessage("Access denied. Only SVROs are allowed to view this page.");
+        if (userData && role && role !== "MRO") {
+            setErrorMessage("Access denied. Only mros are allowed to view this page.");
             setUserLoading(false);
         }
     }, [role]);
@@ -73,7 +77,7 @@ export default function Applications() {
     const fetchApplications = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/pending_applications`, {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/mro/pending_applications`, {
                 headers: {
                     Authorization: `Bearer ${token}`, // Include token in Authorization header
                 },
@@ -137,11 +141,11 @@ export default function Applications() {
         },
         {
             title: 'Status',
-            dataIndex: 'role_type',
-            key: 'role_type',
+            dataIndex: 'current_stage',
+            key: 'current_stage',
             render: (status) => (
                 <span style={{
-                    color: status === 'pending' ? '#faad14' : status === 'completed' ? '#52c41a' : '#f5222d',
+                    color: status === 'mro' ? '#faad14' : status === 'MVRO' ? '#f5222d' : status === 'SVRO' ? '#f5222d': '#52c41a',
                     textTransform: 'capitalize',
                     fontWeight: 'bold',
                 }}>
@@ -164,18 +168,9 @@ export default function Applications() {
         },
     ];
 
-    const handleViewApplication = async (id) => {
-        setLoadingApplicationId(id);
-        try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${id}`);
-            setSelectedApplication(response.data.data);
-            SetReport(response.data.report)
-            setModalVisible(true);
-        } catch (error) {
-            message.error('Failed to load application details');
-        } finally {
-            setLoadingApplicationId(null);
-        }
+    const handleViewApplication = (id) => {
+        setSelectedApplicationId(id);
+        setModalVisible(true);
     };
 
     const openDrawer = () => {
@@ -188,7 +183,7 @@ export default function Applications() {
 
     const openRemarksForm = () => {
         setRemarksDrawerVisible(true);
-      };
+    };
 
     const openProfileDrawer = () => {
         setProfileDrawerVisible(true);
@@ -210,21 +205,52 @@ export default function Applications() {
         setFilterStatus(value);
     };
 
-    const filteredApplications = applications.filter(app => 
+    const filteredApplications = applications.filter(app =>
         filterStatus === 'All' || app.role_type === filterStatus
     );
 
+    const filteredApplicationsByStage = applications.filter(application => {
+        return filter === 'All' || application.current_stage === filter;
+    });
+
+    const submitRemarks = async (values) => {
+        try {
+            console.log(values);
+            await axios.post(
+                `${process.env.REACT_APP_BACKEND_URL}/mro/create_report/${selectedApplicationId}`,
+                { description: values.remarks }, 
+                 // This is the request body
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            message.success('Remarks submitted successfully');
+            setModalVisible(false);
+            fetchApplications(); // Refresh the applications list
+        } catch (error) {
+            console.error('Error submitting remarks:', error);
+            message.error('Failed to submit remarks');
+        }
+    };
+
     const unreadNotificationsCount = notifications.filter(n => !n.read).length;
     const handleNavigate = (path) => {
-        const basePath = "/svro2"; // Define your base path
-        if(path === 'dashboard'){
+        const basePath = "/mro"; // Define your base path
+        if (path === 'dashboard') {
             console.log("ented here")
             navigate(`${basePath}`)
-        }else{
-            console.log("NEthered herre")       
+        } else {
+            console.log("NEthered herre")
             navigate(`${basePath}/${path}`);
         }
     }
+
+    const handleFilterChangeStage = (value) => {
+        setFilter(value);
+    };
+
     return (
         <div className="vro-dashboard bg-background min-h-screen">
             <nav className="bg-primary text-white p-4 flex items-center justify-between">
@@ -256,8 +282,19 @@ export default function Applications() {
             </nav>
             <Card>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <Title level={2}>Applications</Title>
+                    <Title level={2} style={{ margin: 0, color: '#1890ff' }}>VRO Dashboard</Title>
                     <Space>
+                        <Select
+                            defaultValue="All"
+                            style={{ width: 120 }}
+                            onChange={handleFilterChange}
+                        >
+                            <Option value="All">All</Option>
+                            <Option value="SVRO">SVRO</Option>
+                            <Option value="MVRO">MVRO</Option>
+                            <Option value="MRO">MRO</Option>
+                            <Option value="RI">RI</Option>
+                        </Select>
                         <Button icon={<UserOutlined />} onClick={openDrawer}>Profile</Button>
                     </Space>
                 </div>
@@ -355,24 +392,34 @@ export default function Applications() {
             <Drawer
                 title="User Profile"
                 placement="right"
-                onClose={closeDrawer}
-                open={drawerVisible}
+                onClose={closeProfileDrawer}
+                open={profileDrawerVisible}
             >
-                {userData && (
-                    <div className="space-y-4">
-                        <div className="flex items-center space-x-4">
-                            <Avatar size={64} icon={<UserOutlined />} />
-                            <div>
-                                <h2 className="text-xl font-semibold">{userData.name}</h2>
-                                <p className="text-gray-500">{role}</p>
-                            </div>
-                        </div>
+                <div className="space-y-4">
+                    <div className="flex items-center space-x-4">
+                        <Avatar size={64} icon={<UserOutlined />} />
                         <div>
-                            <p className="text-sm text-gray-500">Email</p>
-                            <p>{userData.email}</p>
+                            <h2 className="text-xl font-semibold">{userData.name}</h2>
+                            <p className="text-gray-500">{userData.role}</p>
                         </div>
                     </div>
-                )}
+                    <div>
+                        <p className="text-sm text-gray-500">Email</p>
+                        <p>{userData.email}</p>
+                    </div>
+                    <Button block onClick={() => {
+                        message.info('Navigating to full profile page');
+                        closeProfileDrawer();
+                    }}>
+                        View Full Profile
+                    </Button>
+                    <Button danger block onClick={() => {
+                        logout();
+                        closeProfileDrawer();
+                    }}>
+                        <LogoutOutlined /> Logout
+                    </Button>
+                </div>
             </Drawer>
 
             <NotificationDrawer

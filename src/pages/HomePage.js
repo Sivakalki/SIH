@@ -324,8 +324,8 @@ const HomePage = () => {
           top: '64px', 
           width: '100%', 
           zIndex: 9, 
-          background: '#EAEDFC', 
-          height: '40px', 
+          background: '#ff6700', 
+          height: '100px', 
           overflowY: 'hidden'
         }}
       >
@@ -520,7 +520,7 @@ const HomePage = () => {
             <Col xs={24} md={8}>
               <div className="flex justify-end space-x-4">
                 <Link to="/about">About</Link>
-                <Link to="/contact">Contact</Link>
+                <Link to="/contactus">Contact</Link>
                 <Link to="/privacy">Privacy</Link>
               </div>
             </Col>

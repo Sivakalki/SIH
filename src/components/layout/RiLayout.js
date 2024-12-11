@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Layout, Menu } from 'antd';
 import { 
   DashboardOutlined, 
@@ -8,17 +8,19 @@ import {
   BarsOutlined,
   CalendarOutlined,
   CheckCircleOutlined,
+  SnippetsOutlined,
   HomeOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { UserContext } from '../userContext';
 
 const { Sider, Content } = Layout;
 
-export default function RiLayout({ children, logout }) {
+export default function RiLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
+  const {logout} = useContext(UserContext);
   const handleMenuClick = (item) => {
     if (item.key === 'logout') {
       logout();
@@ -53,6 +55,7 @@ export default function RiLayout({ children, logout }) {
           items={[
             {
               key: '/ri',
+              
               icon: <HomeOutlined />,
               label: 'Home',
             },
@@ -75,6 +78,11 @@ export default function RiLayout({ children, logout }) {
               key: '/ri/completed',
               icon: <CheckCircleOutlined />,
               label: 'Completed Applications',
+            },
+            {
+              key: '/ri/reports',
+              icon: <SnippetsOutlined/>,
+              label: 'Reports',
             },
             {
               key: 'logout',

@@ -27,6 +27,36 @@ const DocumentUploadForm = ({
     defaultValue: ''
   });
 
+  const DocumentUpload = ({ fieldName, label, control, errors, beforeUpload }) => (
+    <Form.Item
+      label={label}
+      validateStatus={errors[fieldName] ? "error" : ""}
+      help={errors[fieldName]?.message}
+    >
+      <Controller
+        name={fieldName}
+        control={control}
+        render={({ field: { onChange } }) => (
+          <Upload
+            beforeUpload={(file) => {
+              const isValid = beforeUpload(file);
+              return false; // Prevent automatic upload
+            }}
+            onChange={({ fileList }) =>
+              onChange(fileList.map(f => ({
+                ...f,
+                originFileObj: f.originFileObj || f,
+              })))
+            }
+            maxCount={1}
+          >
+            <Button icon={<UploadOutlined />}>Upload {label}</Button>
+          </Upload>
+        )}
+      />
+    </Form.Item>
+  );
+
   const beforeUpload = (file) => {
     const isLessThan1MB = file.size <= MAX_FILE_SIZE;
     const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
@@ -52,6 +82,7 @@ const DocumentUploadForm = ({
         <Controller
           name="proofOfResidence"
           control={control}
+          rules={{ required: 'Please select a type of residence proof.' }}
           render={({ field }) => (
             <Radio.Group {...field}>
               <Radio value="aadhaar">Aadhaar Card</Radio>
@@ -60,97 +91,36 @@ const DocumentUploadForm = ({
             </Radio.Group>
           )}
         />
+
       </Form.Item>
 
       {/* Conditional Upload Fields based on Residence Proof Type */}
       {proofOfResidence === 'aadhaar' && (
-        <Form.Item
-          label="Upload Aadhaar Card"
-          validateStatus={errors.aadharCardImage ? "error" : ""}
-          help={errors.aadharCardImage?.message}
-        >
-          <Controller
-            name="aadharCardImage"
-            control={control}
-            render={({ field: { onChange } }) => (
-              <Upload
-                beforeUpload={(file) => {
-                  const isValid = beforeUpload(file);
-                  return false; // Prevent automatic upload
-                }}
-                onChange={({ file, fileList }) => {
-                  onChange(fileList.map(f => ({
-                    ...f,
-                    originFileObj: f.originFileObj || file
-                  })));
-                }}
-                maxCount={1}
-              >
-                <Button icon={<UploadOutlined />}>Upload Aadhaar Card</Button>
-              </Upload>
-            )}
-          />
-        </Form.Item>
+        <DocumentUpload
+          fieldName="aadharCardImage"
+          label="Aadhaar Card"
+          control={control}
+          errors={errors}
+          beforeUpload={beforeUpload}
+        />
       )}
-
       {proofOfResidence === 'electricity' && (
-        <Form.Item
-          label="Upload Electricity Bill"
-          validateStatus={errors.electricityBillImage ? "error" : ""}
-          help={errors.electricityBillImage?.message}
-        >
-          <Controller
-            name="electricityBillImage"
-            control={control}
-            render={({ field: { onChange } }) => (
-              <Upload
-                beforeUpload={(file) => {
-                  const isValid = beforeUpload(file);
-                  return false; // Prevent automatic upload
-                }}
-                onChange={({ file, fileList }) => {
-                  onChange(fileList.map(f => ({
-                    ...f,
-                    originFileObj: f.originFileObj || file
-                  })));
-                }}
-                maxCount={1}
-              >
-                <Button icon={<UploadOutlined />}>Upload Electricity Bill</Button>
-              </Upload>
-            )}
-          />
-        </Form.Item>
+        <DocumentUpload
+          fieldName="electricityBillImage"
+          label="Electricity Bill"
+          control={control}
+          errors={errors}
+          beforeUpload={beforeUpload}
+        />
       )}
-
       {proofOfResidence === 'gas' && (
-        <Form.Item
-          label="Upload Gas Bill"
-          validateStatus={errors.gasBillImage ? "error" : ""}
-          help={errors.gasBillImage?.message}
-        >
-          <Controller
-            name="gasBillImage"
-            control={control}
-            render={({ field: { onChange } }) => (
-              <Upload
-                beforeUpload={(file) => {
-                  const isValid = beforeUpload(file);
-                  return false; // Prevent automatic upload
-                }}
-                onChange={({ file, fileList }) => {
-                  onChange(fileList.map(f => ({
-                    ...f,
-                    originFileObj: f.originFileObj || file
-                  })));
-                }}
-                maxCount={1}
-              >
-                <Button icon={<UploadOutlined />}>Upload Gas Bill</Button>
-              </Upload>
-            )}
-          />
-        </Form.Item>
+        <DocumentUpload
+          fieldName="gasBillImage"
+          label="Gas Bill"
+          control={control}
+          errors={errors}
+          beforeUpload={beforeUpload}
+        />
       )}
 
       {/* Proof of Date of Birth Section */}
@@ -174,93 +144,31 @@ const DocumentUploadForm = ({
 
       {/* Conditional Upload Fields based on DOB Proof Type */}
       {proofOfDOB === 'aadhar' && (
-        <Form.Item
-          label="Upload Aadhaar Card for DOB"
-          validateStatus={errors.aadharCardImageForDOB ? "error" : ""}
-          help={errors.aadharCardImageForDOB?.message}
-        >
-          <Controller
-            name="aadharCardImageForDOB"
-            control={control}
-            render={({ field: { onChange } }) => (
-              <Upload
-                beforeUpload={(file) => {
-                  const isValid = beforeUpload(file);
-                  return false; // Prevent automatic upload
-                }}
-                onChange={({ file, fileList }) => {
-                  onChange(fileList.map(f => ({
-                    ...f,
-                    originFileObj: f.originFileObj || file
-                  })));
-                }}
-                maxCount={1}
-              >
-                <Button icon={<UploadOutlined />}>Upload Aadhaar Card</Button>
-              </Upload>
-            )}
-          />
-        </Form.Item>
+        <DocumentUpload
+          fieldName="aadharCardImageForDOB"
+          label="Aadhaar Card for DOB"
+          control={control}
+          errors={errors}
+          beforeUpload={beforeUpload}
+        />
       )}
-
       {proofOfDOB === 'pan' && (
-        <Form.Item
-          label="Upload PAN Card"
-          validateStatus={errors.panCardImage ? "error" : ""}
-          help={errors.panCardImage?.message}
-        >
-          <Controller
-            name="panCardImage"
-            control={control}
-            render={({ field: { onChange } }) => (
-              <Upload
-                beforeUpload={(file) => {
-                  const isValid = beforeUpload(file);
-                  return false; // Prevent automatic upload
-                }}
-                onChange={({ file, fileList }) => {
-                  onChange(fileList.map(f => ({
-                    ...f,
-                    originFileObj: f.originFileObj || file
-                  })));
-                }}
-                maxCount={1}
-              >
-                <Button icon={<UploadOutlined />}>Upload PAN Card</Button>
-              </Upload>
-            )}
-          />
-        </Form.Item>
+        <DocumentUpload
+          fieldName="panCardImage"
+          label="PAN Card"
+          control={control}
+          errors={errors}
+          beforeUpload={beforeUpload}
+        />
       )}
-
       {proofOfDOB === 'ssc' && (
-        <Form.Item
-          label="Upload SSC Certificate"
-          validateStatus={errors.sscCertificateImage ? "error" : ""}
-          help={errors.sscCertificateImage?.message}
-        >
-          <Controller
-            name="sscCertificateImage"
-            control={control}
-            render={({ field: { onChange } }) => (
-              <Upload
-                beforeUpload={(file) => {
-                  const isValid = beforeUpload(file);
-                  return false; // Prevent automatic upload
-                }}
-                onChange={({ file, fileList }) => {
-                  onChange(fileList.map(f => ({
-                    ...f,
-                    originFileObj: f.originFileObj || file
-                  })));
-                }}
-                maxCount={1}
-              >
-                <Button icon={<UploadOutlined />}>Upload SSC Certificate</Button>
-              </Upload>
-            )}
-          />
-        </Form.Item>
+        <DocumentUpload
+          fieldName="sscCertificateImage"
+          label="SSC Certificate"
+          control={control}
+          errors={errors}
+          beforeUpload={beforeUpload}
+        />
       )}
 
       {/* Proof of Caste Section */}
@@ -280,64 +188,24 @@ const DocumentUploadForm = ({
           )}
         />
       </Form.Item>
+      {/* Conditional Rendering */}
       {proofOfCaste === 'father' && (
-        <Form.Item
-          label="Upload Father's Caste Certificate"
-          validateStatus={errors.fatherCasteCertificateImage ? "error" : ""}
-          help={errors.fatherCasteCertificateImage?.message}
-        >
-          <Controller
-            name="fatherCasteCertificateImage"
-            control={control}
-            render={({ field: { onChange } }) => (
-              <Upload
-                beforeUpload={(file) => {
-                  const isValid = beforeUpload(file);
-                  return false; // Prevent automatic upload
-                }}
-                onChange={({ file, fileList }) => {
-                  onChange(fileList.map(f => ({
-                    ...f,
-                    originFileObj: f.originFileObj || file
-                  })));
-                }}
-                maxCount={1}
-              >
-                <Button icon={<UploadOutlined />}>Upload Father's Caste Certificate</Button>
-              </Upload>
-            )}
-          />
-        </Form.Item>
+        <DocumentUpload
+          fieldName="fatherCasteCertificateImage"
+          label="Father's Caste Certificate"
+          control={control}
+          errors={errors}
+          beforeUpload={beforeUpload}
+        />
       )}
-
       {proofOfCaste === 'mother' && (
-        <Form.Item
-          label="Upload Mother's Caste Certificate"
-          validateStatus={errors.motherCasteCertificateImage ? "error" : ""}
-          help={errors.motherCasteCertificateImage?.message}
-        >
-          <Controller
-            name="motherCasteCertificateImage"
-            control={control}
-            render={({ field: { onChange } }) => (
-              <Upload
-                beforeUpload={(file) => {
-                  const isValid = beforeUpload(file);
-                  return false; // Prevent automatic upload
-                }}
-                onChange={({ file, fileList }) => {
-                  onChange(fileList.map(f => ({
-                    ...f,
-                    originFileObj: f.originFileObj || file
-                  })));
-                }}
-                maxCount={1}
-              >
-                <Button icon={<UploadOutlined />}>Upload Mother's Caste Certificate</Button>
-              </Upload>
-            )}
-          />
-        </Form.Item>
+        <DocumentUpload
+          fieldName="motherCasteCertificateImage"
+          label="Mother's Caste Certificate"
+          control={control}
+          errors={errors}
+          beforeUpload={beforeUpload}
+        />
       )}
     </>
   );

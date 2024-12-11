@@ -1,573 +1,670 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { Form, Input, Select, DatePicker, Button, message, Upload, Row, Col, Card, Typography, Divider, Spin } from 'antd';
+import { UploadOutlined, LoadingOutlined } from '@ant-design/icons';
 import axios from 'axios';
-import {
-  Form,
-  Button,
-  Card,
-  Steps,
-  Layout,
-  message,
-  Menu,
-  Avatar,
-  Typography,
-  Spin,
-  Modal,
-  Select
-} from 'antd';
-import {
-  UserOutlined,
-  HomeOutlined,
-  PlusCircleOutlined,
-  FileTextOutlined,
-  FileSearchOutlined,
-  BarsOutlined,
-  LogoutOutlined,
-  BellOutlined
-} from '@ant-design/icons';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../../../components/userContext';
-import PersonalInfoForm from '../../../components/forms/PersonalInfoForm';
-import AddressForm from '../../../components/forms/AddressForm';
-import DocumentUploadForm from '../../../components/forms/DocumentUploadForm';
-import '../../../styles/Dashboard.css';
+import { useNavigate } from 'react-router-dom';
 
-const { Step } = Steps;
-const { Header, Content, Sider } = Layout;
-const { Title } = Typography;
+const { Option } = Select;
+const { Title, Text } = Typography;
 
-const MAX_FILE_SIZE = 1024 * 1024; // 1MB
+// This would typically come from an API call to the backend
+const states = ['Andhra Pradesh', 'Telangana', 'Karnataka'];
 
-const applicationSchema = z.object({
-  // Personal Info Validation
-  full_name: z.string().min(2, { message: "Full name must be at least 2 characters" }),
-  dob: z.date().refine(date => {
-    const age = calculateAge(date);
-    return age >= 18 && age <= 100;
-  }, { message: "You must be between 18 and 100 years old" }),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { message: "Invalid gender selection" }),
-  religion: z.string().min(2, { message: "Religion must be specified" }),
-  caste: z.string().optional(),
-  sub_caste: z.string().optional(),
-  parent_religion: z.string().min(2, { message: "Parent's religion must be specified" }),
-  parent_guardian_type: z.enum(['FATHER', 'MOTHER', 'GUARDIAN'], { message: "Invalid guardian type" }),
-  parent_guardian_name: z.string().min(2, { message: "Parent/Guardian name must be at least 2 characters" }),
-  marital_status: z.enum(['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED'], { message: "Invalid marital status" }),
-  
-  // Contact Validation
-  aadhar_num: z.string().regex(/^\d{12}$/, { message: "Aadhar number must be 12 digits" }),
-  phone_num: z.string().regex(/^[6-9]\d{9}$/, { message: "Invalid Indian mobile number" }),
-  email: z.string().email({ message: "Invalid email address" }),
-
-  // Address Validation
-  pincode: z.string().regex(/^\d{6}$/, { message: "Pincode must be 6 digits" }),
-  state: z.string().min(2, { message: "State must be specified" }),
-  district: z.string().min(2, { message: "District must be specified" }),
-  mandal: z.string().min(2, { message: "Mandal must be specified" }),
-  address: z.string().min(10, { message: "Address must be at least 10 characters" }),
-  sachivalayam: z.string().min(2, { message: "Sachivalayam must be specified" }),
-
-  // Document Validation
-  addressProof: z.any().refine(file => file && file[0], { message: "Address proof is required" }),
-  dobProof: z.any().refine(file => file && file[0], { message: "Date of Birth proof is required" }),
-  casteProof: z.any().refine(file => file && file[0], { message: "Caste proof is required" }),
-  
-  addressProofType: z.string().min(1, { message: "Address proof type is required" }),
-  dobProofType: z.string().min(1, { message: "DOB proof type is required" }),
-  casteProofType: z.string().min(1, { message: "Caste proof type is required" })
-});
-
-const calculateAge = (birthDate) => {
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  
-  return age;
-};
-
-function ApplicationForm() {
-  const { control, handleSubmit, watch, setValue, formState: { errors }, trigger, getValues } = useForm({
-    resolver: zodResolver(applicationSchema),
-    defaultValues: {
-      full_name: '',
-      dob: '',
-      gender: '',
-      religion: '',
-      caste: '',
-      sub_caste: '',
-      parent_religion: '',
-      parent_guardian_type: '',
-      parent_guardian_name: '',
-      marital_status: '',
-      aadhar_num: '',
-      phone_num: '',
-      email: '',
-      pincode: '',
-      state: '',
-      district: '',
-      mandal: '',
-      address: '',
-      sachivalayam: '',
-      addressProof: null,
-      dobProof: null,
-      casteProof: null,
-      addressProofType: '',
-      dobProofType: '',
-      casteProofType: ''
-    }
-  });
-
-  const [currentStep, setCurrentStep] = useState(0);
-  const [addressData, setAddressData] = useState([]);
-  const [pincodes, setPincodes] = useState([]);
-  const [sachivalayamOptions, setSachivalayamOptions] = useState([]);
-  const [isAadharVerified, setIsAadharVerified] = useState(false);
-  const [isAadharExisting, setIsAadharExisting] = useState(false);
-  const { token, logout } = useContext(UserContext);
-
-  const [collapsed, setCollapsed] = useState(false);
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [verifyingAadhar, setVerifyingAadhar] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const onSubmit = async (data) => {
-    // Validate entire form data
-    try {
-      // Validate using Zod schema
-      const validatedData = applicationSchema.parse(data);
-      
-      // Prepare form data for submission
-      const formData = new FormData();
-
-      // Personal Information
-      Object.keys(validatedData).forEach(key => {
-        if (key !== 'addressProof' && key !== 'dobProof' && key !== 'casteProof') {
-          // Handle special cases like date conversion
-          if (key === 'dob') {
-            formData.append(key, validatedData[key].toISOString());
-          } else {
-            formData.append(key, validatedData[key]);
-          }
+export default function ApplicationForm() {
+    const [form] = Form.useForm();
+    const [loading, setLoading] = useState(false);
+    const [pincodes, setPincodes] = useState([]);
+    const [fetchingPincode, setFetchingPincode] = useState(false);
+    const [addressData, setAddressData] = useState([]);
+    const [proofOfResidence, setProofOfResidence] = useState('');
+    const [proofOfDOB, setProofOfDOB] = useState('');
+    const [proofOfCaste, setProofOfCaste] = useState('');
+    const [districts, setDistricts] = useState([]);
+    const [selectedPincode, setSelectedPincode] = useState('');
+    const [selectedState, setSelectedState] = useState('');
+    const [selectedDistrict, setSelectedDistrict] = useState('');
+    const [selectedMandal, setSelectedMandal] = useState('');
+    const [sachivalayamOptions, setSachivalayamOptions] = useState([]);
+    const [mandals, setMandals] = useState([]);
+    const [cities, setCities] = useState([]);
+    const {token, logout} = useContext(UserContext);
+    const navigate = useNavigate();
+    useEffect(() => {
+        if(!token){
+            navigate('/login')
         }
-      });
+    }, []);
 
-      // Prepare Address Details
-      const addressDetails = {
-        pincode: validatedData.pincode,
-        state: validatedData.state,
-        district: validatedData.district,
-        mandal: validatedData.mandal,
-        address: validatedData.address,
-        sachivalayam: validatedData.sachivalayam
-      };
-      formData.append('addressDetails', JSON.stringify(addressDetails));
+    const handlePincodeChange = (pincode) => {
+        // Find the location data for the selected pincode
+        const locationData = addressData.find((item) => item.pincode === pincode);
+        
+        if (locationData) {
+            // Update the form fields based on the location data
+            form.setFieldsValue({
+                state: locationData.state || '',
+                district: locationData.district || '',
+                mandal: locationData.mandal || '',
+                sachivalayam: '',
+            });
 
-      // File Uploads
-      const fileFields = ['addressProof', 'dobProof', 'casteProof'];
-      fileFields.forEach(field => {
-        if (validatedData[field] && validatedData[field][0]) {
-          const file = validatedData[field][0];
-          
-          // Additional file validation
-          const maxSize = 5 * 1024 * 1024; // 5MB
-          const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-          
-          if (file.size > maxSize) {
-            throw new Error(`${field} file must be less than 5MB`);
-          }
-          
-          if (!allowedTypes.includes(file.type)) {
-            throw new Error(`Invalid file type for ${field}. Only JPEG, PNG, and PDF are allowed.`);
-          }
-          
-          formData.append(field, file);
+            // Update state variables
+            setSelectedState(locationData.state || '');
+            setSelectedDistrict(locationData.district || '');
+            setSelectedMandal(locationData.mandal || '');
+            setSachivalayamOptions(locationData.sachivalayams || []);
         }
-      });
 
-      // Proof Types
-      formData.append('addressProofType', validatedData.addressProofType);
-      formData.append('dobProofType', validatedData.dobProofType);
-      formData.append('casteProofType', validatedData.casteProofType);
-
-      // Set loading state
-      setIsSubmitting(true);
-
-      // Submit to backend
-      const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/application`, 
-        formData, 
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
-          },
-          // Add timeout and error handling
-          timeout: 30000 // 30 seconds timeout
-        }
-      );
-
-      // Success handling
-      message.success('Application submitted successfully!');
-      
-      // Optional: Navigate to tracking or dashboard
-      navigate('/applicant/dashboard');
-    } catch (error) {
-      // Comprehensive error handling
-      if (error instanceof z.ZodError) {
-        // Zod validation errors
-        const errorMessages = error.errors.map(err => err.message);
-        message.error(errorMessages.join(', '));
-      } else if (axios.isAxiosError(error)) {
-        // Axios specific errors
-        if (error.response) {
-          // Server responded with an error
-          message.error(error.response.data.message || 'Submission failed');
-        } else if (error.request) {
-          // Request made but no response received
-          message.error('No response from server. Please check your network connection.');
-        } else {
-          // Something else went wrong
-          message.error('An unexpected error occurred');
-        }
-      } else {
-        // Generic error handling
-        message.error(error.message || 'Submission failed');
-      }
-    } finally {
-      // Always reset submitting state
-      setIsSubmitting(false);
-    }
-  };
-
-  const menuItems = [
-    {
-      key: 'home',
-      icon: <HomeOutlined />,
-      label: 'Home',
-      onClick: () => navigate('/applicant')
-    },
-    {
-      key: 'new-application',
-      icon: <PlusCircleOutlined />,
-      label: 'Create New Application',
-      onClick: () => navigate('/application-form')
-    },
-    {
-      key: 'my-applications',
-      icon: <FileTextOutlined />,
-      label: 'My Applications',
-      onClick: () => navigate('/applicant/applications')
-    },
-    {
-      key: 'application-status',
-      icon: <FileSearchOutlined />,
-      label: 'Application Status',
-      onClick: () => navigate('/applicant/status')
-    },
-    {
-      key: 'application-renewal',
-      icon: <FileSearchOutlined />,
-      label: 'Application renewal',
-      onClick: () => navigate('/applicant/renewal')
-    },
-    {
-      key: 'reports',
-      icon: <BarsOutlined />,
-      label: 'Reports',
-      onClick: () => navigate('/applicant/reports')
-    }
-  ];
-
-  useEffect(() => {
-    const fetchAddressData = async () => {
-      try {
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/getAllLocationDetails`);
-        if (response.status === 400) {
-          message.error("There are no VRO present here");
-        }
-        setAddressData(response.data);
-        const uniquePincodes = [...new Set(response.data.map(item => item.pincode))];
-        setPincodes(uniquePincodes);
-      } catch (error) {
-        console.error('Error fetching address data:', error);
-        message.error('Unable to fetch the data');
-      }
+        // Update the selected pincode
+        setSelectedPincode(pincode);
     };
 
-    fetchAddressData();
-  }, [process.env.REACT_APP_BACKEND_URL]);
+    
+    useEffect(() => {
+        fetchLocationData();
+    }, []);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/users/user`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setUserData(res.data.user);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        setLoading(false);
-      }
+    const fetchLocationData = async (pincode) => {
+
+        setFetchingPincode(true);
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/getAllLocationDetails`);
+            if (response.status === 400) {
+                message.error("There are no VRO present here");
+                return;
+            }
+            const addressData = response.data; // Store the fetched address data
+            setAddressData(addressData); // Set address data for later use
+            console.log('Address Data:', addressData);
+            const uniquePincodes = [...new Set(addressData.map(item => item.pincode))];
+            setPincodes(uniquePincodes);
+        } catch (error) {
+            console.error('Error fetching address data:', error);
+            message.error('Unable to fetch the data');
+        } finally {
+            setFetchingPincode(false);
+        }
     };
 
-    fetchUserData();
-  }, [token]);
+    const onFinish = async (values) => {
+        // setLoading(true);
+        console.log(values);
 
-  const verifyAadhar = async (aadharNumber) => {
-    console.log(aadharNumber);
-    if (!aadharNumber) {
-      message.error('Please enter Aadhar number first');
-      return;
-    }
+        // Prepare the data for the backend
+        const formData = new FormData();
+        formData.append("full_name", `${values.firstName} ${values.lastName}`);
+        formData.append("email", values.email);
+        formData.append("dob",values.dateOfBirth.format('YYYY-MM-DD'));
+        formData.append("phone_num", values.phoneNumber);
+        formData.append("aadhar_num", values.aadharId);
+        formData.append("caste", values.caste);
+        formData.append("sub_caste", values.sub_caste);
+        formData.append("gender", values.gender);
+        formData.append("parent_guardian_type", values.parent_guardian_type);
+        formData.append("parent_guardian_name", values.parent_guardian_name);
+        formData.append("marital_status", values.marital_status);
+        formData.append("religion", values.religion);
+        formData.append("parent_religion", values.parent_religion);
+        formData.append("addressDetails[sachivalayam]", values.sachivalayam);
+        formData.append("addressDetails[village]", values.address);
+        formData.append("addressDetails[mandal]", values.mandal);
+        formData.append("addressDetails[pincode]", values.pincode);
+        formData.append("addressDetails[address]", values.address);
+        formData.append("addressDetails[state]", values.state);
+        formData.append("addressDetails[district]", values.district);
 
-    try {
-      setVerifyingAadhar(true);
-      const response = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/check_aadhaar/${aadharNumber}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
+        // Adding proof types
+        formData.append("addressProofType", values.proofOfResidence);
+        formData.append("dobProofType", values.proofOfDOB);
+        formData.append("casteProofType", values.proofOfCaste);
+
+        console.log(values.aadharCardImage, " is the electricity bill image");
+        // Handle file uploads for each proof
+        if(values.aadharCardImage && values.aadharCardImage.length > 0){
+            formData.append("addressProof", values.aadharCardImage[0].originFileObj);
         }
-      );
-      console.log(response.data.numOfApplications)
-      if (response.data.numOfApplications == 0) {
-        setIsAadharVerified(true);
-        message.success('Aadhar verified successfully!');
-      } 
-      else if(response.data.numOfApplications >= 1){
-        setIsAadharExisting(true);
-        message.error('Aadhar number already exists');  
-      }
-      else {
-        message.error('Invalid Aadhar number. Please check and try again.');
-      }
-    } catch (error) {
-      console.error('Error verifying Aadhar:', error);
-      if (error.response?.status === 401) {
-        message.error('Session expired. Please login again.');
-        logout();
-      } else {
-        message.error('Failed to verify Aadhar. Please try again.');
-      }
-    } finally {
-      setVerifyingAadhar(false);
-    }
-  };
+        if (values.electricityBillImage && values.electricityBillImage.length > 0) {
+            formData.append("addressProof", values.electricityBillImage[0].originFileObj);
+        }
+        if(values.gasBillImage && values.gasBillImage.length > 0){
+            formData.append("addressProof", values.gasBillImage[0].originFileObj);
+        }
+        if(values.fatherCasteCertificateImage && values.fatherCasteCertificateImage.length > 0){
+            formData.append("casteProof", values.fatherCasteCertificateImage[0].originFileObj);
+        }
+        if (values.motherCasteCertificateImage && values.motherCasteCertificateImage.length > 0) {
+            formData.append("casteProof", values.motherCasteCertificateImage[0].originFileObj);
+        }
 
-  const handlePincodeChange = (value) => {
-    // Extensive logging for debugging
-    console.log('Pincode Change Triggered:', value);
-    console.log('Full Address Data:', addressData);
+        if (values.sscCertificateImage && values.sscCertificateImage.length > 0) {
+            formData.append("dobProof", values.sscCertificateImage[0].originFileObj);
+        }
+        if(values.pancardImage && values.pancardImage.length > 0){
+            formData.append("dobProof", values.pancardImage[0].originFileObj);
+        }
+        if(values.aadharCardImage && values.aadharCardImage.length > 0){    
+            formData.append("dobProof", values.aadharCardImage[0].originFileObj);    
+        }
 
-    // Find matching addresses
-    const selectedAddresses = addressData.filter(item => item.pincode === value);
-    console.log('Selected Addresses:', selectedAddresses);
+        console.log(Array.from(formData.entries()), " is the form data");
 
-    if (selectedAddresses.length > 0) {
-      const sachivalayams = selectedAddresses.map(item => item.sachivalayam);
-      const uniqueSachivalayams = [...new Set(sachivalayams)];
-      console.log('All Sachivalayams:', sachivalayams);
-      console.log('Unique Sachivalayams:', uniqueSachivalayams);
-      
-      setValue('sachivalayam', '');
-      setValue('state', selectedAddresses[0].state);
-      setValue('district', selectedAddresses[0].district);
-      setValue('mandal', selectedAddresses[0].mandal);
-      setSachivalayamOptions(uniqueSachivalayams);
-    } else {
-      setSachivalayamOptions([]);
-    }
-  };
+        // // Now, send the data to the backend
+        try {
+            const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/application`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                    "Authorization": `Bearer ${token}`
+                },
+            });
 
-  const steps = [
-    {
-      title: 'Personal Information',
-      content: (
-        <PersonalInfoForm 
-          control={control}
-          errors={errors}
-          isAadharVerified={isAadharVerified}
-          onAadharVerify={verifyAadhar}
-          verifyingAadhar={verifyingAadhar}
-        />
-      )
-    },
-    {
-      title: 'Address Details',
-      content: (
-        <AddressForm 
-          control={control}
-          errors={errors}
-          pincodes={pincodes}
-          sachivalayamOptions={sachivalayamOptions}
-          handlePincodeChange={handlePincodeChange}
-        />
-      )
-    },
-    {
-      title: 'Documents',
-      content: (
-        <DocumentUploadForm 
-          control={control}
-          errors={errors}
-        />
-      )
-    }
-  ];
+            if (response.status === 201) {
+                message.success('Application submitted successfully');
+                form.resetFields();
+            }
+        } catch (error) {
+            console.log(error.response.data.message)
+            message.error('Failed to submit application');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  if (loading) {
+
+    const normFile = (e) => {
+        if (Array.isArray(e)) {
+            return e;
+        }
+        return e && e.fileList;
+    };
+
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
+        <Card style={{ width: '100%', maxWidth: 1200, margin: '0 auto', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
+            <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>Caste Application Form</Title>
+            <Form
+                form={form}
+                name="casteApplicationForm"
+                onFinish={onFinish}
 
-  return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={(value) => setCollapsed(value)}
-        style={{
-          background: '#fff',
-          boxShadow: '2px 0 8px 0 rgba(29,35,41,.05)',
-          overflow: 'auto',
-          height: '100vh',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 10
-        }}
-      >
-        <div style={{ 
-          height: '64px', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          padding: '16px',
-          position: 'sticky',
-          top: 0,
-          background: '#fff',
-          zIndex: 1
-        }}>
-          <Title level={3} className="certitrack-title" style={{ display: collapsed ? 'none' : 'block' }}>
-            CertiTrack
-          </Title>
-        </div>
-        <Menu
-          className="custom-menu"
-          mode="inline"
-          selectedKeys={['new-application']}
-          items={menuItems}
-          style={{ borderRight: 0 }}
-          
-        />
-      </Sider>
-      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s' }}>
-        <Header style={{ 
-          padding: '0 24px', 
-          background: '#fff', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'flex-end',
-          gap: '16px',
-          boxShadow: '0 2px 8px 0 rgba(29,35,41,.05)',
-          position: 'fixed',
-          right: 0,
-          top: 0,
-          left: collapsed ? 80 : 200,
-          zIndex: 9,
-          transition: 'all 0.2s'
-        }}>
-          <Button
-            type="text"
-            icon={<BellOutlined style={{ fontSize: '20px', color: '#4169E1' }} />}
-          />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#4169E1' }} />
-            <span style={{ color: '#4169E1', fontWeight: 500 }}>
-              {userData?.name || 'User'}
-            </span>
-          </div>
-          {/* <Button
-            type="text"
-            icon={<LogoutOutlined style={{ color: '#4169E1' }} />}
-            onClick={logout}
-          /> */}
-        </Header>
-        <Content style={{ 
-          margin: '24px', 
-          marginTop: '88px', 
-          minHeight: 280,
-          overflow: 'auto',
-          height: 'calc(100vh - 88px)',
-          padding: '0 24px 24px'
-        }}>
-          <Card>
-            <Steps current={currentStep} style={{ marginBottom: 24 }}>
-              {steps.map(item => (
-                <Step key={item.title} title={item.title} />
-              ))}
-            </Steps>
-
-            <Form 
-              layout="vertical"
-              onSubmit={handleSubmit(onSubmit)}
+                layout="vertical"
+                requiredMark="optional"
             >
-              {steps[currentStep].content}
+                <Row gutter={24}>
+                    <Col span={24} md={12}>
+                        <Title level={4}>Personal Information</Title>
+                        <Row gutter={16}>
+                            <Col span={12}>
+                                <Form.Item name="firstName" label="First Name" rules={[{ required: true, message: 'Please input your first name!' }]}>
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                                <Form.Item name="lastName" label="Last Name" rules={[{ required: true, message: 'Please input your last name!' }]}>
+                                    <Input />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                        <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Please input a valid email!' }]}>
+                            <Input />
+                        </Form.Item>
+                        <Form.Item
+                            name="dateOfBirth"
+                            label="Date of Birth"
+                            rules={[{ required: true, message: 'Please select your date of birth!' }]}
+                        >
+                            <DatePicker style={{ width: '100%' }} placeholder="Select your date of birth" />
+                        </Form.Item>
 
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                marginTop: 24 
-              }}>
-                {currentStep > 0 && (
-                  <Button 
-                    style={{ margin: '0 8px' }} 
-                    onClick={() => setCurrentStep(currentStep - 1)}
-                  >
-                    Previous
-                  </Button>
-                )}
-                {currentStep < steps.length - 1 && (
-                  <Button 
-                    type="primary" 
-                    onClick={() => setCurrentStep(currentStep + 1)}
-                  >
-                    Next
-                  </Button>
-                )}
-                {currentStep === steps.length - 1 && (
-                  <Button 
-                    type="primary" 
-                    htmlType="submit"
-                    loading={isSubmitting}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Submit Application'}
-                  </Button>
-                )}
-              </div>
+                        <Form.Item name="phoneNumber" label="Phone Number" rules={[{ required: true, message: 'Please input your phone number!' }]}>
+                            <Input />
+                        </Form.Item>
+
+                        <Form.Item
+                            name="aadharId"
+                            label="Aadhar ID"
+                            rules={[
+                                { required: true, message: 'Please input your Aadhar ID!' },
+                                { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
+                            ]}
+                        >
+                            <Input />
+                        </Form.Item>
+                        <Form.Item name="caste" label="Caste" rules={[{ required: true, message: 'Please select your caste!' }]}>
+                            <Select>
+                                {['EWS', 'OBC', 'SC', 'ST'].map(caste => (
+                                    <Option key={caste} value={caste}>{caste}</Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                        <Form.Item
+                            name="sub_caste"
+                            label="Sub Caste"
+                            rules={[{ required: true, message: 'Sub caste is required!' }]}
+                        >
+                            <Input placeholder="Enter your sub caste" />
+                        </Form.Item>
+
+                        <Form.Item
+                            name="gender"
+                            label="Gender"
+                            rules={[{ required: true, message: 'Gender is required!' }]}
+                        >
+                            <Select placeholder="Select your gender">
+                                <Option value="MALE">Male</Option>
+                                <Option value="FEMALE">Female</Option>
+                                <Option value="OTHER">Other</Option>
+                            </Select>
+                        </Form.Item>
+
+                        <Form.Item
+                            name="parent_guardian_type"
+                            label="Parent/Guardian Type"
+                            rules={[{ required: true, message: 'Guardian type is required!' }]}
+                        >
+                            <Select placeholder="Select guardian type">
+                                <Option value="FATHER">Father</Option>
+                                <Option value="MOTHER">Mother</Option>
+                            </Select>
+                        </Form.Item>
+
+                        <Form.Item
+                            name="parent_guardian_name"
+                            label="Parent/Guardian Name"
+                            rules={[{ required: true, message: 'Guardian name is required!' }]}
+                        >
+                            <Input placeholder="Enter guardian name" />
+                        </Form.Item>
+
+                        <Form.Item
+                            name="marital_status"
+                            label="Marital Status"
+                        >
+                            <Select placeholder="Select marital status">
+                                <Option value="SINGLE">Single</Option>
+                                <Option value="MARRIED">Married</Option>
+                                <Option value="DIVORCED">Divorced</Option>
+                                <Option value="WIDOWED">Widowed</Option>
+                            </Select>
+                        </Form.Item>
+
+                        <Form.Item
+                            name="religion"
+                            label="Religion"
+                            rules={[{ required: true, message: 'Religion is required!' }]}
+                        >
+                            <Select placeholder="Select your religion">
+                                <Option value="HINDU">Hindu</Option>
+                                <Option value="MUSLIM">Muslim</Option>
+                                <Option value="CHRISTIAN">Christian</Option>
+                                <Option value="SIKH">Sikh</Option>
+                                <Option value="BUDDHIST">Buddhist</Option>
+                                <Option value="JAIN">Jain</Option>
+                                <Option value="OTHER">Other</Option>
+                            </Select>
+                        </Form.Item>
+
+                        <Form.Item
+                            name="parent_religion"
+                            label="Parent Religion"
+                            rules={[{ required: true, message: 'Parent religion is required!' }]}
+                        >
+                            <Select placeholder="Select parent's religion">
+                                <Option value="HINDU">Hindu</Option>
+                                <Option value="MUSLIM">Muslim</Option>
+                                <Option value="CHRISTIAN">Christian</Option>
+                                <Option value="SIKH">Sikh</Option>
+                                <Option value="BUDDHIST">Buddhist</Option>
+                                <Option value="JAIN">Jain</Option>
+                                <Option value="OTHER">Other</Option>
+                            </Select>
+                        </Form.Item>
+                    </Col>
+                    <Col span={24} md={12}>
+                        <Title level={4}>Address Information</Title>
+                        <Form.Item name="address" label="Address" rules={[{ required: true, message: 'Please input your address!' }]}>
+                            <Input.TextArea rows={4} />
+                        </Form.Item>
+                        <Form.Item
+                            name="pincode"
+                            label="Pincode"
+                            rules={[{ required: true, message: 'Please select your pincode!' }]}
+                        >
+                            <Select
+                                placeholder="Select your pincode"
+                                onChange={handlePincodeChange} // Link the function here
+                            >
+                                {pincodes.map((pincode) => (
+                                    <Option key={pincode} value={pincode}>{pincode}</Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                        <Form.Item
+                            name="sachivalayam"
+                            label="Sachivalayam"
+                            rules={[{ required: true, message: 'Please select your sachivalayam!' }]}
+                        >
+                            <Select
+                                placeholder="Select sachivalayam"
+                                showSearch
+                                filterOption={(input, option) =>
+                                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                                }
+                            >
+                                {addressData.filter(item => item.pincode === form.getFieldValue('pincode')).map(item => (
+                                    <Option key={item.sachivalayam} value={item.sachivalayam}>{item.sachivalayam}</Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                        <Form.Item name="state" label="State" rules={[{ required: true, message: 'Please select your state!' }]}>
+                            <Select
+                                showSearch
+                                placeholder="Select state"
+                                disabled={fetchingPincode}
+                                filterOption={(input, option) =>
+                                    option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                                }
+                            >
+                                {states.map(state => (
+                                    <Option key={state} value={state}>{state}</Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                        <Form.Item name="district" label="District" rules={[{ required: true, message: 'Please select your district!' }]}>
+                            <Select
+                                showSearch
+                                placeholder="Select district"
+                                disabled={fetchingPincode}
+                                filterOption={(input, option) =>
+                                    option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                                }
+                            >
+                                {districts.map(district => (
+                                    <Option key={district} value={district}>{district}</Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+
+                        <Form.Item name="mandal" label="Mandal" rules={[{ required: true, message: 'Please select your mandal!' }]}>
+                            <Select
+                                showSearch
+                                placeholder="Select mandal"
+                                disabled={fetchingPincode}
+                                filterOption={(input, option) =>
+                                    option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                                }
+                            >
+                                {mandals.map(mandal => (
+                                    <Option key={mandal} value={mandal}>{mandal}</Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    </Col>
+                </Row>
+                <Divider />
+                <Row gutter={24}>
+                    <Col span={24} md={8}>
+                        <Title level={4}>Proof of Residence</Title>
+                        <Form.Item name="proofOfResidence" label="Document Type" rules={[{ required: true, message: 'Please select the document type!' }]}>
+                            <Select onChange={(value) => setProofOfResidence(value)}>
+                                <Option value="AADHAAR">Aadhar Card</Option>
+                                <Option value="ELECTRICITY">Electricity Bill</Option>
+                                <Option value="GAS">Gas Bill</Option>
+                            </Select>
+                        </Form.Item>
+                        {proofOfResidence === 'AADHAAR' && (
+                            <>
+                                <Form.Item
+                                    name="aadharCardImage"
+                                    label="Aadhar Card Image"
+                                    valuePropName="fileList"
+                                    getValueFromEvent={normFile}
+                                    rules={[{ required: true, message: 'Please upload Aadhar Card image' }]}
+                                >
+                                    <Upload
+                                        name="aadharCardImage"
+                                        listType="picture"
+                                        maxCount={1}
+                                        accept=".pdf,.jpg,.png"
+                                        beforeUpload={(file) => {
+                                            const isLt1M = file.size / 1024 / 1024 < 1;
+                                            if (!isLt1M) {
+                                                message.error('File must be smaller than 1MB!');
+                                            }
+                                            return false; // Prevent auto upload
+                                        }}
+                                    >
+                                        <Button icon={<UploadOutlined />}>Click to upload</Button>
+                                    </Upload>
+                                </Form.Item>
+                            </>
+                        )}
+                        {proofOfResidence === 'ELECTRICITY' && (
+                            <Form.Item
+                                name="electricityBillImage"
+                                label="Electricity Bill Image"
+                                valuePropName="fileList"
+                                getValueFromEvent={normFile}
+                                rules={[{ required: true, message: 'Please upload Electricity Bill image' }]}
+                            >
+                                <Upload
+                                    name="electricityBillImage"
+                                    listType="picture"
+                                    accept=".pdf,.jpg,.png"
+                                    maxCount={1}
+                                    beforeUpload={(file) => {
+                                        const isLt1M = file.size / 1024 / 1024 < 1;
+                                        if (!isLt1M) {
+                                            message.error('File must be smaller than 1MB!');
+                                        }
+                                        return false;
+                                    }}
+                                >
+                                    <Button icon={<UploadOutlined />}>Click to upload</Button>
+                                </Upload>
+                            </Form.Item>
+                        )}
+                        {proofOfResidence === 'GAS' && (
+                            <Form.Item
+                                name="gasBillImage"
+                                label="Gas Bill Image"
+                                valuePropName="fileList"
+                                getValueFromEvent={normFile}
+                                rules={[{ required: true, message: 'Please upload Gas Bill image' }]}
+                            >
+                                <Upload
+                                    name="gasBillImage"
+                                    listType="picture"
+                                    accept=".pdf,.jpg,.png"
+                                    maxCount={1}
+                                    beforeUpload={(file) => {
+                                        const isLt1M = file.size / 1024 / 1024 < 1;
+                                        if (!isLt1M) {
+                                            message.error('File must be smaller than 1MB!');
+                                        }
+                                        return false;
+                                    }}
+                                >
+                                    <Button icon={<UploadOutlined />}>Click to upload</Button>
+                                </Upload>
+                            </Form.Item>
+                        )}
+                    </Col>
+                    <Col span={24} md={8}>
+                        <Title level={4}>Proof of Date of Birth</Title>
+                        <Form.Item name="proofOfDOB" label="Document Type" rules={[{ required: true, message: 'Please select the document type!' }]}>
+                            <Select onChange={(value) => setProofOfDOB(value)}>
+                                <Option value="AADHAAR">Aadhar Card</Option>
+                                <Option value="PAN">PAN Card</Option>
+                                <Option value="SSC">SSC Certificate</Option>
+                            </Select>
+                        </Form.Item>
+                        {proofOfDOB === 'AADHAAR' && (
+                            <>
+                                <Form.Item
+                                    name="aadharIdForDOB"
+                                    label="Aadhar ID"
+                                    rules={[
+                                        { required: true, message: 'Please input your Aadhar ID!' },
+                                        { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
+                                    ]}
+                                >
+                                    <Input />
+                                </Form.Item>
+                                <Form.Item
+                                    name="aadharCardImageForDOB"
+                                    label="Aadhar Card Image"
+                                    valuePropName="fileList"
+                                    getValueFromEvent={normFile}
+                                    rules={[{ required: true, message: 'Please upload Aadhar Card image' }]}
+                                >
+                                    <Upload
+                                        name="aadharCardImageForDOB"
+                                        listType="picture"
+                                        accept=".pdf,.jpg,.png"
+                                        maxCount={1}
+                                        beforeUpload={(file) => {
+                                            const isLt1M = file.size / 1024 / 1024 < 1;
+                                            if (!isLt1M) {
+                                                message.error('File must be smaller than 1MB!');
+                                            }
+                                            return false;
+                                        }}
+                                    >
+                                        <Button icon={<UploadOutlined />}>Click to upload</Button>
+                                    </Upload>
+                                </Form.Item>
+                            </>
+                        )}
+                        {proofOfDOB === 'PAN' && (
+                            <>
+                                <Form.Item name="panId" label="PAN ID" rules={[{ required: true, message: 'Please input your PAN ID!' }]}>
+                                    <Input />
+                                </Form.Item>
+                                <Form.Item
+                                    name="panCardImage"
+                                    label="PAN Card Image"
+                                    valuePropName="fileList"
+                                    getValueFromEvent={normFile}
+                                    rules={[{ required: true, message: 'Please upload PAN Card image' }]}
+                                >
+                                    <Upload
+                                        name="panCardImage"
+                                        listType="picture"
+                                        accept=".pdf,.jpg,.png"
+                                        maxCount={1}
+                                        beforeUpload={(file) => {
+                                            const isLt1M = file.size / 1024 / 1024 < 1;
+                                            if (!isLt1M) {
+                                                message.error('File must be smaller than 1MB!');
+                                            }
+                                            return false;
+                                        }}
+                                    >
+                                        <Button icon={<UploadOutlined />}>Click to upload</Button>
+                                    </Upload>
+                                </Form.Item>
+                            </>
+                        )}
+                        {proofOfDOB === 'SSC' && (
+                            <Form.Item
+                                name="sscCertificateImage"
+                                label="SSC Certificate Image"
+                                valuePropName="fileList"
+                                getValueFromEvent={normFile}
+                                rules={[{ required: true, message: 'Please upload SSC Certificate image' }]}
+                            >
+                                <Upload
+                                    name="sscCertificateImage"
+                                    listType="picture"
+                                    accept=".pdf,.jpg,.png"
+                                    maxCount={1}
+
+                                    beforeUpload={(file) => {
+                                        const isLt1M = file.size / 1024 / 1024 < 1;
+                                        if (!isLt1M) {
+                                            message.error('File must be smaller than 1MB!');
+                                        }
+                                        return false;
+                                    }}
+                                >
+                                    <Button icon={<UploadOutlined />}>Click to upload</Button>
+                                </Upload>
+                            </Form.Item>
+                        )}
+                    </Col>
+                    <Col span={24} md={8}>
+                        <Title level={4}>Proof of Caste</Title>
+                        <Form.Item name="proofOfCaste" label="Document Type" rules={[{ required: true, message: 'Please select the document type!' }]}>
+                            <Select onChange={(value) => setProofOfCaste(value)}>
+                                <Option value="FATHER">Father's Caste Certificate</Option>
+                                <Option value="MOTHER">Mother's Caste Certificate</Option>
+                            </Select>
+                        </Form.Item>
+                        {proofOfCaste === 'FATHER' && (
+                            <Form.Item
+                                name="fatherCasteCertificateImage"
+                                label="Father's Caste Certificate Image"
+                                valuePropName="fileList"
+                                getValueFromEvent={normFile}
+                                rules={[{ required: true, message: "Please upload Father's Caste Certificate image" }]}
+                            >
+                                <Upload
+                                    name="fatherCasteCertificateImage"
+                                    listType="picture"
+                                    maxCount={1}
+                                    accept=".pdf,.jpg,.png"
+                                    beforeUpload={(file) => {
+                                        const isLt1M = file.size / 1024 / 1024 < 1;
+                                        if (!isLt1M) {
+                                            message.error('File must be smaller than 1MB!');
+                                        }
+                                        return false;
+                                    }}
+                                >
+                                    <Button icon={<UploadOutlined />}>Click to upload</Button>
+                                </Upload>
+                            </Form.Item>
+                        )}
+                        {proofOfCaste === 'MOTHER' && (
+                            <Form.Item
+                                name="motherCasteCertificateImage"
+                                label="Mother's Caste Certificate Image"
+                                valuePropName="fileList"
+                                getValueFromEvent={normFile}
+                                rules={[{ required: true, message: "Please upload Mother's Caste Certificate image" }]}
+                            >
+                                <Upload
+                                    name="motherCasteCertificateImage"
+                                    listType="picture"
+                                    accept=".pdf,.jpg,.png"
+                                    maxCount={1}
+                                    beforeUpload={(file) => {
+                                        const isLt1M = file.size / 1024 / 1024 < 1;
+                                        if (!isLt1M) {
+                                            message.error('File must be smaller than 1MB!');
+                                        }
+                                        return false;
+                                    }}
+                                >
+                                    <Button icon={<UploadOutlined />}>Click to upload</Button>
+                                </Upload>
+                            </Form.Item>
+                        )}
+                    </Col>
+                </Row>
+                <Divider />
+                <Form.Item>
+                    <Button
+                        type="primary"
+                        htmlType="submit"
+                        loading={loading}
+                        disabled={loading || !form.isFieldsTouched()}
+                    >
+                        Submit Application
+                    </Button>
+
+                </Form.Item>
             </Form>
-          </Card>
-        </Content>
-      </Layout>
-    </Layout>
-  );
+        </Card >
+    );
 }
-
-export default ApplicationForm;
