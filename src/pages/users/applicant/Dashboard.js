@@ -170,19 +170,42 @@ const ApplicantDashboard = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
+        console.log('Fetching Dashboard Data');
+        console.log('Backend URL:', process.env.REACT_APP_BACKEND_URL);
+        console.log('Token:', token ? 'Token Present' : 'No Token');
+
         const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/applicant/dashboard`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+        
+        console.log('Dashboard Response:', response);
         setDashboardData(response.data);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
-        if (error.response?.status === 401) {
-          message.error('Session expired. Please login again.');
-          logout();
+        
+        // Detailed error logging
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          console.error('Error Response Data:', error.response.data);
+          console.error('Error Response Status:', error.response.status);
+          console.error('Error Response Headers:', error.response.headers);
+          
+          if (error.response.status === 401) {
+            message.error('Session expired. Please login again.');
+            logout();
+          } else {
+            message.error(`Failed to fetch dashboard data. Status: ${error.response.status}`);
+          }
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error('No response received:', error.request);
+          message.error('No response from server. Check your network connection.');
         } else {
-          message.error('Failed to fetch dashboard data. Please try again.');
+          // Something happened in setting up the request that triggered an Error
+          console.error('Error setting up request:', error.message);
+          message.error('Error preparing dashboard request');
         }
       } finally {
         setLoading(false);

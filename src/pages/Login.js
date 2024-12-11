@@ -1,103 +1,151 @@
-import React , {useContext, useState} from 'react';
-import { Form, Input, Button, Checkbox , message } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
+import React, { useContext, useState } from 'react';
+import { 
+  Form, 
+  Input, 
+  Button, 
+  Card, 
+  Typography, 
+  message, 
+  Space, 
+  Modal
+} from 'antd';
+import { 
+  MailOutlined, 
+  LockOutlined 
+} from '@ant-design/icons';
 import { UserContext } from '../components/userContext';
 import axios from 'axios';
-import { useNavigate} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import SignUp from './SignUp';
+
+const { Text } = Typography;
+
 const Login = () => {
-  const {login } = useContext(UserContext)
+  const { login } = useContext(UserContext);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
   const onFinish = async (values) => {
-    console.log('Received values from form: ', values);
-    // Handle login logic (e.g., send data to the backend)
-    try{
-      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/users/login`,
-        values
-      )
-      console.log(res)
-      if(res.status===200){
-        const token = res.data.token
-        login(token)
-        console.log("token is ",token, res.data)
-        message.success('Login successfull ! Your data is saved temporarily');
-        if(res.data.role === 'ADMIN'){
-          navigate('/admin')
-        }
-        else if(res.data.role === 'SVRO'){
-          navigate('/svro')
-        }
-        else if(res.data.role === 'MVRO'){
-          navigate('/mvro')
-        }
-        else if(res.data.role === 'RI'){
-          navigate('/ri')
-        }
-        else if(res.data.role === 'MRO'){
-          navigate('/mro')
-        }
-        else{
-          navigate('/applicant')
-        }
+    setLoading(true);
+    try {
+      const res = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/users/login`, values);
+      
+      if (res.status === 200) {
+        const { token, role } = res.data;
+        login(token);
+        
+        message.success('Login successful!');
+
+        // Role-based navigation
+        const roleRoutes = {
+          'ADMIN': '/admin',
+          'SVRO': '/svro',
+          'MVRO': '/mvro',
+          'RI': '/ri',
+          'MRO': '/mro',
+          'APPLICANT': '/applicant'
+        };
+
+        navigate(roleRoutes[role] || '/applicant');
+      } else {
+        message.error(res.data.message || 'Login failed');
       }
-      else{
-        message.error(res.data.message)
-      }
+    } catch (error) {
+      console.error('Login error:', error);
+      message.error(error.response?.data?.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
-    catch(e){
-      console.log(e, " is the error  ")
-      message.error("There is an error")
-    }
-    // setLoginData(values);
+  };
+
+  const showModal = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: 'auto', padding: '50px 0' }}>
-      <h2 style={{ textAlign: 'center' }}>Login</h2>
-      <Form
-        name="login"
-        onFinish={onFinish}
-        layout="vertical"
-        autoComplete="off"
+    <>
+      <Card 
+        style={{ 
+          width: '300px', 
+          borderRadius: '8px', 
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)', 
+          margin: '0 auto'
+        }}
       >
-        {/* email Field */}
-        <Form.Item
-          name="email"
-          label="Email"
-          rules={[{ required: true, message: 'Please input your email!' },
-            {type: 'email',message: 'Please enter a valid email!'}
-          ]}
-        >
-          <Input
-            prefix={<MailOutlined />}
-            placeholder="email"
-          />
-        </Form.Item>
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <div style={{ textAlign: 'center' }}>
+            <Text strong style={{ color: '#1890ff', fontSize: '18px' }}>
+              Login
+            </Text>
+          </div>
 
-        {/* Password Field */}
-        <Form.Item
-          name="password"
-          label="Password"
-          rules={[{ required: true, message: 'Please input your password!' }]}
-        >
-          <Input.Password
-            prefix={<LockOutlined />}
-            placeholder="Password"
-          />
-        </Form.Item>
+          <Form
+            name="login"
+            onFinish={onFinish}
+            layout="vertical"
+            autoComplete="off"
+          >
+            <Form.Item
+              name="email"
+              rules={[
+                { required: true, message: 'Please input your email!' },
+                { type: 'email', message: 'Please enter a valid email!' }
+              ]}
+            >
+              <Input
+                prefix={<MailOutlined style={{ color: '#1890ff' }} />}
+                placeholder="Email"
+                size="middle"
+              />
+            </Form.Item>
 
-        {/* Remember me Checkbox
-        <Form.Item name="remember" valuePropName="checked">
-          <Checkbox>Remember me</Checkbox>
-        </Form.Item> */}
+            <Form.Item
+              name="password"
+              rules={[{ required: true, message: 'Please input your password!' }]}
+            >
+              <Input.Password
+                prefix={<LockOutlined style={{ color: '#1890ff' }} />}
+                placeholder="Password"
+                size="middle"
+              />
+            </Form.Item>
 
-        {/* Submit Button */}
-        <Form.Item>
-          <Button type="primary" htmlType="submit" block>
-            Login
-          </Button>
-        </Form.Item>
-      </Form>
-    </div>
+            <Form.Item>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                block 
+                loading={loading}
+              >
+                Login
+              </Button>
+            </Form.Item>
+          </Form>
+
+          <div style={{ textAlign: 'center' }}>
+            <Text type="secondary">
+              Don't have an account? <a onClick={showModal}>Sign Up</a>
+            </Text>
+          </div>
+        </Space>
+      </Card>
+
+      <Modal 
+        title="Sign Up" 
+        visible={isModalVisible} 
+        onCancel={handleCancel} 
+        footer={null}
+        style={{ top: 20 }}
+        bodyStyle={{ padding: '20px' }}
+      >
+        <SignUp />
+      </Modal>
+    </>
   );
 };
 

@@ -9,6 +9,7 @@ import { UserContext } from '../../../components/userContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import MvroLayout from '../../../components/layout/MvroLayout';
+import MvroApplicationModal from '../../../components/modals/MvroApplicationModal';
 import { motion } from 'framer-motion';
 
 const { Title } = Typography;
@@ -34,12 +35,11 @@ const mockNotifications = [
 
 export default function ApplicationsMvro() {
     const [applications, setApplications] = useState([]);
-    const [selectedApplication, setSelectedApplication] = useState(null);
+    const [selectedApplicationId, setSelectedApplicationId] = useState(null);
     const [profileDrawerVisible, setProfileDrawerVisible] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [notificationDrawerVisible, setNotificationDrawerVisible] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
-    const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
     const [userData, setUserData] = useState(null);
     const [notifications, setNotifications] = useState(mockNotifications);
     const { token, logout } = useContext(UserContext);
@@ -47,11 +47,14 @@ export default function ApplicationsMvro() {
     const [errorMessage, setErrorMessage] = useState("");
     const [userLoading, setUserLoading] = useState(true);
     const [activeNavItem, setActiveNavItem] = useState('applications');
-    const [report, SetReport] = useState([]);
     const [role, setRole] = useState("");
-    const navigate = useNavigate()
+    const navigate = useNavigate();
     const [filterStatus, setFilterStatus] = useState('All');
     const [loadingApplicationId, setLoadingApplicationId] = useState(null);
+    const [report, SetReport] = useState([]);
+    const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
+    const [filter, setFilter] = useState('All');
+
     useEffect(() => {
         if (!token) {
             setErrorMessage("You are not logged in. Please log in to access this page.");
@@ -140,7 +143,7 @@ export default function ApplicationsMvro() {
             key: 'current_stage',
             render: (status) => (
                 <span style={{
-                    color: status === 'pending' ? '#faad14' : status === 'completed' ? '#52c41a' : '#f5222d',
+                    color: status === 'MVRO' ? '#faad14' : status === 'SVRO' ? '#f5222d' : '#52c41a',
                     textTransform: 'capitalize',
                     fontWeight: 'bold',
                 }}>
@@ -163,22 +166,9 @@ export default function ApplicationsMvro() {
         },
     ];
 
-    const handleViewApplication = async (id) => {
-        setLoadingApplicationId(id);
-        try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-            setSelectedApplication(response.data.data);
-            SetReport(response.data.report)
-            setModalVisible(true);
-        } catch (error) {
-            message.error('Failed to load application details');
-        } finally {
-            setLoadingApplicationId(null);
-        }
+    const handleViewApplication = (id) => {
+        setSelectedApplicationId(id);
+        setModalVisible(true);
     };
 
     const openDrawer = () => {
@@ -217,11 +207,15 @@ export default function ApplicationsMvro() {
         filterStatus === 'All' || app.role_type === filterStatus
     );
 
+    const filteredApplicationsByStage = applications.filter(application => {
+        return filter === 'All' || application.current_stage === filter;
+    });
+
     const submitRemarks = async (values) => {
         try {
             console.log(values);
             await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/mvro/create_report/${selectedApplication.application_id}`,
+                `${process.env.REACT_APP_BACKEND_URL}/mvro/create_report/${selectedApplicationId}`,
                 { description: values.remarks }, 
                  // This is the request body
                 {
@@ -250,14 +244,31 @@ export default function ApplicationsMvro() {
             navigate(`${basePath}/${path}`);
         }
     }
+
+    const handleFilterChangeStage = (value) => {
+        setFilter(value);
+    };
+
     return (
         <MvroLayout logout={logout}>
             <div style={{ padding: '24px' }}>
                 <Card>
                     <Title level={2} style={{ marginBottom: '24px' }}>Applications</Title>
+                    <Select
+                        placeholder="Select Current Stage"
+                        onChange={handleFilterChangeStage}
+                        defaultValue="All"
+                        style={{ width: 200, marginBottom: 20 }}
+                    >   
+                        <Option value="All">All</Option>
+                        <Option value="MVRO">MVRO</Option>
+                        <Option value="SVRO">SVRO</Option>
+                        <Option value="RI">RI</Option>
+                        <Option value="MRO">MRO</Option>
+                    </Select>
                     <Table
                         columns={columns}
-                        dataSource={filteredApplications}
+                        dataSource={filter === 'All' ? applications : filteredApplicationsByStage}
                         loading={loading}
                         rowKey="id"
                         pagination={{
@@ -268,23 +279,15 @@ export default function ApplicationsMvro() {
                     />
                 </Card>
 
-                <Drawer
-                    title="Application Details"
-                    placement="right"
-                    onClose={() => setDrawerVisible(false)}
-                    open={drawerVisible}
-                    width={600}
-                >
-                    {selectedApplication && (
-                        <Descriptions column={1}>
-                            <Descriptions.Item label="Application ID">{selectedApplication.applicationId}</Descriptions.Item>
-                            <Descriptions.Item label="Applicant Name">{selectedApplication.applicantName}</Descriptions.Item>
-                            <Descriptions.Item label="Type">{selectedApplication.type}</Descriptions.Item>
-                            <Descriptions.Item label="Status">{selectedApplication.status}</Descriptions.Item>
-                            <Descriptions.Item label="Submission Date">{selectedApplication.submissionDate}</Descriptions.Item>
-                        </Descriptions>
-                    )}
-                </Drawer>
+                <MvroApplicationModal
+                    visible={modalVisible}
+                    applicationId={selectedApplicationId}
+                    onCancel={() => {
+                        setModalVisible(false);
+                        setSelectedApplicationId(null);
+                    }}
+                    onUpdate={fetchApplications}
+                />
             </div>
         </MvroLayout>
     );

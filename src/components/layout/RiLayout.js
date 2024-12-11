@@ -67,9 +67,9 @@ export default function RiLayout({ children, logout }) {
               label: 'Pending Applications',
             },
             {
-              key: '/ri/schedule',
+              key: '/ri/ready_to_review',
               icon: <CalendarOutlined />,
-              label: 'Schedule Applications',
+              label: 'Ready to Review',
             },
             {
               key: '/ri/completed',

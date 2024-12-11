@@ -24,7 +24,12 @@ const AddressForm = ({
           render={({ field }) => (
             <Select
               {...field}
+              showSearch
               placeholder="Select Pincode"
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }
               onChange={(value) => {
                 field.onChange(value);
                 handlePincodeChange(value);
@@ -91,7 +96,15 @@ const AddressForm = ({
           name="sachivalayam"
           control={control}
           render={({ field }) => (
-            <Select {...field} placeholder="Select Sachivalayam">
+            <Select 
+              {...field} 
+              showSearch
+              placeholder="Select Sachivalayam"
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }
+            >
               {sachivalayamOptions.map((sachivalayam) => (
                 <Option key={sachivalayam} value={sachivalayam}>
                   {sachivalayam}
