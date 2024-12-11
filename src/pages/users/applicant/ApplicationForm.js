@@ -13,7 +13,9 @@ import {
   Menu,
   Avatar,
   Typography,
-  Spin
+  Spin,
+  Modal,
+  Select
 } from 'antd';
 import {
   UserOutlined,
@@ -38,64 +40,86 @@ const { Title } = Typography;
 
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB
 
-const schema = z.object({
-  aadharNumber: z.string().min(12, "Aadhar number must be 12 digits").max(12, "Aadhar number must be 12 digits"),
-  fullName: z.string().min(1, "Full name is required"),
-  dateOfBirth: z.any().refine((val) => val instanceof Date || val === null, "Date of birth is required"),
-  gender: z.string({ required_error: "Gender is required" }),
-  religion_id: z.any().refine((val) => val !== undefined && val !== null && val !== '', "Religion is required"),
-  caste_id: z.any().refine((val) => val !== undefined && val !== null && val !== '', "Caste is required"),
-  subCaste: z.string().min(1, "Sub caste is required"),
-  parentReligion_id: z.any().refine((val) => val !== undefined && val !== null && val !== '', "Parent religion is required"),
-  parentGuardianType: z.string().min(1, "Guardian type is required"),
-  parentGuardianName: z.string().min(1, "Guardian name is required"),
-  maritalStatus: z.string({ required_error: "Marital status is required" }),
-  phoneNumber: z.string().length(10, "Phone number must be exactly 10 digits"),
-  email: z.string().email("Invalid email address"),
-  pincode: z.string().min(1, "Pincode is required"),
-  state: z.string().min(1, "State is required"),
-  district: z.string().min(1, "District is required"),
-  mandal: z.string().min(1, "Mandal is required"),
-  address: z.string().min(1, "Address is required"),
-  sachivalayam: z.string().min(1, "Sachivalayam is required"),
-  proofOfResidence: z.string().min(1, "Proof of residence type is required"),
-  proofOfDOB: z.string().min(1, "Proof of DOB type is required"),
-  proofOfCaste: z.string().min(1, "Proof of caste type is required"),
-  aadharCardImage: z.any().optional(),
-  electricityBillImage: z.any().optional(),
-  gasBillImage: z.any().optional(),
-  aadharCardImageForDOB: z.any().optional(),
-  panCardImage: z.any().optional(),
-  sscCertificateImage: z.any().optional(),
-  fatherCasteCertificateImage: z.any().optional(),
-  motherCasteCertificateImage: z.any().optional(),
+const applicationSchema = z.object({
+  // Personal Info Validation
+  full_name: z.string().min(2, { message: "Full name must be at least 2 characters" }),
+  dob: z.date().refine(date => {
+    const age = calculateAge(date);
+    return age >= 18 && age <= 100;
+  }, { message: "You must be between 18 and 100 years old" }),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { message: "Invalid gender selection" }),
+  religion: z.string().min(2, { message: "Religion must be specified" }),
+  caste: z.string().optional(),
+  sub_caste: z.string().optional(),
+  parent_religion: z.string().min(2, { message: "Parent's religion must be specified" }),
+  parent_guardian_type: z.enum(['FATHER', 'MOTHER', 'GUARDIAN'], { message: "Invalid guardian type" }),
+  parent_guardian_name: z.string().min(2, { message: "Parent/Guardian name must be at least 2 characters" }),
+  marital_status: z.enum(['SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED'], { message: "Invalid marital status" }),
+  
+  // Contact Validation
+  aadhar_num: z.string().regex(/^\d{12}$/, { message: "Aadhar number must be 12 digits" }),
+  phone_num: z.string().regex(/^[6-9]\d{9}$/, { message: "Invalid Indian mobile number" }),
+  email: z.string().email({ message: "Invalid email address" }),
+
+  // Address Validation
+  pincode: z.string().regex(/^\d{6}$/, { message: "Pincode must be 6 digits" }),
+  state: z.string().min(2, { message: "State must be specified" }),
+  district: z.string().min(2, { message: "District must be specified" }),
+  mandal: z.string().min(2, { message: "Mandal must be specified" }),
+  address: z.string().min(10, { message: "Address must be at least 10 characters" }),
+  sachivalayam: z.string().min(2, { message: "Sachivalayam must be specified" }),
+
+  // Document Validation
+  addressProof: z.any().refine(file => file && file[0], { message: "Address proof is required" }),
+  dobProof: z.any().refine(file => file && file[0], { message: "Date of Birth proof is required" }),
+  casteProof: z.any().refine(file => file && file[0], { message: "Caste proof is required" }),
+  
+  addressProofType: z.string().min(1, { message: "Address proof type is required" }),
+  dobProofType: z.string().min(1, { message: "DOB proof type is required" }),
+  casteProofType: z.string().min(1, { message: "Caste proof type is required" })
 });
+
+const calculateAge = (birthDate) => {
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  
+  return age;
+};
 
 function ApplicationForm() {
   const { control, handleSubmit, watch, setValue, formState: { errors }, trigger, getValues } = useForm({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(applicationSchema),
     defaultValues: {
-      proofOfResidence: '',
-      proofOfDOB: '',
-      proofOfCaste: '',
-      aadharNumber: '',
-      fullName: '',
+      full_name: '',
+      dob: '',
       gender: '',
-      religion_id: '',
-      caste_id: '',
-      subCaste: '',
-      parentReligion_id: '',
-      parentGuardianType: '',
-      parentGuardianName: '',
-      maritalStatus: '',
-      phoneNumber: '',
+      religion: '',
+      caste: '',
+      sub_caste: '',
+      parent_religion: '',
+      parent_guardian_type: '',
+      parent_guardian_name: '',
+      marital_status: '',
+      aadhar_num: '',
+      phone_num: '',
       email: '',
       pincode: '',
       state: '',
       district: '',
       mandal: '',
       address: '',
-      sachivalayam: ''
+      sachivalayam: '',
+      addressProof: null,
+      dobProof: null,
+      casteProof: null,
+      addressProofType: '',
+      dobProofType: '',
+      casteProofType: ''
     }
   });
 
@@ -105,9 +129,6 @@ function ApplicationForm() {
   const [sachivalayamOptions, setSachivalayamOptions] = useState([]);
   const [isAadharVerified, setIsAadharVerified] = useState(false);
   const [isAadharExisting, setIsAadharExisting] = useState(false);
-  const [proofOfResidence, setProofOfResidence] = useState('');
-  const [proofOfDOB, setProofOfDOB] = useState('');
-  const [proofOfCaste, setProofOfCaste] = useState('');
   const { token, logout } = useContext(UserContext);
 
   const [collapsed, setCollapsed] = useState(false);
@@ -119,203 +140,111 @@ function ApplicationForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Comprehensive Proof Type Mapping
-  const getProofType = (proofKey) => {
-    const proofTypeMap = {
-      // Address Proof Types
-      'aadharCardImage': 'AADHAR',
-      'electricityBillImage': 'ELECTRICITY_BILL',
-      'gasBillImage': 'GAS_BILL',
-
-      // DOB Proof Types
-      'aadharCardImageForDOB': 'AADHAR',
-      'panCardImage': 'PAN_CARD',
-      'sscCertificateImage': 'SSC_CERTIFICATE',
-
-      // Caste Proof Types
-      'fatherCasteCertificateImage': 'FATHER_CASTE_CERTIFICATE',
-      'motherCasteCertificateImage': 'MOTHER_CASTE_CERTIFICATE'
-    };
-    return proofTypeMap[proofKey] || 'UNKNOWN';
-  };
-
-  const handleFinalSubmit = async () => {
-    // Validate Aadhar verification
-    if (!isAadharVerified) {
-      message.error('Please verify your Aadhar number before submitting');
-      return;
-    }
-
-    // Trigger form validation
-    const isValid = await trigger();
-    if (!isValid) {
-      message.error('Please fill out all required fields correctly');
-      return;
-    }
-
-    setIsSubmitting(true);
-
+  const onSubmit = async (data) => {
+    // Validate entire form data
     try {
-      // Collect form data
+      // Validate using Zod schema
+      const validatedData = applicationSchema.parse(data);
+      
+      // Prepare form data for submission
       const formData = new FormData();
 
       // Personal Information
-      const personalFields = [
-        { key: 'full_name', value: getValues('fullName') },
-        { 
-          key: 'dob', 
-          value: getValues('dateOfBirth') 
-            ? new Date(getValues('dateOfBirth')).toISOString().split('T')[0] 
-            : null 
-        },
-        { key: 'gender', value: getValues('gender') },
-        { key: 'religion', value: getValues('religion_id') },
-        { key: 'caste', value: getValues('caste_id') },
-        { key: 'sub_caste', value: getValues('subCaste') },
-        { key: 'parent_religion', value: getValues('parentReligion_id') },
-        { key: 'parent_guardian_type', value: getValues('parentGuardianType') },
-        { key: 'parent_guardian_name', value: getValues('parentGuardianName') },
-        { key: 'marital_status', value: getValues('maritalStatus') },
-        { key: 'aadhar_num', value: getValues('aadharNumber') },
-        { key: 'phone_num', value: getValues('phoneNumber') },
-        { key: 'email', value: getValues('email') }
-      ];
-
-      // Debug log
-      console.log('Form Values:', {
-        caste_id: getValues('caste_id'),
-        parsed_caste: parseInt(getValues('caste_id')),
-        all_values: getValues()
-      });
-
-      // Create a JSON object for personal and address data
-      const jsonData = {};
-      
-      // Add personal fields to JSON
-      personalFields.forEach(field => {
-        if (field.value !== null && field.value !== undefined) {
-          jsonData[field.key] = field.value;
+      Object.keys(validatedData).forEach(key => {
+        if (key !== 'addressProof' && key !== 'dobProof' && key !== 'casteProof') {
+          // Handle special cases like date conversion
+          if (key === 'dob') {
+            formData.append(key, validatedData[key].toISOString());
+          } else {
+            formData.append(key, validatedData[key]);
+          }
         }
       });
 
-      // Add address details
+      // Prepare Address Details
       const addressDetails = {
-        pincode: getValues('pincode'),
-        state: getValues('state'),
-        district: getValues('district'),
-        mandal: getValues('mandal'),
-        address: getValues('address'),
-        sachivalayam: getValues('sachivalayam')
+        pincode: validatedData.pincode,
+        state: validatedData.state,
+        district: validatedData.district,
+        mandal: validatedData.mandal,
+        address: validatedData.address,
+        sachivalayam: validatedData.sachivalayam
       };
-      jsonData['addressDetails'] = addressDetails;
+      formData.append('addressDetails', JSON.stringify(addressDetails));
 
-      // Convert the JSON data to a string and append to FormData
-      formData.append('jsonData', JSON.stringify(jsonData));
-
-      // Proof of Residence
-      const residenceProofOptions = [
-        { file: getValues('aadharCardImage')?.[0], key: 'aadharCardImage' },
-        { file: getValues('electricityBillImage')?.[0], key: 'electricityBillImage' },
-        { file: getValues('gasBillImage')?.[0], key: 'gasBillImage' }
-      ];
-      const residenceProof = residenceProofOptions.find(proof => proof.file);
-      
-      if (!residenceProof) {
-        throw new Error('Proof of Residence is required (Aadhar Card, Electricity Bill, or Gas Bill)');
-      }
-      
-      formData.append('addressProof', residenceProof.file);
-      formData.append('addressProofType', getProofType(residenceProof.key));
-
-      // Proof of DOB
-      const dobProofOptions = [
-        { file: getValues('aadharCardImageForDOB')?.[0], key: 'aadharCardImageForDOB' },
-        { file: getValues('panCardImage')?.[0], key: 'panCardImage' },
-        { file: getValues('sscCertificateImage')?.[0], key: 'sscCertificateImage' }
-      ];
-      const dobProof = dobProofOptions.find(proof => proof.file);
-      
-      if (!dobProof) {
-        throw new Error('Proof of Date of Birth is required (Aadhar Card, Pan Card, or SSC Certificate)');
-      }
-      
-      formData.append('dobProof', dobProof.file);
-      formData.append('dobProofType', getProofType(dobProof.key));
-
-      // Proof of Caste
-      const casteProofOptions = [
-        { file: getValues('fatherCasteCertificateImage')?.[0], key: 'fatherCasteCertificateImage' },
-        { file: getValues('motherCasteCertificateImage')?.[0], key: 'motherCasteCertificateImage' }
-      ];
-      const casteProof = casteProofOptions.find(proof => proof.file);
-      
-      if (!casteProof) {
-        throw new Error('Proof of Caste is required (Father\'s or Mother\'s Caste Certificate)');
-      }
-      
-      formData.append('casteProof', casteProof.file);
-      formData.append('casteProofType', getProofType(casteProof.key));
-
-      // Optional Additional Files
-      const optionalFiles = [
-        { key: 'sscCertificateImage', file: getValues('sscCertificateImage')?.[0] },
-        { key: 'panCardImage', file: getValues('panCardImage')?.[0] },
-        { key: 'gasBillImage', file: getValues('gasBillImage')?.[0] },
-        { key: 'electricityBillImage', file: getValues('electricityBillImage')?.[0] }
-      ];
-
-      optionalFiles.forEach(({ key, file }) => {
-        if (file && key !== dobProof.key && key !== residenceProof.key && key !== casteProof.key) {
-          formData.append(key, file);
+      // File Uploads
+      const fileFields = ['addressProof', 'dobProof', 'casteProof'];
+      fileFields.forEach(field => {
+        if (validatedData[field] && validatedData[field][0]) {
+          const file = validatedData[field][0];
+          
+          // Additional file validation
+          const maxSize = 5 * 1024 * 1024; // 5MB
+          const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+          
+          if (file.size > maxSize) {
+            throw new Error(`${field} file must be less than 5MB`);
+          }
+          
+          if (!allowedTypes.includes(file.type)) {
+            throw new Error(`Invalid file type for ${field}. Only JPEG, PNG, and PDF are allowed.`);
+          }
+          
+          formData.append(field, file);
         }
       });
 
-      // Debug: Log form data contents
-      console.log('Submission Payload:');
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}: `, value);
-      }
+      // Proof Types
+      formData.append('addressProofType', validatedData.addressProofType);
+      formData.append('dobProofType', validatedData.dobProofType);
+      formData.append('casteProofType', validatedData.casteProofType);
 
-      // Submit application
+      // Set loading state
+      setIsSubmitting(true);
+
+      // Submit to backend
       const response = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/api/application`, 
         formData, 
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`
+          },
+          // Add timeout and error handling
+          timeout: 30000 // 30 seconds timeout
         }
       );
 
       // Success handling
-      message.success('Application submitted successfully');
-      navigate('/applicant/applications');
-
+      message.success('Application submitted successfully!');
+      
+      // Optional: Navigate to tracking or dashboard
+      navigate('/applicant/dashboard');
     } catch (error) {
       // Comprehensive error handling
-      console.error('Submission Error:', error);
-
-      if (error.response) {
-        // Backend returned an error response
-        const errorMessage = error.response.data.message || 
-                             error.response.data.error || 
-                             'Backend submission error';
-        message.error(errorMessage);
-        console.error('Backend Error Details:', {
-          errorMessage,
-          fullErrorResponse: error.response.data
-        });
-      } else if (error.request) {
-        // Request made but no response received
-        message.error('No response from server. Please check your network connection.');
-        console.error('No response received:', error.request);
+      if (error instanceof z.ZodError) {
+        // Zod validation errors
+        const errorMessages = error.errors.map(err => err.message);
+        message.error(errorMessages.join(', '));
+      } else if (axios.isAxiosError(error)) {
+        // Axios specific errors
+        if (error.response) {
+          // Server responded with an error
+          message.error(error.response.data.message || 'Submission failed');
+        } else if (error.request) {
+          // Request made but no response received
+          message.error('No response from server. Please check your network connection.');
+        } else {
+          // Something else went wrong
+          message.error('An unexpected error occurred');
+        }
       } else {
-        // Error in setting up the request
-        message.error(error.message || 'Error preparing application submission');
-        console.error('Request Setup Error:', error.message);
+        // Generic error handling
+        message.error(error.message || 'Submission failed');
       }
     } finally {
+      // Always reset submitting state
       setIsSubmitting(false);
     }
   };
@@ -438,6 +367,11 @@ function ApplicationForm() {
   };
 
   const handlePincodeChange = (value) => {
+    // Extensive logging for debugging
+    console.log('Pincode Change Triggered:', value);
+    console.log('Full Address Data:', addressData);
+
+    // Find matching addresses
     const selectedAddresses = addressData.filter(item => item.pincode === value);
     console.log('Selected Addresses:', selectedAddresses);
 
@@ -592,37 +526,39 @@ function ApplicationForm() {
 
             <Form 
               layout="vertical"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (currentStep === steps.length - 1) {
-                  handleFinalSubmit();
-                }
-              }}
+              onSubmit={handleSubmit(onSubmit)}
             >
               {steps[currentStep].content}
 
-              <div style={{ marginTop: 24, textAlign: 'right' }}>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                marginTop: 24 
+              }}>
                 {currentStep > 0 && (
-                  <Button style={{ marginRight: 8 }} onClick={() => setCurrentStep(currentStep - 1)}>
+                  <Button 
+                    style={{ margin: '0 8px' }} 
+                    onClick={() => setCurrentStep(currentStep - 1)}
+                  >
                     Previous
                   </Button>
                 )}
                 {currentStep < steps.length - 1 && (
-                  <Button type="primary" onClick={() => setCurrentStep(currentStep + 1)}>
+                  <Button 
+                    type="primary" 
+                    onClick={() => setCurrentStep(currentStep + 1)}
+                  >
                     Next
                   </Button>
                 )}
                 {currentStep === steps.length - 1 && (
                   <Button 
                     type="primary" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleFinalSubmit();
-                    }}
+                    htmlType="submit"
                     loading={isSubmitting}
                     disabled={isSubmitting}
                   >
-                    Submit Application
+                    {isSubmitting ? 'Submitting...' : 'Submit Application'}
                   </Button>
                 )}
               </div>

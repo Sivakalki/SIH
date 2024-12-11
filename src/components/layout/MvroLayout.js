@@ -66,11 +66,7 @@ export default function MvroLayout({ children, logout }) {
               icon: <BarsOutlined />,
               label: 'Pending Applications',
             },
-            {
-              key: '/mvro/schedule',
-              icon: <CalendarOutlined />,
-              label: 'Schedule Applications',
-            },
+            
             {
               key: '/mvro/completed',
               icon: <CheckCircleOutlined />,

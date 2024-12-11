@@ -7,23 +7,33 @@ import { Controller } from 'react-hook-form';
 const { Option } = Select;
 
 const castes = [
-  { caste_id: '1', name: 'OC' },
-  { caste_id: '2', name: 'OBC' },
-  { caste_id: '3', name: 'ST' },
-  { caste_id: '4', name: 'SC' },
+  { id: 'GENERAL', name: 'General' },
+  { id: 'OBC', name: 'OBC' },
+  { id: 'SC', name: 'SC' },
+  { id: 'ST', name: 'ST' },
 ];
 
 const religions = [
-  { religion_id: '1', name: 'HINDU' },
-  { religion_id: '2', name: 'CHRISTIAN' },
-  { religion_id: '3', name: 'MUSLIM' },
-  { religion_id: '4', name: 'NOA' },
+  { id: 'HINDU', name: 'Hindu' },
+  { id: 'MUSLIM', name: 'Muslim' },
+  { id: 'CHRISTIAN', name: 'Christian' },
+  { id: 'SIKH', name: 'Sikh' },
+  { id: 'BUDDHIST', name: 'Buddhist' },
+  { id: 'JAIN', name: 'Jain' },
+  { id: 'OTHER', name: 'Other' },
 ];
 
 const parentGuardianTypes = [
-  { id: 1, type: 'FATHER' },
-  { id: 2, type: 'MOTHER' },
-  { id: 3, type: 'SIBILING' },
+  { id: 'FATHER', type: 'Father' },
+  { id: 'MOTHER', type: 'Mother' },
+  { id: 'GUARDIAN', type: 'Guardian' },
+];
+
+const maritalStatuses = [
+  { id: 'SINGLE', name: 'Single' },
+  { id: 'MARRIED', name: 'Married' },
+  { id: 'DIVORCED', name: 'Divorced' },
+  { id: 'WIDOWED', name: 'Widowed' },
 ];
 
 const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, verifyingAadhar }) => {
@@ -31,11 +41,11 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
     <Space direction="vertical" style={{ width: '100%' }} size="large">
       <Form.Item
         label="Aadhar Number"
-        validateStatus={errors.aadharNumber ? "error" : ""}
-        help={errors.aadharNumber?.message}
+        validateStatus={errors.aadhar_num ? "error" : ""}
+        help={errors.aadhar_num?.message}
       >
         <Controller
-          name="aadharNumber"
+          name="aadhar_num"
           control={control}
           render={({ field }) => (
             <Space>
@@ -74,11 +84,11 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
         <>
           <Form.Item
             label="Full Name"
-            validateStatus={errors.fullName ? "error" : ""}
-            help={errors.fullName?.message}
+            validateStatus={errors.full_name ? "error" : ""}
+            help={errors.full_name?.message}
           >
             <Controller
-              name="fullName"
+              name="full_name"
               control={control}
               render={({ field }) => (
                 <Input {...field} placeholder="Enter your full name" />
@@ -88,11 +98,11 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
 
           <Form.Item
             label="Date of Birth"
-            validateStatus={errors.dateOfBirth ? "error" : ""}
-            help={errors.dateOfBirth?.message}
+            validateStatus={errors.dob ? "error" : ""}
+            help={errors.dob?.message}
           >
             <Controller
-              name="dateOfBirth"
+              name="dob"
               control={control}
               render={({ field }) => (
                 <DatePicker
@@ -130,11 +140,11 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
 
           <Form.Item
             label="Religion"
-            validateStatus={errors.religion_id ? "error" : ""}
-            help={errors.religion_id?.message}
+            validateStatus={errors.religion ? "error" : ""}
+            help={errors.religion?.message}
           >
             <Controller
-              name="religion_id"
+              name="religion"
               control={control}
               render={({ field }) => (
                 <Select
@@ -147,7 +157,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
                   }
                 >
                   {religions.map(religion => (
-                    <Option key={religion.religion_id} value={religion.religion_id}>
+                    <Option key={religion.id} value={religion.id}>
                       {religion.name}
                     </Option>
                   ))}
@@ -158,11 +168,11 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
 
           <Form.Item
             label="Caste"
-            validateStatus={errors.caste_id ? "error" : ""}
-            help={errors.caste_id?.message}
+            validateStatus={errors.caste ? "error" : ""}
+            help={errors.caste?.message}
           >
             <Controller
-              name="caste_id"
+              name="caste"
               control={control}
               render={({ field }) => (
                 <Select
@@ -175,7 +185,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
                   }
                 >
                   {castes.map(caste => (
-                    <Option key={caste.caste_id} value={caste.caste_id}>
+                    <Option key={caste.id} value={caste.id}>
                       {caste.name}
                     </Option>
                   ))}
@@ -186,11 +196,11 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
 
           <Form.Item
             label="Sub Caste"
-            validateStatus={errors.subCaste ? "error" : ""}
-            help={errors.subCaste?.message}
+            validateStatus={errors.sub_caste ? "error" : ""}
+            help={errors.sub_caste?.message}
           >
             <Controller
-              name="subCaste"
+              name="sub_caste"
               control={control}
               render={({ field }) => (
                 <Input {...field} placeholder="Enter your sub caste" />
@@ -200,11 +210,11 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
 
           <Form.Item
             label="Parent Religion"
-            validateStatus={errors.parentReligion_id ? "error" : ""}
-            help={errors.parentReligion_id?.message}
+            validateStatus={errors.parent_religion ? "error" : ""}
+            help={errors.parent_religion?.message}
           >
             <Controller
-              name="parentReligion_id"
+              name="parent_religion"
               control={control}
               render={({ field }) => (
                 <Select
@@ -217,7 +227,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
                   }
                 >
                   {religions.map(religion => (
-                    <Option key={religion.religion_id} value={religion.religion_id}>
+                    <Option key={religion.id} value={religion.id}>
                       {religion.name}
                     </Option>
                   ))}
@@ -227,25 +237,25 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
           </Form.Item>
 
           <Form.Item
-            label="Parent/Guardian Type"
-            validateStatus={errors.parentGuardianType ? "error" : ""}
-            help={errors.parentGuardianType?.message}
+            label="Parent Guardian Type"
+            validateStatus={errors.parent_guardian_type ? "error" : ""}
+            help={errors.parent_guardian_type?.message}
           >
             <Controller
-              name="parentGuardianType"
+              name="parent_guardian_type"
               control={control}
               render={({ field }) => (
                 <Select
                   {...field}
                   showSearch
-                  placeholder="Select parent/guardian type"
+                  placeholder="Select guardian type"
                   optionFilterProp="children"
                   filterOption={(input, option) =>
                     option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                   }
                 >
                   {parentGuardianTypes.map(type => (
-                    <Option key={type.id} value={type.type}>
+                    <Option key={type.id} value={type.id}>
                       {type.type}
                     </Option>
                   ))}
@@ -255,48 +265,85 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
           </Form.Item>
 
           <Form.Item
-            label="Parent/Guardian Name"
-            validateStatus={errors.parentGuardianName ? "error" : ""}
-            help={errors.parentGuardianName?.message}
+            label="Parent Guardian Name"
+            validateStatus={errors.parent_guardian_name ? "error" : ""}
+            help={errors.parent_guardian_name?.message}
           >
             <Controller
-              name="parentGuardianName"
+              name="parent_guardian_name"
               control={control}
               render={({ field }) => (
-                <Input {...field} placeholder="Enter parent/guardian name" />
+                <Input {...field} placeholder="Enter parent guardian name" />
               )}
             />
           </Form.Item>
 
           <Form.Item
             label="Marital Status"
-            validateStatus={errors.maritalStatus ? "error" : ""}
-            help={errors.maritalStatus?.message}
+            validateStatus={errors.marital_status ? "error" : ""}
+            help={errors.marital_status?.message}
           >
             <Controller
-              name="maritalStatus"
+              name="marital_status"
               control={control}
               render={({ field }) => (
-                <Radio.Group {...field}>
-                  <Radio value="SINGLE">Single</Radio>
-                  <Radio value="MARRIED">Married</Radio>
-                  <Radio value="DIVORCED">Divorced</Radio>
-                  <Radio value="WIDOWED">Widowed</Radio>
-                </Radio.Group>
+                <Select
+                  {...field}
+                  showSearch
+                  placeholder="Select marital status"
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }
+                >
+                  {maritalStatuses.map(status => (
+                    <Option key={status.id} value={status.id}>
+                      {status.name}
+                    </Option>
+                  ))}
+                </Select>
               )}
             />
           </Form.Item>
 
           <Form.Item
             label="Phone Number"
-            validateStatus={errors.phoneNumber ? "error" : ""}
-            help={errors.phoneNumber?.message}
+            validateStatus={errors.phone_num ? "error" : ""}
+            help={errors.phone_num?.message}
           >
             <Controller
-              name="phoneNumber"
+              name="phone_num"
               control={control}
-              render={({ field }) => (
-                <Input {...field} placeholder="Enter your 10-digit phone number" maxLength={10} />
+              render={({ field: { onChange, value, ...field } }) => (
+                <Input 
+                  {...field}
+                  value={value || ''}
+                  placeholder="Enter 10-digit phone number"
+                  maxLength={10}
+                  onChange={(e) => {
+                    // Remove any non-digit characters
+                    const numericValue = e.target.value.replace(/\D/g, '');
+                    
+                    // Limit to 10 digits
+                    const limitedValue = numericValue.slice(0, 10);
+                    
+                    // Update the field value
+                    onChange(limitedValue);
+                  }}
+                  onKeyDown={(e) => {
+                    // Allow only numbers, backspace, delete, arrow keys, and tab
+                    if (
+                      !/[0-9]/.test(e.key) &&
+                      e.key !== 'Backspace' &&
+                      e.key !== 'Delete' &&
+                      e.key !== 'ArrowLeft' &&
+                      e.key !== 'ArrowRight' &&
+                      e.key !== 'Tab'
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}
+                />
               )}
             />
           </Form.Item>
@@ -310,7 +357,7 @@ const PersonalInfoForm = ({ control, errors, isAadharVerified, onAadharVerify, v
               name="email"
               control={control}
               render={({ field }) => (
-                <Input {...field} placeholder="Enter your Gmail address" />
+                <Input {...field} placeholder="Enter your email address" />
               )}
             />
           </Form.Item>
