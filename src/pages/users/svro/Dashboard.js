@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Select, Button, Space, Typography, message, Card, Row, Col, Drawer, Avatar, Badge, Spin, Layout, Menu, Calendar, Tooltip } from 'antd';
+import { Table, Select, Button, Space, Typography, message, Card, Row, Col, Drawer, Avatar, Badge, Spin, Layout, Menu, Calendar, Tooltip, Descriptions, Tag } from 'antd';
 import { 
   UserOutlined, 
   LogoutOutlined, 
@@ -25,6 +25,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import dayjs from 'dayjs';
 import '../../../styles/Dashboard.css';
+import SvroLayout from '../../../components/layout/SvroLayout';
 
 const { Option } = Select;
 const { Title } = Typography;
@@ -130,9 +131,9 @@ export default function VRODashboard() {
     reportSubmissions: 0,
     monthlyData: []
   });
-  const [selectedYear, setSelectedYear] = useState('2023');
+  const [selectedYear, setSelectedYear] = useState(dayjs().year().toString());
+  const [selectedRange, setSelectedRange] = useState('Jan-Jul');
   const [role, setRole] = useState("");
-  const [selectedRange, setSelectedRange] = useState('all');
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -149,7 +150,7 @@ export default function VRODashboard() {
   const [scheduledApplications, setScheduledApplications] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedApplicationId, setSelectedApplicationId] = useState(null);
-  const [reportCount, setReportCount] = useState(0);
+  const [reportsCount, setReportsCount] = useState(0);
 
   useEffect(() => {
     if (!token) {
@@ -159,7 +160,7 @@ export default function VRODashboard() {
     }
     fetchData();
     fetchDashboardData();
-    fetchReportCount();
+    fetchReportsCount();
     // fetchScheduledApplications();
   }, [token]);
 
@@ -212,20 +213,16 @@ export default function VRODashboard() {
     }
   };
 
-  const fetchReportCount = async () => {
+  const fetchReportsCount = async () => {
     try {
       const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/get_reports`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      setReportCount(response.data.data.length);
+      setReportsCount(response.data.data.length);
     } catch (error) {
-      if (error.response.status === 401) {
-        message.error('Session expired. Please login again.');
-      } else {
-        message.error('Failed to fetch report count');
-      }
+      console.error('Failed to fetch reports count:', error);
     }
   };
 
@@ -335,38 +332,39 @@ export default function VRODashboard() {
     }
   };
 
+  const openProfileDrawer = () => {
+    setProfileDrawerVisible(true);
+  };
+
+  const closeProfileDrawer = () => {
+    setProfileDrawerVisible(false);
+  };
+
   if (userLoading) {
     return (
-      <Layout style={{ minHeight: '100vh', background: '#FFFFFF' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <SvroLayout logout={logout}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
           <Spin size="large" />
+          <Title level={3} style={{ marginTop: '20px' }}>Loading...</Title>
         </div>
-      </Layout>
+      </SvroLayout>
     );
   }
 
   if (errorMessage) {
     return (
-      <Layout style={{ minHeight: '100vh', background: '#FFFFFF' }}>
-        <div style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '100vh' 
-        }}>
-          <Title level={3} style={{ color: '#f5222d', marginBottom: '24px' }}>{errorMessage}</Title>
-          <Button type="primary" onClick={() => navigate('/login')}>
-            Go to Login
-          </Button>
+      <SvroLayout logout={logout}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
+          <Title level={3} style={{ color: '#f5222d' }}>{errorMessage}</Title>
+          {<Button type="primary" onClick={() => navigate('/login')}>Go to Login</Button>}
         </div>
-      </Layout>
+      </SvroLayout>
     );
   }
 
   if (!userData) {
     return (
-      <Layout style={{ minHeight: '100vh', background: '#FFFFFF' }}>
+      <SvroLayout logout={logout}>
         <div style={{ 
           display: 'flex', 
           flexDirection: 'column', 
@@ -381,7 +379,7 @@ export default function VRODashboard() {
             Go to Login
           </Button>
         </div>
-      </Layout>
+      </SvroLayout>
     );
   }
 
@@ -413,400 +411,221 @@ export default function VRODashboard() {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#FFFFFF' }}>
-      <Layout style={{ width: '100%', position: 'fixed', top: 0, zIndex: 2, background: '#FFFFFF' }}>
-        <Header style={{ 
-          padding: '0',
-          background: '#FFFFFF',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          display: 'flex',
-          flexDirection: 'column',
-          height: 'auto',
-          width: '100%'
-        }}>
-          <NewsTicker news={[
-            "New online service for income certificate launched",
-            "Updated guidelines for caste certificate applications",
-            "Last date for property tax payment: 31st March 2024",
-            "E-filing system maintenance scheduled for next weekend"
-          ]} />
-          
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            padding: '0 24px',
-            height: '64px',
-            background: '#FFFFFF'
-          }}>
+    <SvroLayout logout={logout}>
+      <div style={{ padding: '24px', backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
+        <div className="dashboard-header">
+          <div>
+            <Title level={2} className="dashboard-title">SVRO Dashboard</Title>
+            <p>Welcome, {userData?.name || 'User'}</p>
+          </div>
+        </div>
+
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+          <Col xs={24} lg={12}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <StatisticCard
+                    title="Total Applications"
+                    value={dashboardData.totalApplications || 0}
+                    icon={<FileTextOutlined />}
+                    color="#1890ff"
+                    to="/svro/applications"
+                  />
+                </motion.div>
+              </Col>
+              <Col xs={24} sm={12}>
+                <StatisticCard
+                  title="Completed"
+                  value={dashboardData.completedApplications}
+                  to="/svro/completed"
+                  backgroundColor="#f6ffed"
+                  borderColor="#b7eb8f"
+                  textColor="#52c41a"
+                  icon={<CheckCircleOutlined style={{ fontSize: '24px', color: '#52c41a' }} />}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <StatisticCard
+                  title="Pending"
+                  value={dashboardData.pendingApplications}
+                  to="/svro/Pending"
+                  backgroundColor="#fff7e6"
+                  borderColor="#ffd591"
+                  textColor="#faad14"
+                  icon={<ClockCircleOutlined style={{ fontSize: '24px', color: '#faad14' }} />}
+                />
+              </Col>
+              <Col xs={24} sm={12}>
+                <StatisticCard
+                  title="Reports"
+                  value={reportsCount}
+                  to="/svro/reports"
+                  backgroundColor="#f9f0ff"
+                  borderColor="#d3adf7"
+                  textColor="#722ed1"
+                  icon={<FileSearchOutlined style={{ fontSize: '24px', color: '#722ed1' }} />}
+                />
+              </Col>
+            </Row>
+          </Col>
+        </Row>
+
+        <Row gutter={[16, 16]}>
+          {/* Left Column - Graph */}
+          <Col xs={24} lg={12}>
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <Title level={3} className="certitrack-title">
-                CertiTrack
-              </Title>
-            </motion.div>
-
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <Card 
+                title="Application Statistics"
+                style={{ height: '100%' }}
+                bodyStyle={{ height: 'calc(100% - 87px)', padding: '12px' }}
               >
-                <Button 
-                  type="text"
-                  icon={<BellOutlined style={{ color: '#FF4500' }} />}
-                  onClick={() => setNotificationDrawerVisible(true)}
-                  style={{ 
-                    marginRight: '16px',
-                    color: '#FF4500'
+                <Line 
+                  data={dashboardData.monthlyData || [
+                    { month: 'Jan', applications: 30, year: '2023' },
+                    { month: 'Feb', applications: 45, year: '2023' },
+                    { month: 'Mar', applications: 35, year: '2023' },
+                    { month: 'Apr', applications: 50, year: '2023' },
+                    { month: 'May', applications: 40, year: '2023' },
+                    { month: 'Jun', applications: 60, year: '2023' }
+                  ]}
+                  xField="month"
+                  yField="applications"
+                  seriesField="year"
+                  smooth={true}
+                  animation={{
+                    appear: {
+                      animation: 'path-in',
+                      duration: 1000,
+                    },
                   }}
-                >
-                  <span style={{ color: '#FF4500' }}>Notifications</span>
-                </Button>
-              </motion.div>
-              
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button 
-                  type="text"
-                  icon={<UserOutlined style={{ color: '#FF4500' }} />}
-                  onClick={() => setProfileDrawerVisible(true)}
-                  style={{
-                    color: '#FF4500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '0 24px',
-                    height: '40px',
-                    borderRadius: '20px'
+                  tooltip={{
+                    showMarkers: true,
+                    shared: true,
+                    showCrosshairs: true,
+                    crosshairs: {
+                      type: 'xy',
+                    },
                   }}
-                >
-                  <span style={{ marginLeft: '8px', color: '#FF4500' }}>
-                    {userData ? userData.name : 'User'}
-                  </span>
-                </Button>
-              </motion.div>
-            </div>
-          </div>
-        </Header>
-      </Layout>
-      <Layout style={{ 
-        marginLeft: collapsed ? 80 : 250,
-        transition: 'all 0.2s',
-        minHeight: '100vh',
-        background: '#f5f5f5',
-        marginTop: '108px'
-      }}>
-        <Sider
-          collapsible
-          collapsed={collapsed}
-          onCollapse={(value) => setCollapsed(value)}
-          style={{
-            background: '#fff',
-            borderRight: '1px solid #f0f0f0',
-            overflow: 'auto',
-            height: 'calc(100vh - 108px)', 
-            position: 'fixed',
-            left: 0,
-            top: 108,
-            zIndex: 1,
-            boxShadow: '2px 0 8px rgba(0,0,0,0.1)'
-          }}
-          width={250}
-        >
-          {/* <div style={{ 
-            height: '64px', 
-            display: 'flex', 
-            alignItems: 'center',
-            padding: '0 24px',
-            borderBottom: '1px solid #f0f0f0'
-          }}>
-            <Title level={4} style={{ margin: 0, color: '#4169E1' }}>
-              CertiTrack
-            </Title>
-          </div> */}
-          <Menu
-
-            mode="inline"
-            selectedKeys={[activeNavItem]}
-            style={{ 
-              border: 'none',
-              padding: '16px 0',
-              marginTop:'32px'
-
-            }}
-            items={[
-              {
-                key: 'dashboard',
-                icon: <HomeOutlined style={{ fontSize: '18px' }} />,
-                label: 'Dashboard',
-                onClick: () => setActiveNavItem('dashboard')
-              },
-              {
-                key: 'applications',
-                icon: <FileTextOutlined style={{ fontSize: '18px' }} />,
-                label: 'Applications',
-                onClick: () => navigate('/svro/applications')
-              },
-              {
-                key: 'schedule',
-                icon: <CalendarOutlined style={{ fontSize: '18px' }} />,
-                label: 'Schedule Applications',
-                onClick: () => navigate('/svro/schedule')
-              },
-              {
-                key: 'reports',
-                icon: <BarsOutlined style={{ fontSize: '18px' }} />,
-                label: 'Reports',
-                onClick: () => navigate('/svro/reports')
-              }
-            ]}
-          />
-        </Sider>
-        <Content style={{ 
-          padding: '24px',
-          minHeight: 'calc(100vh - 108px)',
-          background: '#f5f5f5'
-        }}>
-          <div style={{ background: '#fff', padding: '24px', borderRadius: '8px', marginTop: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-            <div className="dashboard-header">
-              <div>
-                <Title level={2} className="dashboard-title">SVRO Dashboard</Title>
-                <p>Welcome, {userData?.name || 'User'}</p>
-              </div>
-            </div>
-
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-              <Col xs={24} lg={12}>
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} sm={12}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <StatisticCard
-                        title="Total Applications"
-                        value={dashboardData.total_applications || 0}
-                        icon={<FileTextOutlined />}
-                        color="#1890ff"
-                      />
-                    </motion.div>
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <StatisticCard
-                      title="Completed"
-                      value={dashboardData.completedApplications}
-                      to="/svro/completed"
-                      backgroundColor="#f6ffed"
-                      borderColor="#b7eb8f"
-                      textColor="#52c41a"
-                      icon={<CheckCircleOutlined style={{ fontSize: '24px', color: '#52c41a' }} />}
-                    />
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <StatisticCard
-                      title="Pending"
-                      value={dashboardData.pendingApplications}
-                      to="/svro/Pending"
-                      backgroundColor="#fff7e6"
-                      borderColor="#ffd591"
-                      textColor="#faad14"
-                      icon={<ClockCircleOutlined style={{ fontSize: '24px', color: '#faad14' }} />}
-                    />
-                  </Col>
-                  <Col xs={24} sm={12}>
-                    <StatisticCard
-                      title="Reports"
-                      value={reportCount}
-                      to="/svro/reports"
-                      backgroundColor="#f9f0ff"
-                      borderColor="#d3adf7"
-                      textColor="#722ed1"
-                      icon={<FileSearchOutlined style={{ fontSize: '24px', color: '#722ed1' }} />}
-                    />
-                  </Col>
-                </Row>
-              </Col>
-            </Row>
-
-            <Row gutter={[16, 16]}>
-              {/* Left Column - Graph */}
-              <Col xs={24} lg={12}>
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                >
-                  <Card 
-                    title="Application Statistics"
-                    style={{ height: '100%' }}
-                    bodyStyle={{ height: 'calc(100% - 87px)', padding: '12px' }}
-                  >
-                    <Line 
-                      data={dashboardData.monthlyData || [
-                        { month: 'Jan', applications: 30, year: '2023' },
-                        { month: 'Feb', applications: 45, year: '2023' },
-                        { month: 'Mar', applications: 35, year: '2023' },
-                        { month: 'Apr', applications: 50, year: '2023' },
-                        { month: 'May', applications: 40, year: '2023' },
-                        { month: 'Jun', applications: 60, year: '2023' }
-                      ]}
-                      xField="month"
-                      yField="applications"
-                      seriesField="year"
-                      smooth={true}
-                      animation={{
-                        appear: {
-                          animation: 'path-in',
-                          duration: 1000,
-                        },
-                      }}
-                      tooltip={{
-                        showMarkers: true,
-                        shared: true,
-                        showCrosshairs: true,
-                        crosshairs: {
-                          type: 'xy',
-                        },
-                      }}
-                      xAxis={{
-                        label: {
-                          autoRotate: false,
-                          style: {
-                            fill: '#666',
-                            fontSize: 12,
-                          },
-                        },
-                      }}
-                      yAxis={{
-                        label: {
-                          style: {
-                            fill: '#666',
-                            fontSize: 12,
-                          },
-                        },
-                        grid: {
-                          line: {
-                            style: {
-                              stroke: '#f0f0f0',
-                              lineWidth: 1,
-                              lineDash: [4, 4],
-                            },
-                          },
-                        },
-                      }}
-                      point={{
-                        size: 5,
-                        shape: 'circle',
+                  xAxis={{
+                    label: {
+                      autoRotate: false,
+                      style: {
+                        fill: '#666',
+                        fontSize: 12,
+                      },
+                    },
+                  }}
+                  yAxis={{
+                    label: {
+                      style: {
+                        fill: '#666',
+                        fontSize: 12,
+                      },
+                    },
+                    grid: {
+                      line: {
                         style: {
-                          fill: '#4169E1',
-                          stroke: '#fff',
-                          lineWidth: 2,
+                          stroke: '#f0f0f0',
+                          lineWidth: 1,
+                          lineDash: [4, 4],
                         },
-                      }}
-                      color="#4169E1"
-                      height={400}
-                      style={{ height: '100%' }}
-                    />
-                  </Card>
-                </motion.div>
-              </Col>
+                      },
+                    },
+                  }}
+                  point={{
+                    size: 5,
+                    shape: 'circle',
+                    style: {
+                      fill: '#4169E1',
+                      stroke: '#fff',
+                      lineWidth: 2,
+                    },
+                  }}
+                  color="#4169E1"
+                  height={400}
+                  style={{ height: '100%' }}
+                />
+              </Card>
+            </motion.div>
+          </Col>
 
-              {/* Right Column - Calendar */}
-              <Col xs={24} lg={12}>
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                >
-                  <Card 
-                    title={
-                      <Space>
-                        <CalendarOutlined style={{ color: '#1890ff' }} />
-                        <span style={{ color: '#1890ff', fontWeight: 'bold' }}>
-                          Upcoming Appointments
-                        </span>
-                      </Space>
-                    }
-                    loading={loading}
-                    style={{ 
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                      height: '100%'
-                    }}
-                    bodyStyle={{ 
-                      padding: '12px',
-                      height: 'calc(100% - 87px)',
-                      overflow: 'auto'
-                    }}
-                  >
-                    <Calendar 
-                      dateCellRender={dateCellRender}
-                      style={{ 
-                        ...calendarStyle,
-                      }}
-                      fullscreen={false}
-                    />
-                  </Card>
-                </motion.div>
-              </Col>
-            </Row>
-          </div>
-        </Content>
-      </Layout>
-
-      <NotificationDrawer
-        visible={notificationDrawerVisible}
-        onClose={() => setNotificationDrawerVisible(false)}
-        notifications={notifications}
-      />
-
+          {/* Right Column - Calendar */}
+          <Col xs={24} lg={12}>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Card 
+                title={
+                  <Space>
+                    <CalendarOutlined style={{ color: '#1890ff' }} />
+                    <span style={{ color: '#1890ff', fontWeight: 'bold' }}>
+                      Upcoming Appointments
+                    </span>
+                  </Space>
+                }
+                loading={loading}
+                style={{ 
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                  height: '100%'
+                }}
+                bodyStyle={{ 
+                  padding: '12px',
+                  height: 'calc(100% - 87px)',
+                  overflow: 'auto'
+                }}
+              >
+                <Calendar 
+                  dateCellRender={dateCellRender}
+                  style={{ 
+                    ...calendarStyle,
+                  }}
+                  fullscreen={false}
+                />
+              </Card>
+            </motion.div>
+          </Col>
+        </Row>
+      </div>
+      <Button type="text" onClick={openProfileDrawer} icon={<UserOutlined />} />
       <Drawer
         title="Profile"
         placement="right"
-        onClose={() => setProfileDrawerVisible(false)}
-        visible={profileDrawerVisible}
-        width={300}
+        onClose={closeProfileDrawer}
+        open={profileDrawerVisible}
+        width={400}
       >
-        <div className="space-y-4">
-          <div className="flex items-center space-x-4">
-            <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#4169E1' }} />
-            <div>
-              <h2 className="text-xl font-semibold">{userData.name}</h2>
-              <p className="text-gray-500">{userData.role}</p>
+        {userData && (
+          <>
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <Avatar size={64} icon={<UserOutlined />} />
+              <Title level={4} style={{ marginTop: '16px', marginBottom: '4px' }}>{userData.name}</Title>
+              <Tag color="blue">{role}</Tag>
             </div>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Email</p>
-            <p>{userData.email}</p>
-          </div>
-          <Button block onClick={() => {
-            message.info('Navigating to full profile page');
-            setProfileDrawerVisible(false);
-          }}>
-            View Full Profile
-          </Button>
-          <Button danger block onClick={() => {
-            logout();
-            setProfileDrawerVisible(false);
-          }}>
-            <LogoutOutlined /> Logout
-          </Button>
-        </div>
+            <Descriptions bordered column={1}>
+              <Descriptions.Item label="Email">{userData.email}</Descriptions.Item>
+              <Descriptions.Item label="Phone">{userData.phone || 'Not provided'}</Descriptions.Item>
+              <Descriptions.Item label="Department">{userData.department || 'Not provided'}</Descriptions.Item>
+            </Descriptions>
+            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+              <Button type="primary" danger icon={<LogoutOutlined />} onClick={logout}>
+                Logout
+              </Button>
+            </div>
+          </>
+        )}
       </Drawer>
-
-      <ApplicationDetailsModal
-        visible={modalVisible}
-        applicationId={selectedApplicationId}
-        onCancel={() => {
-          setModalVisible(false);
-          setSelectedApplicationId(null);
-        }}
-      />
-    </Layout>
+    </SvroLayout>
   );
 }

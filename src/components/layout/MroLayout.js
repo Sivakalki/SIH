@@ -20,12 +20,8 @@ export default function MroLayout({ children, logout }) {
   const location = useLocation();
 
   const handleMenuClick = (item) => {
-    console.log('Menu item clicked:', item.key);  // Debug log
     if (item.key === 'logout') {
       logout();
-    } else if (item.key === '/mro') {
-      console.log('Navigating to MRO dashboard');  // Debug log
-      navigate('/mro');  
     } else {
       navigate(item.key);
     }

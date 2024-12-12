@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Table, Button, Typography, message, Card, Modal, Descriptions, Spin, Tag, Drawer, Avatar } from 'antd';
-import { EyeOutlined, FileTextOutlined, UserOutlined } from '@ant-design/icons';
+import { EyeOutlined, FileTextOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { UserContext } from '../../../components/userContext';
 import StatisticCard from './utils/statistic-card';
 import SvroLayout from '../../../components/layout/SvroLayout';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 
@@ -35,6 +36,7 @@ export default function MyReports() {
     const [drawerVisible, setDrawerVisible] = useState(false);
     const [userData, setUserData] = useState(null);
     const { token, logout } = useContext(UserContext);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!token) {
@@ -167,8 +169,9 @@ export default function MyReports() {
     if (userLoading) {
         return (
             <SvroLayout logout={logout}>
-                <div className="flex justify-center items-center min-h-screen">
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
                     <Spin size="large" />
+                    <Title level={3} style={{ marginTop: '20px' }}>Loading...</Title>
                 </div>
             </SvroLayout>
         );
@@ -177,8 +180,9 @@ export default function MyReports() {
     if (errorMessage) {
         return (
             <SvroLayout logout={logout}>
-                <div className="flex justify-center items-center min-h-screen">
-                    <Title level={3} className="text-red-500">{errorMessage}</Title>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
+                    <Title level={3} style={{ color: '#f5222d' }}>{errorMessage}</Title>
+                    <Button type="primary" onClick={() => navigate('/login')}>Go to Login</Button>
                 </div>
             </SvroLayout>
         );
@@ -186,115 +190,120 @@ export default function MyReports() {
 
     return (
         <SvroLayout logout={logout}>
-            <div className="mb-6">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Title level={2}>My Reports</Title>
-                    <Button icon={<UserOutlined />} onClick={openDrawer}>Profile</Button>
+            <div style={{ padding: '24px', backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <Title level={2} style={{ margin: 0, color: '#1890ff' }}>My Reports</Title>
+                    <Button type="text" onClick={openDrawer} icon={<UserOutlined />} />
                 </div>
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <StatisticCard
+                        title="Total Reports"
+                        value={applications.length}
+                        icon={<FileTextOutlined style={{ color: '#1890ff' }} />}
+                        backgroundColor="#e6f7ff"
+                        borderColor="#91d5ff"
+                        textColor="#1890ff"
+                    />
+                    <StatisticCard
+                        title="Completed Reports"
+                        value={applications.filter(app => app.status.toUpperCase() === 'COMPLETED').length}
+                        icon={<FileTextOutlined style={{ color: '#52c41a' }} />}
+                        backgroundColor="#f6ffed"
+                        borderColor="#b7eb8f"
+                        textColor="#52c41a"
+                    />
+                    <StatisticCard
+                        title="Pending Reports"
+                        value={applications.filter(app => app.status.toUpperCase() === 'PENDING').length}
+                        icon={<FileTextOutlined style={{ color: '#faad14' }} />}
+                        backgroundColor="#fff7e6"
+                        borderColor="#ffd591"
+                        textColor="#faad14"
+                    />
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <StatisticCard
-                    title="Total Reports"
-                    value={applications.length}
-                    icon={<FileTextOutlined style={{ color: '#1890ff' }} />}
-                    backgroundColor="#e6f7ff"
-                    borderColor="#91d5ff"
-                    textColor="#1890ff"
-                />
-                <StatisticCard
-                    title="Completed Reports"
-                    value={applications.filter(app => app.status.toUpperCase() === 'COMPLETED').length}
-                    icon={<FileTextOutlined style={{ color: '#52c41a' }} />}
-                    backgroundColor="#f6ffed"
-                    borderColor="#b7eb8f"
-                    textColor="#52c41a"
-                />
-                <StatisticCard
-                    title="Pending Reports"
-                    value={applications.filter(app => app.status.toUpperCase() === 'PENDING').length}
-                    icon={<FileTextOutlined style={{ color: '#faad14' }} />}
-                    backgroundColor="#fff7e6"
-                    borderColor="#ffd591"
-                    textColor="#faad14"
-                />
-            </div>
-
-            <Card className="shadow-md">
-                <Table
-                    columns={columns}
-                    dataSource={applications}
-                    loading={loading}
-                    rowKey="id"
-                />
-            </Card>
-
-            <Modal
-                title="Report Details"
-                visible={modalVisible}
-                onCancel={() => {
-                    setModalVisible(false);
-                    setSelectedApplication(null);
-                }}
-                footer={null}
-                width={800}
-            >
-                {modalLoading ? (
-                    <div style={{ textAlign: 'center', padding: '20px' }}>
-                        <Spin size="large" />
-                    </div>
-                ) : selectedApplication ? (
-                    <Descriptions bordered column={2}>
-                        <Descriptions.Item label="Report ID" span={2}>
-                            {selectedApplication.report_id}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Application ID" span={2}>
-                            {selectedApplication.application_id}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Applicant Name" span={2}>
-                            {selectedApplication.applicant_name}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Status" span={2}>
-                            <span style={{
-                                color: selectedApplication.status === 'PENDING' ? '#faad14' : '#52c41a',
-                                textTransform: 'capitalize',
-                                fontWeight: 'bold',
-                            }}>
-                                {selectedApplication.status}
-                            </span>
-                        </Descriptions.Item>
-                        <Descriptions.Item label="Description" span={2}>
-                            {selectedApplication.description}
-                        </Descriptions.Item>
-                    </Descriptions>
-                ) : (
-                    <div style={{ textAlign: 'center', padding: '20px' }}>
-                        No report data available
-                    </div>
-                )}
-            </Modal>
-
-            <Drawer
-                title="User Profile"
-                placement="right"
-                onClose={closeDrawer}
-                visible={drawerVisible}
-                width={400}
-            >
-                <Card>
-                    <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                        <Avatar size={64} icon={<UserOutlined />} />
-                        <Title level={4} style={{ marginTop: '10px', marginBottom: '0' }}>
-                            {userData?.name || 'User'}
-                        </Title>
-                        <p>{userData?.email || 'No email available'}</p>
-                    </div>
-                    <Descriptions column={1}>
-                        <Descriptions.Item label="Role">SVRO</Descriptions.Item>
-                        <Descriptions.Item label="Status">Active</Descriptions.Item>
-                    </Descriptions>
+                <Card className="shadow-md">
+                    <Table
+                        columns={columns}
+                        dataSource={applications}
+                        rowKey="id"
+                        loading={loading}
+                    />
                 </Card>
-            </Drawer>
+
+                <Modal
+                    visible={modalVisible}
+                    title="Report Details"
+                    onCancel={() => {
+                        setModalVisible(false);
+                        setSelectedApplication(null);
+                    }}
+                    footer={null}
+                    width={800}
+                >
+                    {modalLoading ? (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                            <Spin size="large" />
+                        </div>
+                    ) : selectedApplication ? (
+                        <Descriptions bordered column={2}>
+                            <Descriptions.Item label="Report ID" span={2}>
+                                {selectedApplication.report_id}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Application ID" span={2}>
+                                {selectedApplication.application_id}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Applicant Name" span={2}>
+                                {selectedApplication.applicant_name}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Status" span={2}>
+                                <span style={{
+                                    color: selectedApplication.status === 'PENDING' ? '#faad14' : '#52c41a',
+                                    textTransform: 'capitalize',
+                                    fontWeight: 'bold',
+                                }}>
+                                    {selectedApplication.status}
+                                </span>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Description" span={2}>
+                                {selectedApplication.description}
+                            </Descriptions.Item>
+                        </Descriptions>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                            No report data available
+                        </div>
+                    )}
+                </Modal>
+
+                <Drawer
+                    title="Profile"
+                    placement="right"
+                    onClose={closeDrawer}
+                    open={drawerVisible}
+                    width={400}
+                >
+                    {userData && (
+                        <>
+                            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                                <Avatar size={64} icon={<UserOutlined />} />
+                                <Title level={4} style={{ marginTop: '16px', marginBottom: '4px' }}>{userData.name}</Title>
+                                <Tag color="blue">{role}</Tag>
+                            </div>
+                            <Descriptions bordered column={1}>
+                                <Descriptions.Item label="Email">{userData.email}</Descriptions.Item>
+                                <Descriptions.Item label="Phone">{userData.phone || 'Not provided'}</Descriptions.Item>
+                                <Descriptions.Item label="Department">{userData.department || 'Not provided'}</Descriptions.Item>
+                            </Descriptions>
+                            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                                <Button type="primary" danger icon={<LogoutOutlined />} onClick={logout}>
+                                    Logout
+                                </Button>
+                            </div>
+                        </>
+                    )}
+                </Drawer>
+            </div>
         </SvroLayout>
     );
 }
