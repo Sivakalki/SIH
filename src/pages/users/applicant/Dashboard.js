@@ -233,7 +233,7 @@ const ApplicantDashboard = () => {
     // Set selected menu key based on current path
     const path = location.pathname;
     if (path === '/applicant') setSelectedKey('home');
-    else if (path === '/application-form') setSelectedKey('new-application');
+    else if (path === '/applicant/new-application') setSelectedKey('new-application');
     else if (path === '/applicant/applications') setSelectedKey('my-applications');
     else if (path === '/applicant/status') setSelectedKey('application-status');
     else if (path === '/applicant/reports') setSelectedKey('reports');
