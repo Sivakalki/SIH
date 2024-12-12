@@ -45,7 +45,6 @@ import RIReports from './pages/users/ri/MyReports';
 
 // MRO Pages
 import Mro from './pages/dashboards/Mro';
-import MVRODashboard from './pages/users/mvro/Dashboard';
 import ApplicationsMvro from './pages/users/mvro/Applications';
 import MVROMyReports from './pages/users/mvro/MyReports';
 

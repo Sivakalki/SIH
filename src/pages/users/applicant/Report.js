@@ -96,7 +96,8 @@ const Report = () => {
         <Tag color={
           status === 'PENDING' ? 'gold' :
           status === 'APPROVED' ? 'green' :
-          status === 'REJECTED' ? 'red' : 'default'
+          status === 'REJECTED' ? 'red' :
+          status === 'COMPLETED' ? 'blue' : 'default'
         }>
           {status}
         </Tag>
@@ -105,15 +106,19 @@ const Report = () => {
     {
       title: 'Actions',
       key: 'actions',
-      render: (_, record) => (
-        <Button 
-          type="primary"
-          onClick={() => handleEdit(record.application_id)}
-          loading={editLoading}
-        >
-          Edit Application
-        </Button>
-      ),
+      render: (_, record) => {
+        const isCompleted = record.status === 'COMPLETED';
+        return (
+          <Button 
+            type="primary" 
+            disabled={isCompleted} 
+            onClick={() => handleEdit(record.application_id)}
+            loading={editLoading}
+          >
+            Edit Application
+          </Button>
+        );
+      }
     }
   ];
 
@@ -341,6 +346,7 @@ const Report = () => {
                   <Select.Option value="PENDING">Pending</Select.Option>
                   <Select.Option value="APPROVED">Approved</Select.Option>
                   <Select.Option value="REJECTED">Rejected</Select.Option>
+                  <Select.Option value="COMPLETED">Completed</Select.Option>
                 </Select>
               </Space>
             </Col>
@@ -536,6 +542,7 @@ const Report = () => {
                   <Select.Option value="PENDING">Pending</Select.Option>
                   <Select.Option value="APPROVED">Approved</Select.Option>
                   <Select.Option value="REJECTED">Rejected</Select.Option>
+                  <Select.Option value="COMPLETED">Completed</Select.Option>
                 </Select>
               </Form.Item>
             </Col>
