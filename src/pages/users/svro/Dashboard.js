@@ -415,7 +415,7 @@ export default function VRODashboard() {
       <div style={{ padding: '24px', backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
         <div className="dashboard-header">
           <div>
-            <Title level={2} className="dashboard-title">SVRO Dashboard</Title>
+            <Title level={2} className="dashboard-title">Patwari Dashboard</Title>
             <p>Welcome, {userData?.name || 'User'}</p>
           </div>
         </div>

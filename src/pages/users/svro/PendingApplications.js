@@ -291,7 +291,9 @@ export default function PendingApplications() {
                         <Button 
                             key="resend" 
                             type="primary" 
-                            onClick={() => setResendDrawerVisible(true)}
+                            onClick={() => {
+                                console.log ("function called")
+                                setResendDrawerVisible(true)}}
                             style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
                             disabled={applicationDetails?.reCheck?.length > 0}
                         >
