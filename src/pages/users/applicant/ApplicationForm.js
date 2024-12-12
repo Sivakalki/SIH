@@ -67,9 +67,13 @@ export default function ApplicationForm() {
                 );
 
                 if (response.status === 200) {
+                    if(response.data.numOfApplications !== 0) {
+                        message.error('Application with this Aadhar number already exists.');
+                        return;
+                    }
                     message.success('Aadhar verified successfully');
                     setIsAadharVerified(true);
-                    setAadhaarId(aadharNumber);
+                    setAadhaarId(aadharNumber); 
                     // Optionally, pre-fill some fields from the verification response
                     const userData = response.data;
                     aadharVerificationForm.setFieldsValue({
@@ -236,7 +240,7 @@ export default function ApplicationForm() {
                 form.resetFields();
             }
         } catch (error) {
-            console.log(error.response.data.message)
+            console.log(error)
             message.error('Failed to submit application');
         } finally {
             setLoading(false);

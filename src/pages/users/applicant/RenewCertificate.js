@@ -46,7 +46,8 @@ const RenewCertificate = () => {
         message.error('No certificate found for this Aadhar number. Please create a new application.');
         handleNewApplication();
       } 
-      else if(response.data.numOfApplications >= 1) {
+      else if(response.data.numOfApplications === 1) {
+        navigate('/applicant/new-application');
         setIsModalVisible(true);
         setProfileData(response.data.profileData);
         message.info('Existing certificate found for this Aadhar number');
