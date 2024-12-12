@@ -574,7 +574,7 @@ export default function VRODashboard() {
           <div style={{ background: '#fff', padding: '24px', borderRadius: '8px', marginTop: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
             <div className="dashboard-header">
               <div>
-                <Title level={2} className="dashboard-title">SVRO Dashboard</Title>
+                <Title level={2} className="dashboard-title">Patwari Dashboard</Title>
                 <p>Welcome, {userData?.name || 'User'}</p>
               </div>
             </div>
@@ -744,13 +744,13 @@ export default function VRODashboard() {
                       overflow: 'auto'
                     }}
                   >
-                    <Calendar 
+                    {/* <Calendar 
                       dateCellRender={dateCellRender}
                       style={{ 
                         ...calendarStyle,
                       }}
                       fullscreen={false}
-                    />
+                    /> */}
                   </Card>
                 </motion.div>
               </Col>

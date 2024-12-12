@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Button, Card, Row, Col, Typography, Spin, Avatar, Drawer, Layout, Menu, Timeline, message } from 'antd';
+import { Button, Card, Row, Col, Typography, Spin, Avatar, Drawer, Layout, Menu, Timeline, message, Modal, Descriptions } from 'antd';
 import { 
   UserOutlined, 
   LogoutOutlined, 
@@ -10,13 +10,15 @@ import {
   PlusCircleOutlined,
   FileSearchOutlined,
   BarsOutlined,
-  BellOutlined
+  BellOutlined,
+  FilePdfOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../../../components/userContext';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import '../../../styles/Dashboard.css';
+import { generateCasteCertificatePDF, downloadPDF, sendCertificateByEmail } from '../../../utils/certificateGenerator';
 
 const { Title } = Typography;
 const { Header, Content, Sider } = Layout;
@@ -104,6 +106,8 @@ const ApplicantDashboard = () => {
     pendingApplications: 0,
     completedApplications: 0
   });
+  const [certificateModalVisible, setCertificateModalVisible] = useState(false);
+  const [selectedCertificateApplication, setSelectedCertificateApplication] = useState(null);
 
   const menuItems = [
     {
@@ -238,6 +242,152 @@ const ApplicantDashboard = () => {
     else if (path === '/applicant/status') setSelectedKey('application-status');
     else if (path === '/applicant/reports') setSelectedKey('reports');
   }, [location]);
+
+  const handleDownloadCertificate = async (application) => {
+    try {
+      // Prepare MRO details (this might come from the application's approval data)
+      const mroDetails = {
+        name: application.mro_name || 'District MRO',
+        email: application.mro_email || 'mro@government.com',
+        digitalSignatureId: `MRO-${application.mro_id || 'DEFAULT'}-${new Date().getTime()}`
+      };
+
+      // Prepare certificate data with more comprehensive details
+      const certificateData = {
+        name: application.full_name.toUpperCase(),
+        fatherName: application.father_name.toUpperCase(),
+        dob: application.date_of_birth,
+        caste: application.caste.toUpperCase(),
+        address: `${application.address_line1}, ${application.address_line2}`.toUpperCase(),
+        district: application.district.toUpperCase(),
+        state: application.state.toUpperCase(),
+        pincode: application.pincode || '110044', // Default pincode if not available
+        applicationId: `90500000${application.application_id}`, // Custom certificate number format
+        email: application.email
+      };
+
+      // Generate PDF with MRO details
+      const pdfDoc = generateCasteCertificatePDF(certificateData, mroDetails);
+
+      // Open certificate modal
+      setSelectedCertificateApplication({
+        ...certificateData,
+        mroDetails,
+        pdfDoc
+      });
+      setCertificateModalVisible(true);
+    } catch (error) {
+      message.error('Failed to generate certificate');
+      console.error(error);
+    }
+  };
+
+  const performCertificateDownload = () => {
+    if (selectedCertificateApplication && selectedCertificateApplication.pdfDoc) {
+      downloadPDF(
+        selectedCertificateApplication.pdfDoc, 
+        `CasteCertificate_${selectedCertificateApplication.applicationId}.pdf`
+      );
+      message.success('Certificate downloaded successfully');
+      setCertificateModalVisible(false);
+    }
+  };
+
+  const handleEmailCertificate = async () => {
+    if (selectedCertificateApplication && selectedCertificateApplication.pdfDoc) {
+      try {
+        const emailSent = await sendCertificateByEmail(
+          selectedCertificateApplication, 
+          selectedCertificateApplication.mroDetails,
+          selectedCertificateApplication.pdfDoc
+        );
+        
+        if (emailSent) {
+          message.success('Certificate sent to your email');
+          setCertificateModalVisible(false);
+        } else {
+          message.error('Failed to send certificate via email');
+        }
+      } catch (error) {
+        message.error('Error sending certificate');
+        console.error(error);
+      }
+    }
+  };
+
+  const renderApplications = () => {
+    // Filter for approved applications
+    const approvedApplications = dashboardData.applications.filter(app => 
+      app.current_stage === 'Approved' || app.status === 'Approved'
+    );
+
+    return (
+      <Card title="My Applications" extra={<FileTextOutlined />}>
+        {approvedApplications.map(application => {
+          // Prepare certificate data
+          const certificateData = {
+            name: application.full_name.toUpperCase(),
+            fatherName: application.father_name.toUpperCase(),
+            dob: application.date_of_birth,
+            caste: application.caste.toUpperCase(),
+            address: `${application.address_line1}, ${application.address_line2}`.toUpperCase(),
+            district: application.district.toUpperCase(),
+            state: application.state.toUpperCase(),
+            pincode: application.pincode || '110044',
+            applicationId: `90500000${application.application_id}`,
+            email: application.email
+          };
+
+          // Prepare MRO details
+          const mroDetails = {
+            name: application.mro_name || 'District MRO',
+            email: application.mro_email || 'mro@government.com',
+            digitalSignatureId: `MRO-${application.mro_id || 'DEFAULT'}-${new Date().getTime()}`
+          };
+
+          // Direct download function
+          const directDownloadCertificate = () => {
+            // Generate PDF
+            const pdfDoc = generateCasteCertificatePDF(certificateData, mroDetails);
+            
+            // Download immediately
+            downloadPDF(
+              pdfDoc, 
+              `CasteCertificate_${application.application_id}.pdf`
+            );
+          };
+
+          return (
+            <Card.Grid 
+              key={application.application_id} 
+              style={{ 
+                width: '100%', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center' 
+              }}
+            >
+              <div>
+                <Typography.Text strong>
+                  Application ID: {application.application_id}
+                </Typography.Text>
+                <Typography.Paragraph>
+                  Status: <Typography.Text type="success">Approved</Typography.Text>
+                </Typography.Paragraph>
+              </div>
+              <Button 
+                type="primary" 
+                icon={<FilePdfOutlined />}
+                onClick={directDownloadCertificate}
+              >
+                Download Certificate
+              </Button>
+            </Card.Grid>
+          );
+        })}
+      </Card>
+    );
+  };
 
   if (loading) {
     return (
@@ -534,6 +684,40 @@ const ApplicantDashboard = () => {
           </Content>
         </Layout>
       </Layout>
+
+      <Modal
+        title="Digital Caste Certificate"
+        visible={certificateModalVisible}
+        onCancel={() => setCertificateModalVisible(false)}
+        footer={[
+          <Button key="download" type="primary" onClick={performCertificateDownload}>
+            Download PDF
+          </Button>,
+          <Button key="email" type="primary" onClick={handleEmailCertificate}>
+            Send via Email
+          </Button>
+        ]}
+      >
+        {selectedCertificateApplication && (
+          <Descriptions column={1} bordered>
+            <Descriptions.Item label="Name">
+              {selectedCertificateApplication.name}
+            </Descriptions.Item>
+            <Descriptions.Item label="Application ID">
+              {selectedCertificateApplication.applicationId}
+            </Descriptions.Item>
+            <Descriptions.Item label="Caste">
+              {selectedCertificateApplication.caste}
+            </Descriptions.Item>
+            <Descriptions.Item label="MRO Name">
+              {selectedCertificateApplication.mroDetails.name}
+            </Descriptions.Item>
+            <Descriptions.Item label="MRO Email">
+              {selectedCertificateApplication.mroDetails.email}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
 
       <Drawer
         title={
