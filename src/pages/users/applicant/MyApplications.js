@@ -8,10 +8,14 @@ import {
   Typography,
   Modal,
   Descriptions,
-  Spin
+  Spin,
+  Empty,
+  RefreshOutlined,
+  ReloadOutlined
 } from 'antd';
 import {
   EyeOutlined,
+  SyncOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import { UserContext } from '../../../components/userContext';
@@ -31,17 +35,42 @@ const MyApplications = () => {
     const fetchApplications = async () => {
       try {
         setLoading(true);
+        
+        // First, try to fetch from backend
         const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/myapplications`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setApplications(response.data.applications || []);
+        
+        // If backend fetch successful, use those applications
+        if (response.data.applications && response.data.applications.length > 0) {
+          setApplications(response.data.applications);
+          // Also save to local storage as a cache
+          localStorage.setItem('cachedApplications', JSON.stringify(response.data.applications));
+        } else {
+          // If no applications from backend, check local storage
+          const cachedApplications = localStorage.getItem('cachedApplications');
+          if (cachedApplications) {
+            const parsedApplications = JSON.parse(cachedApplications);
+            setApplications(parsedApplications);
+            message.info('Showing cached applications');
+          }
+        }
       } catch (error) {
         console.error('Error fetching applications:', error);
+        
+        // On network error, try to fetch from local storage
+        const cachedApplications = localStorage.getItem('cachedApplications');
+        if (cachedApplications) {
+          const parsedApplications = JSON.parse(cachedApplications);
+          setApplications(parsedApplications);
+          message.warning('Showing offline applications');
+        }
+        
         if (error.response?.status === 401) {
           message.error('Session expired. Please login again.');
           logout();
         } else {
-          message.error('Failed to fetch applications. Please try again.');
+          message.error('Failed to fetch applications. Showing offline data if available.');
         }
       } finally {
         setLoading(false);
@@ -64,6 +93,22 @@ const MyApplications = () => {
       console.error('Error fetching application details:', error);
     } finally {
       setLoadingApplicationId(null);
+    }
+  };
+
+  const handleRefreshApplications = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/myapplications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setApplications(response.data.applications);
+      localStorage.setItem('cachedApplications', JSON.stringify(response.data.applications));
+    } catch (error) {
+      console.error('Error refreshing applications:', error);
+      message.error('Failed to refresh applications');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -117,12 +162,37 @@ const MyApplications = () => {
 
   const content = (
     <>
-      <Title level={2}>My Applications</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Title level={2}>My Applications</Title>
+        <Button 
+          type="primary" 
+          icon={<SyncOutlined />} 
+          onClick={handleRefreshApplications}
+          loading={loading}
+        >
+          Refresh Applications
+        </Button>
+      </div>
       <Table
         columns={columns}
         dataSource={applications}
         loading={loading}
         rowKey="application_id"
+        locale={{
+          emptyText: (
+            <Empty 
+              description="No applications found" 
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            >
+              <Button 
+                type="primary" 
+                onClick={handleRefreshApplications}
+              >
+                Refresh Applications
+              </Button>
+            </Empty>
+          )
+        }}
       />
 
       <Modal
@@ -157,11 +227,9 @@ const MyApplications = () => {
               <Descriptions.Item label="Current Stage">{selectedApplication.current_stage.role_type}</Descriptions.Item>
             )}
             {selectedApplication.address && (
-              <>
-                <Descriptions.Item label="Address">
-                  {`${selectedApplication.address.address}, ${selectedApplication.address.sachivalayam}, ${selectedApplication.address.mandal}, ${selectedApplication.address.district}, ${selectedApplication.address.state} - ${selectedApplication.address.pincode}`}
-                </Descriptions.Item>
-              </>
+              <Descriptions.Item label="Address">
+                {`${selectedApplication.address.address}, ${selectedApplication.address.sachivalayam}, ${selectedApplication.address.mandal}, ${selectedApplication.address.district}, ${selectedApplication.address.state} - ${selectedApplication.address.pincode}`}
+              </Descriptions.Item>
             )}
           </Descriptions>
         ) : (
