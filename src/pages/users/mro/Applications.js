@@ -140,6 +140,11 @@ export default function ApplicationsMro() {
         },
         {
             title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+        },
+        {
+            title: 'Current Stage',
             dataIndex: 'current_stage',
             key: 'current_stage',
             render: (status) => (
