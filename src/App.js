@@ -42,16 +42,19 @@ import RIDashboard from './pages/users/ri/Dashboard';
 import CompletedApplicationsRI from './pages/users/ri/Completed';
 import PendingApplicationsRI from './pages/users/ri/Pending';
 import RIReports from './pages/users/ri/MyReports';
+import ReadyToReviewRI from './pages/users/ri/ReadyToReview';
 
 // MRO Pages
-import Mro from './pages/dashboards/Mro';
-import ApplicationsMvro from './pages/users/mvro/Applications';
-import MVROMyReports from './pages/users/mvro/MyReports';
-
-// DO Pages
+import MRODashboard from './pages/users/mro/Dashboard';
+import ApplicationsMro from './pages/users/mro/Applications';
+import MROMyReports from './pages/users/mro/MyReports';
+import PendingApplicationsMRO from './pages/users/mro/PendingApplications';
+import CompletedApplicationsMRO from './pages/users/mro/Completed';
 import Do from './pages/dashboards/Do';
-import ReadyToReviewRI from './pages/users/ri/ReadyToReview';
-import ApplicationForm2 from './pages/users/applicant/ApplicationForm';
+import ScheduleApplicationsMro from './pages/users/mro/ScheduleApplications';
+
+
+// import MRODashboard from './pages/dashboards/Mro';
 
 const App = () => {
   return (
@@ -102,12 +105,14 @@ const App = () => {
 
 
         {/* MRO Routes */}
-        <Route path="/mro" element={<Mro />} />
-        <Route path="/mvro" element={<MVRODashboard />} />
-        <Route path="/mvro/Applications" element={<ApplicationsMvro />} />
-        <Route path="/mvro/pending" element={<PendingApplicationsMVRO />} />
-        <Route path='/mvro/completed' element={<CompletedApplicationsMVRO />} />
-        <Route path="/mvro/reports" element={<MVROMyReports />} />
+        {/* <Route path="/mro" element={<MRODashboard />} /> */}
+        <Route path="/mro" element={<MRODashboard />} />
+        <Route path="/mro/Applications" element={<ApplicationsMro />} />
+        <Route path="/mro/pending" element={<PendingApplicationsMRO />} />
+        <Route path='/mro/completed' element={<CompletedApplicationsMRO />} />
+        <Route path="/mro/reports" element={<MROMyReports />} />
+        <Route path="/mro/schedule" element={<ScheduleApplicationsMro />} />
+
 
 
 

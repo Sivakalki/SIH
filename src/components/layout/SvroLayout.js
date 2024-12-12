@@ -44,7 +44,7 @@ export default function SvroLayout({ children, logout }) {
           fontSize: '18px',
           fontWeight: 'bold' 
         }}>
-          SVRO Dashboard
+          Patwari Dashboard
         </div>
         <Menu
           mode="inline"

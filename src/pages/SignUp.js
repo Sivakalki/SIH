@@ -1,7 +1,7 @@
 import {  LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons'
 import { Button, ConfigProvider, Form, Input, Select, Typography, message, Space } from 'antd'
 import { useContext, useState } from 'react'
-import { Link,useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { UserContext } from '../components/userContext'
 
@@ -21,15 +21,23 @@ export default function SignUp() {
       if (response.status===200) {
         console.log(response.data)
         login(response.data.token)
-        message.success('Sign up successful!')
-        navigate('/')
+        
+        // Use a more context-friendly approach for showing messages
+        setTimeout(() => {
+          message.success('Sign up successful!');
+          navigate('/applicant');
+        }, 0);
       } else {
         console.log(response.data.message)
         throw new Error('Sign up failed')
       }
     } catch (error) {
       console.log(error)
-      message.error('An error occurred during sign up')
+      
+      // Use a more context-friendly approach for showing error messages
+      setTimeout(() => {
+        message.error(error.response?.data?.message || 'An error occurred during sign up');
+      }, 0);
     } finally {
       setLoading(false)
     }
