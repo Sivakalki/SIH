@@ -14,7 +14,8 @@ import {
   Select,
   message,
   Avatar,
-  Drawer
+  Drawer,
+  Descriptions
 } from 'antd';
 import {
   HomeOutlined,
@@ -40,6 +41,7 @@ import NotificationDrawer from './utils/notification-drawer';
 import ApplicationDetailsModal from '../../../components/modals/ApplicationDetailsModal';
 import { motion } from 'framer-motion';
 import dayjs from 'dayjs';
+import MvroLayout from '../../../components/layout/MvroLayout';
 import '../../../styles/Dashboard.css';
 
 const { Header, Sider, Content } = Layout;
@@ -183,7 +185,7 @@ export default function MVRODashboard() {
     try {
       const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/users/user`, {
         headers: {
-          Authorization: `Bearer ${token}`, // Include token in Authorization header
+          Authorization: `Bearer ${token}`,
         },
       });
       setUserData(res.data.user);
@@ -218,6 +220,10 @@ export default function MVRODashboard() {
     setProfileDrawerVisible(true);
   };
 
+  const closeProfileDrawer = () => {
+    setProfileDrawerVisible(false);
+  };
+
   const handleLogout = () => {
     logout();
     message.success('Logged out successfully!');
@@ -227,19 +233,23 @@ export default function MVRODashboard() {
   if (userLoading) {
     // Display a loading spinner while user data is being fetched
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
-        <Spin size="large" />
-        <Title level={3} style={{ marginTop: '20px' }}>Loading...</Title>
-      </div>
+      <MvroLayout logout={logout}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
+          <Spin size="large" />
+          <Title level={3} style={{ marginTop: '20px' }}>Loading...</Title>
+        </div>
+      </MvroLayout>
     );
   }
 
   if (errorMessage) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
-        <Title level={3} style={{ color: '#f5222d' }}>{errorMessage}</Title>
-        {<Button type="primary" onClick={() => navigate('/login')}>Go to Login</Button>}
-      </div>
+      <MvroLayout logout={logout}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
+          <Title level={3} style={{ color: '#f5222d' }}>{errorMessage}</Title>
+          {<Button type="primary" onClick={() => navigate('/login')}>Go to Login</Button>}
+        </div>
+      </MvroLayout>
     );
   }
 
@@ -248,279 +258,123 @@ export default function MVRODashboard() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <div className="news-ticker" style={{
-        background: '#4169E1',
-        color: 'white',
-        padding: '28px',
-        textAlign: 'center',
-        marginBottom: '2px',
-        width: '100%',
-        overflow: 'hidden',
-        whiteSpace: 'nowrap',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1000
-      }}>
-        <motion.div
-          initial={{ x: "100%" }}
-          animate={{ x: "-100%" }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "linear"
-          }}
-          style={{ display: 'inline-block', fontSize: '16px' }}
-        >
-          New online service for income certificate launched • Updated guidelines for caste certificate applications • Last date for property tax payment: 31st March
-        </motion.div>
-      </div>
-
-      <Layout style={{ minHeight: '100vh', marginTop: '80px' }}>
-        <Sider
-          collapsible={false}
-          style={{
-            background: '#fff',
-            boxShadow: '1px 0 0 0 #f0f0f0',
-            position: 'fixed',
-            height: '100vh',
-            left: 0,
-            top: '80px',
-            zIndex: 999
-          }}
-          width={250}
-        >
-          <div style={{
-            padding: '16px 24px',
-            borderBottom: '1px solid #f0f0f0'
-          }}>
-            <Title level={3} style={{
-              margin: 0,
-              color: '#1890ff',
-              fontWeight: 600,
-              letterSpacing: '0.5px'
-            }}>
-              CertiTrack
-            </Title>
+    <MvroLayout logout={logout}>
+      <div style={{ padding: '24px', backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
+        <div className="dashboard-header">
+          <div>
+            <Title level={2} className="dashboard-title">MVRO Dashboard</Title>
+            <p>Welcome, {userData?.name || 'User'}</p>
           </div>
-          <Menu
-            mode="inline"
-            selectedKeys={[location.pathname]}
-            onClick={({ key }) => navigate(key)}
-            items={[
-              {
-                key: '/mvro',
-                icon: <HomeOutlined />,
-                label: 'Dashboard',
-              },
-              {
-                key: '/mvro/applications',
-                icon: <FileTextOutlined />,
-                label: 'Applications',
-              },
-              {
-                key: '/mvro/completed',
-                icon: <FileTextOutlined />,
-                label: 'Completed Applications',
-              },
+          <Space>
+            <Button 
+              type="text"
+              icon={<BellOutlined style={{ color: '#FF4500' }} />}
+              onClick={() => setNotificationDrawerVisible(true)}
+              style={{ marginRight: '16px' }}
+            >
+              <span style={{ color: '#FF4500' }}>Notifications</span>
+            </Button>
+            <Button 
+              type="text"
+              icon={<UserOutlined style={{ color: '#FF4500' }} />}
+              onClick={openProfileDrawer}
+            >
+              <span style={{ color: '#FF4500' }}>{userData?.name || 'User'}</span>
+            </Button>
+          </Space>
+        </div>
 
-              {
-                key: '/mvro/reports',
-                icon: <BarsOutlined />,
-                label: 'Reports',
-              }
-            ]}
-            style={{
-              border: 'none',
-              padding: '8px 0',
-              height: 'calc(100vh - 80px)',
-              overflowY: 'auto'
-            }}
-          />
-        </Sider>
+        <Row gutter={[16, 16]} className="mb-6">
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <StatisticCard
+              title="Total Applications"
+              value={dashboardData.totalApplications}
+              icon={<FileTextOutlined />}
+              color="#4169E1"
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <StatisticCard
+              title="Completed"
+              value={dashboardData.completedApplications}
+              icon={<CheckCircleOutlined />}
+              color="#52c41a"
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <StatisticCard
+              title="Pending"
+              value={dashboardData.pendingApplications}
+              icon={<ClockCircleOutlined />}
+              color="#faad14"
+            />
+          </Col>
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <StatisticCard
+              title="Reports"
+              value={dashboardData.reportSubmissions}
+              icon={<FileSearchOutlined />}
+              color="#722ed1"
+            />
+          </Col>
+        </Row>
 
-        <Layout style={{ marginLeft: '250px' }}>
-          <Header style={{
-            padding: '0 16px',
-            background: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-            position: 'fixed',
-            width: 'calc(100% - 250px)',
-            top: '80px',
-            right: 0,
-            zIndex: 999
-          }}>
-            <Space>
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <Button type="text" icon={<QuestionCircleOutlined />} />
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <Badge count={notifications.filter(n => !n.read).length} overflowCount={99}>
-                  <Button type="text" icon={<BellOutlined />} onClick={() => setNotificationDrawerVisible(true)} />
-                </Badge>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <Button type="text" icon={<UserOutlined />} onClick={openProfileDrawer}>
-                  {userData?.name}
-                </Button>
-              </motion.div>
-            </Space>
-          </Header>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={12}>
+            <Card title="Monthly Applications" style={{ height: '400px' }}>
+              <Line
+                data={dashboardData.monthlyData || []}
+                xField="month"
+                yField="applications"
+                smooth={true}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} lg={12}>
+            <Card title="Recent Activities" style={{ height: '400px' }}>
+              {/* Add your recent activities content here */}
+            </Card>
+          </Col>
+        </Row>
 
-          <Content style={{ margin: '88px 16px 24px', minHeight: 280 }}>
-            <Title level={2} style={{ marginBottom: '8px' }}>MVRO Dashboard</Title>
-            <Typography.Text style={{ marginBottom: '24px', display: 'block' }}>
-              Welcome, {userData?.name}
-            </Typography.Text>
+        <NotificationDrawer
+          visible={notificationDrawerVisible}
+          onClose={() => setNotificationDrawerVisible(false)}
+          notifications={notifications}
+        />
 
-            <Row gutter={[16, 16]}>
-              <Col span={10}>
-                <Space direction="vertical" style={{ width: '100%' }} size={16}>
-                  
-                  <Card
-                    style={{
-                      background: '#f5f5f5',
-                      borderRadius: '12px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                    }}
-                    bodyStyle={{ padding: '24px' }}
-                    onClick={() => navigate('/mvro/applications')}
-                    hoverable
-                  >
-                    <Space direction="vertical" size={8}>
-                      <Space size={12}>
-                        <FileTextOutlined style={{ fontSize: '24px', color: '#595959' }} />
-                        <Typography.Text strong>Total Applications</Typography.Text>
-                      </Space>
-                      <Typography.Title level={2} style={{ margin: 0 }}>
-                        {dashboardData.totalApplications}
-                      </Typography.Title>
-                    </Space>
-                  </Card>
-
-                  <Card
-                    style={{
-                      background: '#e6fffb',
-                      borderRadius: '12px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                      cursor: 'pointer'
-                    }}
-                    bodyStyle={{ padding: '24px' }}
-                    onClick={() => navigate('/mvro/pending')}
-                    hoverable
-                  >
-                    <Space direction="vertical" size={8}>
-                      <Space size={12}>
-                        <BarChartOutlined style={{ fontSize: '24px', color: '#13c2c2' }} />
-                        <Typography.Text strong style={{ color: '#13c2c2' }}>Ready to Review</Typography.Text>
-                      </Space>
-                      <Typography.Title level={2} style={{ margin: 0, color: '#13c2c2' }}>
-                        {dashboardData.readyApplications || 0}
-                      </Typography.Title>
-                    </Space>
-                  </Card>
-                  <Card
-                    style={{
-                      background: '#f6ffed',
-                      borderRadius: '12px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                    }}
-                    bodyStyle={{ padding: '24px' }}
-                    onClick={() => navigate('/mvro/completed')}
-                    hoverable
-                  >
-                    <Space direction="vertical" size={8}>
-                      <Space size={12}>
-                        <CheckCircleOutlined style={{ fontSize: '24px', color: '#52c41a' }} />
-                        <Typography.Text strong style={{ color: '#52c41a' }}>Completed</Typography.Text>
-                      </Space>
-                      <Typography.Title level={2} style={{ margin: 0, color: '#52c41a' }}>
-                        {dashboardData.completedApplications}
-                      </Typography.Title>
-                    </Space>
-                  </Card>
-
-                  <Card
-                    style={{
-                      background: '#fff7e6',
-                      borderRadius: '12px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                    }}
-                    bodyStyle={{ padding: '24px' }}
-                    onClick={() => navigate('/mvro/pending')}
-                    hoverable
-                  >
-                    <Space direction="vertical" size={8}>
-                      <Space size={12}>
-                        <ClockCircleOutlined style={{ fontSize: '24px', color: '#fa8c16' }} />
-                        <Typography.Text strong style={{ color: '#fa8c16' }}>Pending</Typography.Text>
-                      </Space>
-                      <Typography.Title level={2} style={{ margin: 0, color: '#fa8c16' }}>
-                        {dashboardData.pendingApplications}
-                      </Typography.Title>
-                    </Space>
-                  </Card>
-
-
-                  <Card
-                    style={{
-                      background: '#f9f0ff',
-                      borderRadius: '12px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                    }}
-                    bodyStyle={{ padding: '24px' }}
-                    onClick={() => navigate('/mvro/reports')}
-                    hoverable
-                  >
-                    <Space direction="vertical" size={8}>
-                      <Space size={12}>
-                        <FileSearchOutlined style={{ fontSize: '24px', color: '#722ed1' }} />
-                        <Typography.Text strong style={{ color: '#722ed1' }}>Reports</Typography.Text>
-                      </Space>
-                      <Typography.Title level={2} style={{ margin: 0, color: '#722ed1' }}>
-                        {dashboardData.reportSubmissions}
-                      </Typography.Title>
-                    </Space>
-                  </Card>
-                </Space>
-              </Col>
-
-              <Col span={14}>
-                <Card
-                  title="Application Statistics"
-                  style={{
-                    background: '#fff',
-                    borderRadius: '12px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                  }}
-                  bodyStyle={{ padding: '24px' }}
-                >
-                  <Line {...config} />
-                </Card>
-              </Col>
-            </Row>
-          </Content>
-        </Layout>
-      </Layout>
-      <Drawer
-        title="User Profile"
-        placement="right"
-        onClose={() => setProfileDrawerVisible(false)}
-        visible={profileDrawerVisible}
-        bodyStyle={{ padding: '20px' }}
-      >
-        <p style={{ fontWeight: 'bold' }}><strong>Name:</strong> {userData?.name}</p>
-        <p style={{ fontWeight: 'bold' }}><strong>Email:</strong> {userData?.email}</p>
-        <p style={{ fontWeight: 'bold' }}><strong>Role:</strong> {userData?.role}</p>
-        <Button type="primary" danger onClick={handleLogout} style={{ marginTop: '20px' }}>
-          Logout
-        </Button>
-      </Drawer>
-    </div>
+        <Drawer
+          title="Profile"
+          placement="right"
+          onClose={closeProfileDrawer}
+          visible={profileDrawerVisible}
+          width={300}
+        >
+          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+            <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: '#4169E1' }} />
+            <Title level={4} style={{ marginTop: '10px', marginBottom: '0' }}>
+              {userData?.name || 'User'}
+            </Title>
+            <p style={{ color: '#666' }}>{userData?.email}</p>
+          </div>
+          <Descriptions column={1} bordered>
+            <Descriptions.Item label="Role">{role}</Descriptions.Item>
+            <Descriptions.Item label="District">{userData?.district || 'N/A'}</Descriptions.Item>
+            <Descriptions.Item label="Mandal">{userData?.mandal || 'N/A'}</Descriptions.Item>
+            <Descriptions.Item label="Status">
+              <Badge status="success" text="Active" />
+            </Descriptions.Item>
+          </Descriptions>
+          <div style={{ marginTop: '20px' }}>
+            <Button type="primary" block onClick={() => navigate('/mvro/profile')}>
+              View Full Profile
+            </Button>
+            <Button danger block onClick={logout} style={{ marginTop: '10px' }}>
+              <LogoutOutlined /> Logout
+            </Button>
+          </div>
+        </Drawer>
+      </div>
+    </MvroLayout>
   );
 }

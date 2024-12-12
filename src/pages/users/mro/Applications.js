@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Table, Select, Button, Space, Typography, message, Card, Drawer, Avatar, Modal, Badge, Spin, Descriptions, Form, Input, Tag } from 'antd';
-import { EyeOutlined, UserOutlined, LogoutOutlined, FileTextOutlined, BellOutlined, QuestionCircleOutlined, FilePdfOutlined } from '@ant-design/icons';
+import { Table, Select, Button, Space, Typography, message, Card,  Drawer, Avatar,Modal, Badge, Spin, Descriptions, Tag } from 'antd';
+import {EyeOutlined, UserOutlined, LogoutOutlined, FileTextOutlined,  BellOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Line } from '@ant-design/plots';
 import { Link } from 'react-router-dom';
 import StatisticCard from './utils/statistic-card';
@@ -8,11 +8,8 @@ import NotificationDrawer from './utils/notification-drawer';
 import { UserContext } from '../../../components/userContext';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import MroLayout from '../../../components/layout/MroLayout';
-import MroApplicationModal from '../../../components/modals/MroApplicationModal';
-import MroHeader from '../../../components/header/MroHeader';
 import { motion } from 'framer-motion';
-import { generateCasteCertificatePDF, downloadPDF, sendCertificateByEmail } from '../../../utils/certificateGenerator';
+
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -21,7 +18,8 @@ const NavItem = ({ to, children, isActive, onClick }) => (
     <motion.div
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className={`px-4 py-2 rounded-md cursor-pointer ${isActive ? 'bg-secondary text-white' : 'text-white hover:bg-secondary/10'}`}
+        className={`px-4 py-2 rounded-md cursor-pointer ${isActive ? 'bg-secondary text-white' : 'text-white hover:bg-secondary/10'
+            }`}
         onClick={onClick} // Attach onClick for navigation
     >
         <Link to={to}>{children}</Link>
@@ -35,13 +33,15 @@ const mockNotifications = [
     { id: 3, message: 'Reminder: Review pending applications', read: false },
 ];
 
-export default function ApplicationsMro() {
+
+export default function Applications() {
     const [applications, setApplications] = useState([]);
-    const [selectedApplicationId, setSelectedApplicationId] = useState(null);
+    const [selectedApplication, setSelectedApplication] = useState(null);
     const [profileDrawerVisible, setProfileDrawerVisible] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [notificationDrawerVisible, setNotificationDrawerVisible] = useState(false);
     const [drawerVisible, setDrawerVisible] = useState(false);
+    const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
     const [userData, setUserData] = useState(null);
     const [notifications, setNotifications] = useState(mockNotifications);
     const { token, logout } = useContext(UserContext);
@@ -49,16 +49,11 @@ export default function ApplicationsMro() {
     const [errorMessage, setErrorMessage] = useState("");
     const [userLoading, setUserLoading] = useState(true);
     const [activeNavItem, setActiveNavItem] = useState('applications');
+    const [report, SetReport] = useState([]);
     const [role, setRole] = useState("");
-    const navigate = useNavigate();
+    const navigate = useNavigate()
     const [filterStatus, setFilterStatus] = useState('All');
     const [loadingApplicationId, setLoadingApplicationId] = useState(null);
-    const [report, SetReport] = useState([]);
-    const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
-    const [filter, setFilter] = useState('All');
-    const [certificateModalVisible, setCertificateModalVisible] = useState(false);
-    const [selectedCertificateApplication, setSelectedCertificateApplication] = useState(null);
-
     useEffect(() => {
         if (!token) {
             setErrorMessage("You are not logged in. Please log in to access this page.");
@@ -70,8 +65,8 @@ export default function ApplicationsMro() {
     }, [token]);
 
     useEffect(() => {
-        if (userData && role && role !== "MRO") {
-            setErrorMessage("Access denied. Only mros are allowed to view this page.");
+        if (userData && role && role !== "SVRO") {
+            setErrorMessage("Access denied. Only SVROs are allowed to view this page.");
             setUserLoading(false);
         }
     }, [role]);
@@ -79,7 +74,7 @@ export default function ApplicationsMro() {
     const fetchApplications = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/mro/pending_applications`, {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/svro/pending_applications`, {
                 headers: {
                     Authorization: `Bearer ${token}`, // Include token in Authorization header
                 },
@@ -111,161 +106,6 @@ export default function ApplicationsMro() {
             setUserLoading(false); // Stop loading after data is fetched
         }
     };
-
-    const handleGenerateCertificate = async (application) => {
-        try {
-            // Get current MRO details from context or user data
-            const mroDetails = {
-                name: userData.name,
-                email: userData.email,
-                digitalSignatureId: `MRO-${userData.id}-${new Date().getTime()}` // Generate a unique signature ID
-            };
-
-            // Prepare certificate data with more comprehensive details
-            const certificateData = {
-                name: application.full_name.toUpperCase(),
-                fatherName: application.father_name.toUpperCase(),
-                dob: application.date_of_birth,
-                caste: application.caste.toUpperCase(),
-                address: `${application.address_line1}, ${application.address_line2}`.toUpperCase(),
-                district: application.district.toUpperCase(),
-                state: application.state.toUpperCase(),
-                pincode: application.pincode || '110044', // Default pincode if not available
-                applicationId: `90500000${application.application_id}`, // Custom certificate number format
-                email: application.email
-            };
-
-            // Generate PDF with MRO details
-            const pdfDoc = generateCasteCertificatePDF(certificateData, mroDetails);
-
-            // Open certificate modal
-            setSelectedCertificateApplication({
-                ...certificateData,
-                mroDetails,
-                pdfDoc
-            });
-            setCertificateModalVisible(true);
-        } catch (error) {
-            message.error('Failed to generate certificate');
-            console.error(error);
-        }
-    };
-
-    const handleDownloadCertificate = () => {
-        if (selectedCertificateApplication && selectedCertificateApplication.pdfDoc) {
-            downloadPDF(
-                selectedCertificateApplication.pdfDoc, 
-                `CasteCertificate_${selectedCertificateApplication.applicationId}.pdf`
-            );
-            message.success('Certificate downloaded successfully');
-        }
-    };
-
-    const handleEmailCertificate = async () => {
-        if (selectedCertificateApplication && selectedCertificateApplication.pdfDoc) {
-            try {
-                const emailSent = await sendCertificateByEmail(
-                    selectedCertificateApplication, 
-                    selectedCertificateApplication.mroDetails,
-                    selectedCertificateApplication.pdfDoc
-                );
-                
-                if (emailSent) {
-                    message.success('Certificate sent to applicant\'s email');
-                    setCertificateModalVisible(false);
-                } else {
-                    message.error('Failed to send certificate via email');
-                }
-            } catch (error) {
-                message.error('Error sending certificate');
-                console.error(error);
-            }
-        }
-    };
-
-    const handleViewApplication = (id) => {
-        setSelectedApplicationId(id);
-        setModalVisible(true);
-    };
-
-    const openDrawer = () => {
-        setDrawerVisible(true);
-    };
-
-    const closeDrawer = () => {
-        setDrawerVisible(false);
-    };
-
-    const openRemarksForm = () => {
-        setRemarksDrawerVisible(true);
-    };
-
-    const openProfileDrawer = () => {
-        setProfileDrawerVisible(true);
-    };
-
-    const closeProfileDrawer = () => {
-        setProfileDrawerVisible(false);
-    };
-
-    const openNotificationDrawer = () => {
-        setNotificationDrawerVisible(true);
-    };
-
-    const closeNotificationDrawer = () => {
-        setNotificationDrawerVisible(false);
-    };
-
-    const handleFilterChange = (value) => {
-        setFilterStatus(value);
-    };
-
-    const filteredApplications = applications.filter(app =>
-        filterStatus === 'All' || app.role_type === filterStatus
-    );
-
-    const filteredApplicationsByStage = applications.filter(application => {
-        return filter === 'All' || application.current_stage === filter;
-    });
-
-    const submitRemarks = async (values) => {
-        try {
-            console.log(values);
-            await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/mro/create_report/${selectedApplicationId}`,
-                { description: values.remarks }, 
-                 // This is the request body
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            message.success('Remarks submitted successfully');
-            setModalVisible(false);
-            fetchApplications(); // Refresh the applications list
-        } catch (error) {
-            console.error('Error submitting remarks:', error);
-            message.error('Failed to submit remarks');
-        }
-    };
-
-    const unreadNotificationsCount = notifications.filter(n => !n.read).length;
-    const handleNavigate = (path) => {
-        const basePath = "/mro"; // Define your base path
-        if (path === 'dashboard') {
-            console.log("ented here")
-            navigate(`${basePath}`)
-        } else {
-            console.log("NEthered herre")
-            navigate(`${basePath}/${path}`);
-        }
-    }
-
-    const handleFilterChangeStage = (value) => {
-        setFilter(value);
-    };
-
     if (userLoading) {
         // Display a loading spinner while user data is being fetched
         return (
@@ -298,11 +138,11 @@ export default function ApplicationsMro() {
         },
         {
             title: 'Status',
-            dataIndex: 'current_stage',
-            key: 'current_stage',
+            dataIndex: 'role_type',
+            key: 'role_type',
             render: (status) => (
                 <span style={{
-                    color: status === 'mro' ? '#faad14' : status === 'MVRO' ? '#f5222d' : status === 'SVRO' ? '#f5222d': '#52c41a',
+                    color: status === 'pending' ? '#faad14' : status === 'completed' ? '#52c41a' : '#f5222d',
                     textTransform: 'capitalize',
                     fontWeight: 'bold',
                 }}>
@@ -314,100 +154,256 @@ export default function ApplicationsMro() {
             title: 'Action',
             key: 'action',
             render: (_, record) => (
-                <Space>
-                    <Button
-                        icon={<EyeOutlined />}
-                        onClick={() => handleViewApplication(record.application_id)}
-                        loading={loadingApplicationId === record.application_id}
-                    >
-                        View Full Application
-                    </Button>
-                    <Button 
-                        icon={<FilePdfOutlined />} 
-                        onClick={() => handleGenerateCertificate(record)}
-                    >
-                        Generate Certificate
-                    </Button>
-                </Space>
+                <Button
+                    icon={<EyeOutlined />}
+                    onClick={() => handleViewApplication(record.application_id)}
+                    loading={loadingApplicationId === record.application_id}
+                >
+                    View Full Application
+                </Button>
             ),
         },
     ];
 
+    const handleViewApplication = async (id) => {
+        setLoadingApplicationId(id);
+        try {
+            const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/application/${id}`);
+            setSelectedApplication(response.data.data);
+            SetReport(response.data.report)
+            setModalVisible(true);
+        } catch (error) {
+            message.error('Failed to load application details');
+        } finally {
+            setLoadingApplicationId(null);
+        }
+    };
+
+    const openDrawer = () => {
+        setDrawerVisible(true);
+    };
+
+    const closeDrawer = () => {
+        setDrawerVisible(false);
+    };
+
+    const openRemarksForm = () => {
+        setRemarksDrawerVisible(true);
+      };
+
+    const openProfileDrawer = () => {
+        setProfileDrawerVisible(true);
+    };
+
+    const closeProfileDrawer = () => {
+        setProfileDrawerVisible(false);
+    };
+
+    const openNotificationDrawer = () => {
+        setNotificationDrawerVisible(true);
+    };
+
+    const closeNotificationDrawer = () => {
+        setNotificationDrawerVisible(false);
+    };
+
+    const handleFilterChange = (value) => {
+        setFilterStatus(value);
+    };
+
+    const filteredApplications = applications.filter(app => 
+        filterStatus === 'All' || app.role_type === filterStatus
+    );
+
+    const unreadNotificationsCount = notifications.filter(n => !n.read).length;
+    const handleNavigate = (path) => {
+        const basePath = "/svro2"; // Define your base path
+        if(path === 'dashboard'){
+            console.log("ented here")
+            navigate(`${basePath}`)
+        }else{
+            console.log("NEthered herre")       
+            navigate(`${basePath}/${path}`);
+        }
+    }
     return (
-        <MroLayout logout={logout}>
-            <MroHeader userData={userData} logout={logout} />
-            <div style={{ 
-                padding: '24px',
-                marginTop: '80px', // Increased height for the header
-                height: 'calc(100vh - 80px)',
-                overflowY: 'auto'
-            }}>
-                <Card>
-                    <Title level={2} style={{ marginBottom: '24px' }}>Applications</Title>
-                    <Select
-                        placeholder="Select Current Stage"
-                        onChange={handleFilterChangeStage}
-                        defaultValue="All"
-                        style={{ width: 200, marginBottom: 20 }}
-                    >   
-                        <Option value="All">All</Option>
-                        <Option value="MVRO">MVRO</Option>
-                        <Option value="SVRO">SVRO</Option>
-                        <Option value="RI">RI</Option>
-                        <Option value="MRO">MRO</Option>
-                    </Select>
-                    <Table
-                        columns={columns}
-                        dataSource={filter === 'All' ? applications : filteredApplicationsByStage}
-                        loading={loading}
-                        rowKey="id"
-                        pagination={{
-                            pageSize: 10,
-                            showSizeChanger: true,
-                            showTotal: (total) => `Total ${total} items`,
-                        }}
-                    />
-                </Card>
-
-                <MroApplicationModal
-                    visible={modalVisible}
-                    applicationId={selectedApplicationId}
-                    onCancel={() => {
-                        setModalVisible(false);
-                        setSelectedApplicationId(null);
-                    }}
-                    onUpdate={fetchApplications}
-                />
-
-                {/* Certificate Generation Modal */}
-                <Modal
-                    title="Digital Caste Certificate"
-                    visible={certificateModalVisible}
-                    onCancel={() => setCertificateModalVisible(false)}
-                    footer={[
-                        <Button key="download" onClick={handleDownloadCertificate}>
-                            Download PDF
-                        </Button>,
-                        <Button key="email" type="primary" onClick={handleEmailCertificate}>
-                            Send to Email
+        <div className="vro-dashboard bg-background min-h-screen">
+            <nav className="bg-primary text-white p-4 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                    <img src="/certitrack.jpg" alt="CertiTrack Logo" className="h-8 w-8 logo" />
+                    <Title level={3} className="text-white m-0">CertiTrack</Title>
+                </div>
+                <div className="flex items-center space-x-4">
+                    <NavItem to="/dashboard" isActive={activeNavItem === 'dashboard'} onClick={() => handleNavigate('dashboard')}>Dashboard</NavItem>
+                    <NavItem to="/applications" isActive={activeNavItem === 'applications'} onClick={() => handleNavigate('applications')}>Applications</NavItem>
+                    <NavItem to="/field-verification" isActive={activeNavItem === 'field-verification'} onClick={() => handleNavigate('field-verification')}>Field Verification</NavItem>
+                    <NavItem to="/myReports" isActive={activeNavItem === 'myReports'} onClick={() => handleNavigate('myReports')}>MyReports</NavItem>
+                </div>
+                <div className="flex items-center space-x-4">
+                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                        <Button type="text" icon={<QuestionCircleOutlined />} className="text-white" />
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                        <Badge count={unreadNotificationsCount} overflowCount={99}>
+                            <Button type="text" icon={<BellOutlined />} onClick={openNotificationDrawer} className="text-white" aria-label="Notifications" />
+                        </Badge>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                        <Button type="text" icon={<UserOutlined />} onClick={openProfileDrawer} className="text-white">
+                            {userData?.name}
                         </Button>
-                    ]}
-                >
-                    {selectedCertificateApplication && (
-                        <Descriptions column={1} bordered>
-                            <Descriptions.Item label="Name">
-                                {selectedCertificateApplication.name}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Application ID">
-                                {selectedCertificateApplication.applicationId}
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Caste">
-                                {selectedCertificateApplication.caste}
-                            </Descriptions.Item>
-                        </Descriptions>
-                    )}
-                </Modal>
-            </div>
-        </MroLayout>
+                    </motion.div>
+                </div>
+            </nav>
+            <Card>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                    <Title level={2} style={{ margin: 0, color: '#1890ff' }}>VRO Dashboard</Title>
+                    <Space>
+                        <Select
+                            defaultValue="All"
+                            style={{ width: 120 }}
+                            onChange={handleFilterChange}
+                        >
+                            <Option value="All">All</Option>
+                            <Option value="SVRO">SVRO</Option>
+                            <Option value="MVRO">MVRO</Option>
+                            <Option value="MRO">MRO</Option>
+                            <Option value="RI">RI</Option>
+                        </Select>
+                        <Button icon={<UserOutlined />} onClick={openDrawer}>Profile</Button>
+                    </Space>
+                </div>
+                <Table
+                    columns={columns}
+                    dataSource={filteredApplications}
+                    rowKey="id"
+                    pagination={{ pageSize: 10 }}
+                    style={{ overflowX: 'auto' }}
+                    loading={loading}
+                />
+            </Card>
+            <Modal
+                title={<Title level={3}>Full Application Details</Title>}
+                visible={modalVisible}
+                onCancel={() => setModalVisible(false)}
+                footer={[
+                    report === null ? (
+                        <Button key="remarks" type="primary" onClick={openRemarksForm}>
+                            Add Remarks
+                        </Button>
+                    ) : (
+                        <Button key="submitted" type="default" disabled>
+                            Report Already Submitted
+                        </Button>
+                    ),
+                ]}
+                width={800}
+            >
+                {selectedApplication && (
+                    <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                        <Card title="Applicant Information" style={{ marginBottom: '16px' }}>
+                            <Descriptions column={2}>
+                                <Descriptions.Item label="Applied By">
+                                    {selectedApplication.applied_by.name} 
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Application ID">{selectedApplication.application_id}</Descriptions.Item>
+                                <Descriptions.Item label="Status">{selectedApplication.status}</Descriptions.Item>
+                                <Descriptions.Item label="Current Stage">{selectedApplication.current_stage.role_type}</Descriptions.Item>
+                            </Descriptions>
+                        </Card>
+
+                        <Card title="Personal Details" style={{ marginBottom: '16px' }}>
+                            <Descriptions column={2}>
+                                <Descriptions.Item label="Full Name">{selectedApplication.full_name}</Descriptions.Item>
+                                <Descriptions.Item label="Date of Birth">{new Date(selectedApplication.dob).toLocaleDateString()}</Descriptions.Item>
+                                <Descriptions.Item label="Gender">{selectedApplication.gender}</Descriptions.Item>
+                                <Descriptions.Item label="Religion">{selectedApplication.religion}</Descriptions.Item>
+                                <Descriptions.Item label="Caste">{selectedApplication.caste.caste_type}</Descriptions.Item>
+                                <Descriptions.Item label="Sub Caste">{selectedApplication.sub_caste}</Descriptions.Item>
+                                <Descriptions.Item label="Parent/Guardian">{selectedApplication.parent_guardian_type.type}: {selectedApplication.parent_guardian_name}</Descriptions.Item>
+                                <Descriptions.Item label="Marital Status">{selectedApplication.marital_status}</Descriptions.Item>
+                                <Descriptions.Item label="Aadhar Number">{selectedApplication.aadhar_num}</Descriptions.Item>
+                                <Descriptions.Item label="Phone Number">{selectedApplication.phone_num}</Descriptions.Item>
+                                <Descriptions.Item label="Email">{selectedApplication.email}</Descriptions.Item>
+                            </Descriptions>
+                        </Card>
+
+                        <Card title="Address Details" style={{ marginBottom: '16px' }}>
+                            <Descriptions column={2}>
+                                <Descriptions.Item label="Address">{selectedApplication.address.address}</Descriptions.Item>
+                                <Descriptions.Item label="Pincode">{selectedApplication.address.pincode}</Descriptions.Item>
+                                <Descriptions.Item label="State">{selectedApplication.address.state}</Descriptions.Item>
+                                <Descriptions.Item label="District">{selectedApplication.address.district}</Descriptions.Item>
+                                <Descriptions.Item label="Mandal">{selectedApplication.address.mandal}</Descriptions.Item>
+                                <Descriptions.Item label="Sachivalayam">{selectedApplication.address.sachivalayam}</Descriptions.Item>
+                            </Descriptions>
+                        </Card>
+
+                        <Card title="Proof Types" style={{ marginBottom: '16px' }}>
+                            <Descriptions column={2}>
+                                <Descriptions.Item label="Address Proof">
+                                    {selectedApplication.addressProof ? <FileTextOutlined /> : 'Not Provided'}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Caste Proof">
+                                    {selectedApplication.casteProof ? <FileTextOutlined /> : 'Not Provided'}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Date of Birth Proof">
+                                    {selectedApplication.dobProof ? <FileTextOutlined /> : 'Not Provided'}
+                                </Descriptions.Item>
+                            </Descriptions>
+                        </Card>
+
+                        <Card title="Roles Allotted">
+                            <Descriptions column={2}>
+                                <Descriptions.Item label="MVRO">User ID: {selectedApplication.mvro_user.user_id}</Descriptions.Item>
+                                <Descriptions.Item label="SVRO">User ID: {selectedApplication.svro_user.user_id}</Descriptions.Item>
+                                <Descriptions.Item label="RI">User ID: {selectedApplication.ri_user.user_id}</Descriptions.Item>
+                                <Descriptions.Item label="MRO">User ID: {selectedApplication.mro_user.user_id}</Descriptions.Item>
+                            </Descriptions>
+                        </Card>
+                    </div>
+                )}
+            </Modal>
+            <Drawer
+                title="User Profile"
+                placement="right"
+                onClose={closeProfileDrawer}
+                open={profileDrawerVisible}
+            >
+                <div className="space-y-4">
+                    <div className="flex items-center space-x-4">
+                        <Avatar size={64} icon={<UserOutlined />} />
+                        <div>
+                            <h2 className="text-xl font-semibold">{userData.name}</h2>
+                            <p className="text-gray-500">{userData.role}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p className="text-sm text-gray-500">Email</p>
+                        <p>{userData.email}</p>
+                    </div>
+                    <Button block onClick={() => {
+                        message.info('Navigating to full profile page');
+                        closeProfileDrawer();
+                    }}>
+                        View Full Profile
+                    </Button>
+                    <Button danger block onClick={() => {
+                        logout();
+                        closeProfileDrawer();
+                    }}>
+                        <LogoutOutlined /> Logout
+                    </Button>
+                </div>
+            </Drawer>
+
+            <NotificationDrawer
+                visible={notificationDrawerVisible}
+                onClose={closeNotificationDrawer}
+                notifications={notifications}
+                setNotifications={setNotifications}
+            />
+        </div>
     );
 }
+

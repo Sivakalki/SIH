@@ -26,41 +26,114 @@ export default function ApplicationForm() {
     const [selectedDistrict, setSelectedDistrict] = useState('');
     const [selectedMandal, setSelectedMandal] = useState('');
     const [sachivalayamOptions, setSachivalayamOptions] = useState([]);
+    const [aadhaarId, setAadhaarId] = useState('');
     const [mandals, setMandals] = useState([]);
     const [cities, setCities] = useState([]);
-    const {token, logout} = useContext(UserContext);
+    const { token, logout } = useContext(UserContext);
+    const [aadhaarVerified, setIsAadharVerified] = useState(false);
+    const [aadharVerificationForm] = Form.useForm();
+    const [verificationLoading, setVerificationLoading] = useState(false);
     const navigate = useNavigate();
     useEffect(() => {
-        if(!token){
+        if (!token) {
             navigate('/login')
         }
     }, []);
 
+    const validateAadhaar = (value) => {
+        if (!value) {
+          return Promise.reject('Please enter your Aadhaar number');
+        }
+        // if (!/^\d+$/.test(value)) {
+        //   return Promise.reject('Aadhaar number must contain only digits');
+        // }
+        // if (value.length !== 12) {
+        //   return Promise.reject('Aadhaar number must be exactly 12 digits');
+        // }
+        return Promise.resolve();
+      };
+
+    const handleAadharVerification = async () => {
+        try {
+            await aadharVerificationForm.validateFields();
+            setVerificationLoading(true);
+
+            const aadharNumber = aadharVerificationForm.getFieldValue('aadharNumber');
+
+            try {
+                const response = await axios.get(
+                    `${process.env.REACT_APP_BACKEND_URL}/api/check_aadhaar/${aadharNumber}`,
+
+                );
+
+                if (response.status === 200) {
+                    message.success('Aadhar verified successfully');
+                    setIsAadharVerified(true);
+                    setAadhaarId(aadharNumber);
+                    // Optionally, pre-fill some fields from the verification response
+                    const userData = response.data;
+                    aadharVerificationForm.setFieldsValue({
+                        aadharId: aadharNumber,
+                        firstName: userData.firstName || '',
+                        lastName: userData.lastName || '',
+                        dateOfBirth: userData.dateOfBirth || null,
+                        // Add more pre-filling as needed
+                    });
+                }
+            } catch (error) {
+                message.error(error.response?.data?.message || 'Aadhar verification failed');
+                setIsAadharVerified(false);
+            } finally {
+                setVerificationLoading(false);
+            }
+        } catch (error) {
+            message.error('Please enter a valid Aadhar number');
+        }
+    }
+
     const handlePincodeChange = (pincode) => {
-        // Find the location data for the selected pincode
-        const locationData = addressData.find((item) => item.pincode === pincode);
-        
-        if (locationData) {
+        // Find all location data for the selected pincode
+        const locationDataForPincode = addressData.filter((item) => item.pincode === pincode);
+
+        if (locationDataForPincode.length > 0) {
+            // Get the first item to set initial values
+            const firstLocation = locationDataForPincode[0];
+
             // Update the form fields based on the location data
             form.setFieldsValue({
-                state: locationData.state || '',
-                district: locationData.district || '',
-                mandal: locationData.mandal || '',
-                sachivalayam: '',
+                state: firstLocation.state || '',
+                district: firstLocation.district || '',
+                mandal: firstLocation.mandal || '',
+                sachivalayam: '', // Reset sachivalayam when pincode changes
             });
 
             // Update state variables
-            setSelectedState(locationData.state || '');
-            setSelectedDistrict(locationData.district || '');
-            setSelectedMandal(locationData.mandal || '');
-            setSachivalayamOptions(locationData.sachivalayams || []);
+            setSelectedState(firstLocation.state || '');
+            setSelectedDistrict(firstLocation.district || '');
+            setSelectedMandal(firstLocation.mandal || '');
+
+            // Set sachivalayam options based on the filtered location data
+            const sachivalayamOptions = [...new Set(locationDataForPincode.map(item => item.sachivalayam))];
+            setSachivalayamOptions(sachivalayamOptions);
+        } else {
+            // Reset form fields and state if no matching pincode is found
+            form.setFieldsValue({
+                state: '',
+                district: '',
+                mandal: '',
+                sachivalayam: '',
+            });
+            setSelectedState('');
+            setSelectedDistrict('');
+            setSelectedMandal('');
+            setSachivalayamOptions([]);
         }
 
         // Update the selected pincode
         setSelectedPincode(pincode);
     };
 
-    
+
     useEffect(() => {
         fetchLocationData();
     }, []);
@@ -88,14 +161,14 @@ export default function ApplicationForm() {
     };
 
     const onFinish = async (values) => {
-        // setLoading(true);
+        setLoading(true);
         console.log(values);
 
         // Prepare the data for the backend
         const formData = new FormData();
         formData.append("full_name", `${values.firstName} ${values.lastName}`);
         formData.append("email", values.email);
-        formData.append("dob",values.dateOfBirth.format('YYYY-MM-DD'));
+        formData.append("dob", values.dateOfBirth.format('YYYY-MM-DD'));
         formData.append("phone_num", values.phoneNumber);
         formData.append("aadhar_num", values.aadharId);
         formData.append("caste", values.caste);
@@ -121,16 +194,16 @@ export default function ApplicationForm() {
 
         console.log(values.aadharCardImage, " is the electricity bill image");
         // Handle file uploads for each proof
-        if(values.aadharCardImage && values.aadharCardImage.length > 0){
+        if (values.aadharCardImage && values.aadharCardImage.length > 0) {
             formData.append("addressProof", values.aadharCardImage[0].originFileObj);
         }
         if (values.electricityBillImage && values.electricityBillImage.length > 0) {
             formData.append("addressProof", values.electricityBillImage[0].originFileObj);
         }
-        if(values.gasBillImage && values.gasBillImage.length > 0){
+        if (values.gasBillImage && values.gasBillImage.length > 0) {
             formData.append("addressProof", values.gasBillImage[0].originFileObj);
         }
-        if(values.fatherCasteCertificateImage && values.fatherCasteCertificateImage.length > 0){
+        if (values.fatherCasteCertificateImage && values.fatherCasteCertificateImage.length > 0) {
             formData.append("casteProof", values.fatherCasteCertificateImage[0].originFileObj);
         }
         if (values.motherCasteCertificateImage && values.motherCasteCertificateImage.length > 0) {
@@ -140,11 +213,11 @@ export default function ApplicationForm() {
         if (values.sscCertificateImage && values.sscCertificateImage.length > 0) {
             formData.append("dobProof", values.sscCertificateImage[0].originFileObj);
         }
-        if(values.pancardImage && values.pancardImage.length > 0){
+        if (values.pancardImage && values.pancardImage.length > 0) {
             formData.append("dobProof", values.pancardImage[0].originFileObj);
         }
-        if(values.aadharCardImage && values.aadharCardImage.length > 0){    
-            formData.append("dobProof", values.aadharCardImage[0].originFileObj);    
+        if (values.aadharCardImage && values.aadharCardImage.length > 0) {
+            formData.append("dobProof", values.aadharCardImage[0].originFileObj);
         }
 
         console.log(Array.from(formData.entries()), " is the form data");
@@ -178,7 +251,7 @@ export default function ApplicationForm() {
         return e && e.fileList;
     };
 
-    return (
+    return aadhaarVerified ? (
         <Card style={{ width: '100%', maxWidth: 1200, margin: '0 auto', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
             <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>Caste Application Form</Title>
             <Form
@@ -222,12 +295,13 @@ export default function ApplicationForm() {
                         <Form.Item
                             name="aadharId"
                             label="Aadhar ID"
+                            initialValue={aadhaarId}
                             rules={[
                                 { required: true, message: 'Please input your Aadhar ID!' },
                                 { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
                             ]}
                         >
-                            <Input />
+                            <Input disabled />
                         </Form.Item>
                         <Form.Item name="caste" label="Caste" rules={[{ required: true, message: 'Please select your caste!' }]}>
                             <Select>
@@ -350,8 +424,8 @@ export default function ApplicationForm() {
                                     option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                                 }
                             >
-                                {addressData.filter(item => item.pincode === form.getFieldValue('pincode')).map(item => (
-                                    <Option key={item.sachivalayam} value={item.sachivalayam}>{item.sachivalayam}</Option>
+                                {sachivalayamOptions.map(sachivalayam => (
+                                    <Option key={sachivalayam} value={sachivalayam}>{sachivalayam}</Option>
                                 ))}
                             </Select>
                         </Form.Item>
@@ -500,16 +574,7 @@ export default function ApplicationForm() {
                         </Form.Item>
                         {proofOfDOB === 'AADHAAR' && (
                             <>
-                                <Form.Item
-                                    name="aadharIdForDOB"
-                                    label="Aadhar ID"
-                                    rules={[
-                                        { required: true, message: 'Please input your Aadhar ID!' },
-                                        { pattern: /^\d{12}$/, message: 'Aadhar ID must be exactly 12 digits!' }
-                                    ]}
-                                >
-                                    <Input />
-                                </Form.Item>
+
                                 <Form.Item
                                     name="aadharCardImageForDOB"
                                     label="Aadhar Card Image"
@@ -537,9 +602,6 @@ export default function ApplicationForm() {
                         )}
                         {proofOfDOB === 'PAN' && (
                             <>
-                                <Form.Item name="panId" label="PAN ID" rules={[{ required: true, message: 'Please input your PAN ID!' }]}>
-                                    <Input />
-                                </Form.Item>
                                 <Form.Item
                                     name="panCardImage"
                                     label="PAN Card Image"
@@ -660,11 +722,51 @@ export default function ApplicationForm() {
                         loading={loading}
                         disabled={loading || !form.isFieldsTouched()}
                     >
-                        Submit Application
+                        {loading ? 'Submitting...' : 'Submit Application'}
                     </Button>
 
                 </Form.Item>
             </Form>
         </Card >
-    );
-}
+    ) : (
+        <div className="flex items-center justify-center min-h-screen bg-gray-100">
+            <Card className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
+                <h2 className="text-2xl font-bold mb-6 text-center">Aadhaar Verification</h2>
+                <Form
+                    form={aadharVerificationForm}
+                    layout="vertical"
+                    onFinish={handleAadharVerification}
+                >
+                    <Form.Item
+                        label="Aadhaar Number"
+                        name="aadharNumber"
+                        rules={[
+                            { validator: validateAadhaar }
+                        ]}
+                    >
+                        <Input
+                            placeholder="Enter your 12-digit Aadhaar number"
+                            maxLength={12}
+                            onKeyPress={(event) => {
+                                if (!/[0-9]/.test(event.key)) {
+                                    event.preventDefault();
+                                }
+                            }}
+                        />
+                    </Form.Item>
+                    <Form.Item>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            loading={verificationLoading}
+                            className="w-full"
+                        >
+                            {verificationLoading ? 'Verifying...' : 'Verify Aadhaar'}
+                        </Button>
+                    </Form.Item>
+                </Form>
+            </Card>
+        </div>
+    )
+};
+

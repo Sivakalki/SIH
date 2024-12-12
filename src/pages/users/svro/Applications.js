@@ -40,7 +40,7 @@ export default function Applications() {
   const [modalVisible, setModalVisible] = useState(false);
   const [applicationDetails, setApplicationDetails] = useState(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
-  const [currentStageFilter, setCurrentStageFilter] = useState(null);
+  const [currentStageFilter, setCurrentStageFilter] = useState('ALL');
   const [remarksDrawerVisible, setRemarksDrawerVisible] = useState(false);
   const [resendDrawerVisible, setResendDrawerVisible] = useState(false);
   const [resendDescription, setResendDescription] = useState('');
@@ -148,8 +148,15 @@ export default function Applications() {
 
   const filteredApplications = applications.filter(app => {
     if (!currentStageFilter || currentStageFilter === 'ALL') return true;
-    return app.current_stage?.role_type === currentStageFilter;
+    console.log('Filtering for stage:', currentStageFilter); // Log the current stage filter
+    return app.current_stage === currentStageFilter; // Compare directly with current_stage
   });
+
+  console.log('Filtered Applications:', filteredApplications); // Log the filtered applications
+
+  console.log('Applications:', applications);
+  console.log('Application Objects:', applications);
+  console.log('DataSource for Table:', filteredApplications);
 
   const columns = [
     {
@@ -279,8 +286,9 @@ export default function Applications() {
   if (userLoading) {
     return (
       <SvroLayout logout={logout}>
-        <div className="flex justify-center items-center min-h-screen">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
           <Spin size="large" />
+          <Title level={3} style={{ marginTop: '20px' }}>Loading...</Title>
         </div>
       </SvroLayout>
     );
@@ -289,8 +297,9 @@ export default function Applications() {
   if (errorMessage) {
     return (
       <SvroLayout logout={logout}>
-        <div className="flex justify-center items-center min-h-screen">
-          <Title level={3} className="text-red-500">{errorMessage}</Title>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', textAlign: 'center' }}>
+          <Title level={3} style={{ color: '#f5222d' }}>{errorMessage}</Title>
+          {<Button type="primary" onClick={() => navigate('/login')}>Go to Login</Button>}
         </div>
       </SvroLayout>
     );
@@ -298,286 +307,260 @@ export default function Applications() {
 
   return (
     <SvroLayout logout={logout}>
-      <div className="mb-6" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title level={2}>Applications</Title>
-        <Button icon={<UserOutlined />} onClick={openDrawer}>Profile</Button>
-      </div>
-
-      <Card className="shadow-md">
-        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
-          <Select
-            style={{ width: 200 }}
-            placeholder="Filter by Current Stage"
-            allowClear
-            onChange={handleStageFilterChange}
-            value={currentStageFilter}
-            defaultValue="ALL"
-          >
-            <Select.Option value="ALL">All Applications</Select.Option>
-            <Select.Option value="SVRO">SVRO</Select.Option>
-            <Select.Option value="MVRO">MVRO</Select.Option>
-            <Select.Option value="RI">RI</Select.Option>
-            <Select.Option value="MRO">MRO</Select.Option>
-          </Select>
-        </div>
-        <Table 
-          columns={columns} 
-          dataSource={filteredApplications}
-          loading={loading}
-          rowKey="app_id"
-        />
-      </Card>
-
-      <Modal
-        title={<Title level={3}>Application Details</Title>}
-        visible={modalVisible}
-        onCancel={() => {
-          setModalVisible(false);
-          setSelectedApplication(null);
-          setApplicationDetails(null);
-        }}
-        footer={[
-          <Button 
-            key="remarks" 
-            type="primary" 
-            onClick={openRemarksForm}
-            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-            disabled={applicationDetails?.recheck?.status !== 'COMPLETED'}
-          >
-            Add Remarks
-          </Button>,
-          <Button 
-            key="resend" 
-            type="primary" 
-            onClick={() => setResendDrawerVisible(true)}
-            style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
-            disabled={applicationDetails?.recheck !== null}
-          >
-            Resend Application
-          </Button>,
-          <Button 
-            key="close" 
-            onClick={() => {
-              setModalVisible(false);
-              setSelectedApplication(null);
-              setApplicationDetails(null);
-            }}
-          >
-            Close
-          </Button>
-        ]}
-        width={800}
-      >
-        {loadingDetails ? (
-          <div style={{ textAlign: 'center', padding: '20px' }}>
-            <Spin size="large" />
+      <div style={{ padding: '24px', backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <Title level={2} style={{ margin: 0, color: '#1890ff' }}>Applications</Title>
           </div>
-        ) : applicationDetails && (
-          <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-            <Card title="Personal Information" style={{ marginBottom: '16px' }}>
-              <Descriptions column={2}>
-                <Descriptions.Item label="Full Name">{applicationDetails.full_name}</Descriptions.Item>
-                <Descriptions.Item label="Application ID">{applicationDetails.application_id}</Descriptions.Item>
-                <Descriptions.Item label="Date of Birth">{new Date(applicationDetails.dob).toLocaleDateString()}</Descriptions.Item>
-                <Descriptions.Item label="Gender">{applicationDetails.gender}</Descriptions.Item>
-                <Descriptions.Item label="Religion">{applicationDetails.religion}</Descriptions.Item>
-                <Descriptions.Item label="Caste">{applicationDetails.caste?.caste_type}</Descriptions.Item>
-                <Descriptions.Item label="Sub Caste">{applicationDetails.sub_caste}</Descriptions.Item>
-                <Descriptions.Item label="Parent Religion">{applicationDetails.parent_religion}</Descriptions.Item>
-                <Descriptions.Item label="Marital Status">{applicationDetails.marital_status}</Descriptions.Item>
-                <Descriptions.Item label="Aadhar Number">{applicationDetails.aadhar_num}</Descriptions.Item>
-                <Descriptions.Item label="Phone Number">{applicationDetails.phone_num}</Descriptions.Item>
-                <Descriptions.Item label="Email">{applicationDetails.email}</Descriptions.Item>
-              </Descriptions>
-            </Card>
+          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
+            <Select
+              placeholder="Select Current Stage"
+              onChange={handleStageFilterChange}
+              defaultValue="ALL"
+              style={{ width: 200, marginBottom: 20 }}
+            >
+              <Select.Option value="ALL">All</Select.Option>
+              <Select.Option value="SVRO">SVRO</Select.Option>
+              <Select.Option value="MVRO">MVRO</Select.Option>
+              <Select.Option value="RI">RI</Select.Option>
+              <Select.Option value="MRO">MRO</Select.Option>
+            </Select>
+          </div>
+          <Table 
+            columns={columns} 
+            dataSource={filteredApplications}
+            rowKey="app_id"
+            loading={loading}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `Total ${total} items`,
+            }}
+          />
+        </Card>
 
-            <Card title="Parent/Guardian Information" style={{ marginBottom: '16px' }}>
-              <Descriptions column={2}>
-                <Descriptions.Item label="Guardian Type">{applicationDetails.parent_guardian_type?.type}</Descriptions.Item>
-                <Descriptions.Item label="Guardian Name">{applicationDetails.parent_guardian_name}</Descriptions.Item>
-              </Descriptions>
-            </Card>
+        <Modal
+          title={<Title level={3}>Application Details</Title>}
+          visible={modalVisible}
+          onCancel={() => {
+            setModalVisible(false);
+            setSelectedApplication(null);
+            setApplicationDetails(null);
+          }}
+          footer={null}
+          width={800}
+        >
+          {loadingDetails ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <Spin size="large" />
+            </div>
+          ) : applicationDetails && (
+            <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              <Card title="Personal Information" style={{ marginBottom: '16px' }}>
+                <Descriptions column={2}>
+                  <Descriptions.Item label="Full Name">{applicationDetails.full_name}</Descriptions.Item>
+                  <Descriptions.Item label="Application ID">{applicationDetails.application_id}</Descriptions.Item>
+                  <Descriptions.Item label="Date of Birth">{new Date(applicationDetails.dob).toLocaleDateString()}</Descriptions.Item>
+                  <Descriptions.Item label="Gender">{applicationDetails.gender}</Descriptions.Item>
+                  <Descriptions.Item label="Religion">{applicationDetails.religion}</Descriptions.Item>
+                  <Descriptions.Item label="Caste">{applicationDetails.caste?.caste_type}</Descriptions.Item>
+                  <Descriptions.Item label="Sub Caste">{applicationDetails.sub_caste}</Descriptions.Item>
+                  <Descriptions.Item label="Parent Religion">{applicationDetails.parent_religion}</Descriptions.Item>
+                  <Descriptions.Item label="Marital Status">{applicationDetails.marital_status}</Descriptions.Item>
+                  <Descriptions.Item label="Aadhar Number">{applicationDetails.aadhar_num}</Descriptions.Item>
+                  <Descriptions.Item label="Phone Number">{applicationDetails.phone_num}</Descriptions.Item>
+                  <Descriptions.Item label="Email">{applicationDetails.email}</Descriptions.Item>
+                </Descriptions>
+              </Card>
 
-            <Card title="Address Information" style={{ marginBottom: '16px' }}>
-              <Descriptions column={2}>
-                <Descriptions.Item label="Address">{applicationDetails.address?.address}</Descriptions.Item>
-                <Descriptions.Item label="Pincode">{applicationDetails.address?.pincode}</Descriptions.Item>
-                <Descriptions.Item label="State">{applicationDetails.address?.state}</Descriptions.Item>
-                <Descriptions.Item label="District">{applicationDetails.address?.district}</Descriptions.Item>
-                <Descriptions.Item label="Mandal">{applicationDetails.address?.mandal}</Descriptions.Item>
-                <Descriptions.Item label="Sachivalayam">{applicationDetails.address?.sachivalayam}</Descriptions.Item>
-              </Descriptions>
-            </Card>
+              <Card title="Parent/Guardian Information" style={{ marginBottom: '16px' }}>
+                <Descriptions column={2}>
+                  <Descriptions.Item label="Guardian Type">{applicationDetails.parent_guardian_type?.type}</Descriptions.Item>
+                  <Descriptions.Item label="Guardian Name">{applicationDetails.parent_guardian_name}</Descriptions.Item>
+                </Descriptions>
+              </Card>
 
-            <Card title="Documents" style={{ marginBottom: '16px' }}>
-              <Descriptions column={2}>
-                <Descriptions.Item label="Address Proof">
-                  {applicationDetails.addressProof ? (
-                    <Button type="link" onClick={() => window.open(applicationDetails.addressProof, '_blank')}>
-                      View Document
-                    </Button>
-                  ) : 'Not Uploaded'}
-                </Descriptions.Item>
-                <Descriptions.Item label="Caste Proof">
-                  {applicationDetails.casteProof ? (
-                    <Button type="link" onClick={() => window.open(applicationDetails.casteProof, '_blank')}>
-                      View Document
-                    </Button>
-                  ) : 'Not Uploaded'}
-                </Descriptions.Item>
-                <Descriptions.Item label="DOB Proof">
-                  {applicationDetails.dobProof ? (
-                    <Button type="link" onClick={() => window.open(applicationDetails.dobProof, '_blank')}>
-                      View Document
-                    </Button>
-                  ) : 'Not Uploaded'}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
+              <Card title="Address Information" style={{ marginBottom: '16px' }}>
+                <Descriptions column={2}>
+                  <Descriptions.Item label="Address">{applicationDetails.address?.address}</Descriptions.Item>
+                  <Descriptions.Item label="Pincode">{applicationDetails.address?.pincode}</Descriptions.Item>
+                  <Descriptions.Item label="State">{applicationDetails.address?.state}</Descriptions.Item>
+                  <Descriptions.Item label="District">{applicationDetails.address?.district}</Descriptions.Item>
+                  <Descriptions.Item label="Mandal">{applicationDetails.address?.mandal}</Descriptions.Item>
+                  <Descriptions.Item label="Sachivalayam">{applicationDetails.address?.sachivalayam}</Descriptions.Item>
+                </Descriptions>
+              </Card>
 
-            <Card title="Application Status" style={{ marginBottom: '16px' }}>
-              <Descriptions column={2}>
-                <Descriptions.Item label="Status">
-                  <Badge 
-                    status={applicationDetails.status === 'PENDING' ? 'processing' : 'success'} 
-                    text={applicationDetails.status}
-                  />
-                </Descriptions.Item>
-                <Descriptions.Item 
-                  label={
-                    <span style={{ 
-                      backgroundColor: '#1890ff',
-                      color: 'white',
+              <Card title="Documents" style={{ marginBottom: '16px' }}>
+                <Descriptions column={2}>
+                  <Descriptions.Item label="Address Proof">
+                    {applicationDetails.addressProof ? (
+                      <Button type="link" onClick={() => window.open(applicationDetails.addressProof, '_blank')}>
+                        View Document
+                      </Button>
+                    ) : 'Not Uploaded'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Caste Proof">
+                    {applicationDetails.casteProof ? (
+                      <Button type="link" onClick={() => window.open(applicationDetails.casteProof, '_blank')}>
+                        View Document
+                      </Button>
+                    ) : 'Not Uploaded'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="DOB Proof">
+                    {applicationDetails.dobProof ? (
+                      <Button type="link" onClick={() => window.open(applicationDetails.dobProof, '_blank')}>
+                        View Document
+                      </Button>
+                    ) : 'Not Uploaded'}
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              <Card title="Application Status" style={{ marginBottom: '16px' }}>
+                <Descriptions column={2}>
+                  <Descriptions.Item label="Status">
+                    <Badge 
+                      status={applicationDetails.status === 'PENDING' ? 'processing' : 'success'} 
+                      text={applicationDetails.status}
+                    />
+                  </Descriptions.Item>
+                  <Descriptions.Item 
+                    label={
+                      <span style={{ 
+                        backgroundColor: '#1890ff',
+                        color: 'white',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontWeight: 'bold'
+                      }}>
+                        Current Stage
+                      </span>
+                    }
+                  >
+                    <div style={{
+                      backgroundColor: '#e6f7ff',
                       padding: '4px 8px',
                       borderRadius: '4px',
+                      border: '1px solid #91d5ff',
+                      color: '#1890ff',
                       fontWeight: 'bold'
                     }}>
-                      Current Stage
-                    </span>
-                  }
-                >
-                  <div style={{
-                    backgroundColor: '#e6f7ff',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    border: '1px solid #91d5ff',
-                    color: '#1890ff',
-                    fontWeight: 'bold'
-                  }}>
-                    {applicationDetails.current_stage?.role_type || 'Not Started'}
-                  </div>
-                </Descriptions.Item>
-                <Descriptions.Item label="Created At">{new Date(applicationDetails.created_at).toLocaleString()}</Descriptions.Item>
-                <Descriptions.Item label="Updated At">{new Date(applicationDetails.updated_at).toLocaleString()}</Descriptions.Item>
-                {applicationDetails.rejection_reason && (
-                  <Descriptions.Item label="Rejection Reason">{applicationDetails.rejection_reason}</Descriptions.Item>
-                )}
-              </Descriptions>
-            </Card>
+                      {applicationDetails.current_stage || 'Not Started'}
+                    </div>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Created At">{new Date(applicationDetails.created_at).toLocaleString()}</Descriptions.Item>
+                  <Descriptions.Item label="Updated At">{new Date(applicationDetails.updated_at).toLocaleString()}</Descriptions.Item>
+                  {applicationDetails.rejection_reason && (
+                    <Descriptions.Item label="Rejection Reason">{applicationDetails.rejection_reason}</Descriptions.Item>
+                  )}
+                </Descriptions>
+              </Card>
 
-            <Card title="Officials Information" style={{ marginBottom: '16px' }}>
-              <Descriptions column={2}>
-                <Descriptions.Item label="MVRO Details">
-                  {`${applicationDetails.mvro_user?.mandal || 'N/A'} - ${applicationDetails.mvro_user?.district || 'N/A'}`}
-                </Descriptions.Item>
-                <Descriptions.Item label="SVRO Details">
-                  {`${applicationDetails.svro_user?.mandal || 'N/A'} - ${applicationDetails.svro_user?.sachivalayam || 'N/A'}`}
-                </Descriptions.Item>
-                <Descriptions.Item label="RI Details">
-                  {`${applicationDetails.ri_user?.mandal || 'N/A'} - ${applicationDetails.ri_user?.district || 'N/A'}`}
-                </Descriptions.Item>
-                <Descriptions.Item label="MRO Details">
-                  {`${applicationDetails.mro_user?.mandal || 'N/A'} - ${applicationDetails.mro_user?.district || 'N/A'}`}
-                </Descriptions.Item>
-              </Descriptions>
-            </Card>
-          </div>
-        )}
-      </Modal>
+              <Card title="Officials Information" style={{ marginBottom: '16px' }}>
+                <Descriptions column={2}>
+                  <Descriptions.Item label="MVRO Details">
+                    {`${applicationDetails.mvro_user?.mandal || 'N/A'} - ${applicationDetails.mvro_user?.district || 'N/A'}`}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="SVRO Details">
+                    {`${applicationDetails.svro_user?.mandal || 'N/A'} - ${applicationDetails.svro_user?.sachivalayam || 'N/A'}`}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="RI Details">
+                    {`${applicationDetails.ri_user?.mandal || 'N/A'} - ${applicationDetails.ri_user?.district || 'N/A'}`}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="MRO Details">
+                    {`${applicationDetails.mro_user?.mandal || 'N/A'} - ${applicationDetails.mro_user?.district || 'N/A'}`}
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+            </div>
+          )}
+        </Modal>
 
-      <Drawer
-        title="Add Remarks"
-        placement="right"
-        onClose={closeRemarksDrawer}
-        open={remarksDrawerVisible}
-      >
-        <Form onFinish={submitRemarks}>
-          <Form.Item
-            name="remarks"
-            rules={[{ required: true, message: 'Please enter your remarks' }]}
-          >
-            <Input.TextArea rows={4} placeholder="Enter your remarks here" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              Submit Remarks
-            </Button>
-          </Form.Item>
-        </Form>
-      </Drawer>
-
-      <Drawer
-        title="Resend Application"
-        placement="right"
-        onClose={() => {
-          setResendDrawerVisible(false);
-          setResendDescription('');
-        }}
-        visible={resendDrawerVisible}
-        width={400}
-        footer={
-          <div style={{ textAlign: 'right' }}>
-            <Button onClick={() => setResendDrawerVisible(false)} style={{ marginRight: 8 }}>
-              Cancel
-            </Button>
-            <Button 
-              type="primary" 
-              onClick={handleResendApplication}
-              loading={resendLoading}
-              style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
+        <Drawer
+          title="Add Remarks"
+          placement="right"
+          onClose={closeRemarksDrawer}
+          open={remarksDrawerVisible}
+        >
+          <Form onFinish={submitRemarks}>
+            <Form.Item
+              name="remarks"
+              rules={[{ required: true, message: 'Please enter your remarks' }]}
             >
-              Submit
-            </Button>
-          </div>
-        }
-      >
-        <Form layout="vertical">
-          <Form.Item
-            label="Description"
-            name="description"
-            rules={[{ required: true, message: 'Please provide a description' }]}
-          >
-            <Input.TextArea 
-              rows={4} 
-              value={resendDescription}
-              onChange={(e) => setResendDescription(e.target.value)}
-              placeholder="Enter reason for resending application"
-            />
-          </Form.Item>
-        </Form>
-      </Drawer>
+              <Input.TextArea rows={4} placeholder="Enter your remarks here" />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit">
+                Submit Remarks
+              </Button>
+            </Form.Item>
+          </Form>
+        </Drawer>
 
-      <Drawer
-        title="User Profile"
-        placement="right"
-        onClose={closeDrawer}
-        visible={drawerVisible}
-        width={400}
-      >
-        <Card>
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <Avatar size={64} icon={<UserOutlined />} />
-            <Title level={4} style={{ marginTop: '10px', marginBottom: '0' }}>
-              {userData?.name || 'User'}
-            </Title>
-            <p>{userData?.email || 'No email available'}</p>
-          </div>
-          <Descriptions column={1}>
-            <Descriptions.Item label="Role">{role}</Descriptions.Item>
-            <Descriptions.Item label="Status">Active</Descriptions.Item>
-          </Descriptions>
-        </Card>
-      </Drawer>
+        <Drawer
+          title="Resend Application"
+          placement="right"
+          onClose={() => {
+            setResendDrawerVisible(false);
+            setResendDescription('');
+          }}
+          visible={resendDrawerVisible}
+          width={400}
+          footer={
+            <div style={{ textAlign: 'right' }}>
+              <Button onClick={() => setResendDrawerVisible(false)} style={{ marginRight: 8 }}>
+                Cancel
+              </Button>
+              <Button 
+                type="primary" 
+                onClick={handleResendApplication}
+                loading={resendLoading}
+                style={{ backgroundColor: '#faad14', borderColor: '#faad14' }}
+              >
+                Submit
+              </Button>
+            </div>
+          }
+        >
+          <Form layout="vertical">
+            <Form.Item
+              label="Description"
+              name="description"
+              rules={[{ required: true, message: 'Please provide a description' }]}
+            >
+              <Input.TextArea 
+                rows={4} 
+                value={resendDescription}
+                onChange={(e) => setResendDescription(e.target.value)}
+                placeholder="Enter reason for resending application"
+              />
+            </Form.Item>
+          </Form>
+        </Drawer>
+
+        <Drawer
+          title="User Profile"
+          placement="right"
+          onClose={closeDrawer}
+          visible={drawerVisible}
+          width={400}
+        >
+          <Card>
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <Avatar size={64} icon={<UserOutlined />} />
+              <Title level={4} style={{ marginTop: '10px', marginBottom: '0' }}>
+                {userData?.name || 'User'}
+              </Title>
+              <p>{userData?.email || 'No email available'}</p>
+            </div>
+            <Descriptions column={1}>
+              <Descriptions.Item label="Role">{role}</Descriptions.Item>
+              <Descriptions.Item label="Status">Active</Descriptions.Item>
+            </Descriptions>
+          </Card>
+        </Drawer>
+      </div>
     </SvroLayout>
   );
 }

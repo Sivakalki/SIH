@@ -19,6 +19,13 @@ import RenewCertificate from './pages/users/applicant/RenewCertificate';
 // Admin Pages
 import Admin from './pages/dashboards/Admin';
 
+// MVRO pages
+import PendingApplicationsMVRO from './pages/users/mvro/PendingApplications';
+import CompletedApplicationsMVRO from './pages/users/mvro/Completed';
+import ApplicationsMVRO from './pages/users/mvro/Applications';
+import MyReportsMVRO from './pages/users/mvro/MyReports';
+import MVRODashboard from './pages/users/mvro/Dashboard';
+
 // VRO Pages
 import Vro from './pages/dashboards/Vro';
 import VRODashboard2 from './pages/users/svro/Dashboard';
@@ -29,14 +36,6 @@ import Applications from './pages/users/svro/Applications';
 import MyReports from './pages/users/svro/MyReports';
 import ScheduleApplications from './pages/users/svro/ScheduleApplications';
 
-// MVRO Pages
-import MVRO from './pages/dashboards/mvro';
-import MVRODashboard from './pages/users/mvro/Dashboard';
-import PendingApplicationsMVRO from './pages/users/mvro/PendingApplications';
-import CompletedApplicationsMVRO from './pages/users/mvro/Completed';
-// import ScheduleApplicationsMVRO from './pages/users/mvro/ScheduleApplications';
-import ApplicationsMVRO from './pages/users/mvro/Applications';
-import MyReportsMVRO from './pages/users/mvro/MyReports';
 
 // Ri pages
 import ApplicationsRi from './pages/users/ri/Applications';
@@ -47,12 +46,9 @@ import RIReports from './pages/users/ri/MyReports';
 
 // MRO Pages
 import Mro from './pages/dashboards/Mro';
-import MroDashboard from './pages/users/mro/Dashboard';
-import ApplicationsMro from './pages/users/mro/Applications';
-import MroReports from './pages/users/mro/MyReports';
-import PendingApplicationsMrO from './pages/users/mro/PendingApplications';
-import CompletedApplicationsMRO from './pages/users/mro/Completed';
-import ScheduleApplicationsMro from './pages/users/mro/ScheduleApplications';
+import MVRODashboard from './pages/users/mvro/Dashboard';
+import ApplicationsMvro from './pages/users/mvro/Applications';
+import MVROMyReports from './pages/users/mvro/MyReports';
 
 // DO Pages
 import Do from './pages/dashboards/Do';
@@ -81,24 +77,22 @@ const App = () => {
           {/* Admin Routes */}
           <Route path="/admin" element={<Admin />} />
 
-          {/* VRO Routes */}
-          <Route path="/vro" element={<Vro />} />
-          <Route path="/svro" element={<VRODashboard2 />} />
-          <Route path="/svro/applications" element={<Applications />} />
-          <Route path="/svro/pending" element={<PendingApplications />} />
-          <Route path="/svro/schedule" element={<ScheduleApplications />} />
-          <Route path="/svro/completed" element={<CompletedApplications />} />
-          <Route path="/svro/Resent" element={<ResentApplications />} />
-          <Route path="/svro/reports" element={<MyReports />} />
+        {/* VRO Routes */}
+        <Route path="/vro" element={<Vro />} />
+        <Route path="/svro" element={<VRODashboard2 />} />
+        <Route path="/svro/applications" element={<Applications />} />
+        <Route path="/svro/pending" element={<PendingApplications />} />
+        <Route path="/svro/schedule" element={<ScheduleApplications />} />
+        <Route path="/svro/completed" element={<CompletedApplications />} />
+        <Route path="/svro/Resent" element={<ResentApplications />} />
+        <Route path="/svro/reports" element={<MyReports />} />
 
-          {/* MVRO Routes */}
-          <Route path="/mvro" element={<MVRO />} />
-          <Route path="/mvro/dashboard" element={<MVRODashboard />} />
-          <Route path="/mvro/applications" element={<ApplicationsMVRO />} />
-          <Route path="/mvro/pending" element={<PendingApplicationsMVRO />} />
-          {/* <Route path="/mvro/schedule" element={<ScheduleApplicationsMVRO />} /> */}
-          <Route path="/mvro/completed" element={<CompletedApplicationsMVRO />} />
-          <Route path="/mvro/reports" element={<MyReportsMVRO />} />
+        {/* MVRO Routes */}
+        <Route path="/mvro" element={<MVRODashboard />} />
+        <Route path="/mvro/applications" element={<ApplicationsMVRO />} />
+        <Route path="/mvro/pending" element={<PendingApplicationsMVRO />} />
+        <Route path="/mvro/completed" element={<CompletedApplicationsMVRO />} />
+        <Route path="/mvro/reports" element={<MyReportsMVRO />} />
 
           {/* RI Routes */}
           {/* <Route path="/ri" element={<RiDashboard />} /> */}
@@ -110,13 +104,15 @@ const App = () => {
           <Route path="/ri/reports" element={<RIReports />} />
 
 
-          {/* MRO Routes */}
-          <Route path="/mro" element={<MroDashboard />} />
-          <Route path="/mro/applications" element={<ApplicationsMro />} />
-          <Route path="/mro/pending" element={<PendingApplicationsMrO />} />
-          <Route path="/mro/completed" element={<CompletedApplicationsMRO />} />
-          <Route path="/mro/reports" element={<MroReports />} />
-          <Route path="/mro/schedule" element={<ScheduleApplicationsMro />} />
+        {/* MRO Routes */}
+        <Route path="/mro" element={<Mro />} />
+        <Route path="/mvro" element={<MVRODashboard />} />
+        <Route path="/mvro/Applications" element={<ApplicationsMvro />} />
+        <Route path="/mvro/pending" element={<PendingApplicationsMVRO />} />
+        <Route path='/mvro/completed' element={<CompletedApplicationsMVRO />} />
+        <Route path="/mvro/reports" element={<MVROMyReports />} />
+
+
 
           {/* DO Routes */}
           <Route path="/do" element={<Do />} />

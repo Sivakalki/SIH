@@ -49,6 +49,7 @@ export default function PendingApplicationsMRO() {
             setApplications(response.data.data);
         } catch (error) {
             message.error('Failed to fetch applications');
+            console.log(error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }

@@ -238,20 +238,6 @@ export default function CompletedApplicationsMVRO() {
                                     <p className="text-sm text-gray-500">Email</p>
                                     <p>{userData.email}</p>
                                 </div>
-                                <Button block onClick={() => navigate('/profile')}>
-                                    View Full Profile
-                                </Button>
-                                <Button
-                                    danger
-                                    block
-                                    onClick={() => {
-                                        logout();
-                                        setUserData(null);
-                                        closeDrawer();
-                                    }}
-                                >
-                                    <LogoutOutlined /> Logout
-                                </Button>
                             </div>
                         )}
                     </Drawer>
