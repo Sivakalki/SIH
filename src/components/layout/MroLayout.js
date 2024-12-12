@@ -71,11 +71,6 @@ export default function MroLayout({ children, logout }) {
               label: 'Pending Applications',
             },
             {
-              key: '/mro/schedule',
-              icon: <CalendarOutlined />,
-              label: 'Schedule Applications',
-            },
-            {
               key: '/mro/completed',
               icon: <CheckCircleOutlined />,
               label: 'Completed Applications',
